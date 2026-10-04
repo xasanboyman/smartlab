@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from "react";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw, Focus } from "lucide-react";
 
 const SKETCHFAB_API_SCRIPT_URL = "https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js";
 const MODEL_UID = "9b0b079953b840bc9a13f524b60041e4";
@@ -7,12 +7,12 @@ const MODEL_UID = "9b0b079953b840bc9a13f524b60041e4";
 const SketchfabCanvas = forwardRef(function SketchfabCanvas(
   {
     modelUid = MODEL_UID,
+    activeKeywords = null, // e.g. ["skull", "spine", "ribcage", "pelvis", "hands", "legs"]
     speed = 1,
     paused = false,
     onTimeUpdate = () => {},
     onDurationChange = () => {},
-    onNodeMapLoaded = () => {},
-    hiddenCategories = new Set(),
+    onModelReady = () => {},
     onPick = () => {},
   },
   ref
@@ -21,10 +21,11 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
   const apiRef = useRef(null);
   const [loaded, setLoaded] = useState(false);
   const [loadingError, setLoadingError] = useState(null);
-  const [nodesByCategory, setNodesByCategory] = useState(null);
+  const [nodesList, setNodesList] = useState([]);
   const isSeekingRef = useRef(false);
+  const recenterTimerRef = useRef(null);
 
-  // 1. Load Sketchfab API Script if not already present
+  // 1. Load Sketchfab API Script if not already loaded in document
   useEffect(() => {
     if (window.Sketchfab) return;
 
@@ -43,19 +44,19 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
   const callbacksRef = useRef({
     onTimeUpdate,
     onDurationChange,
-    onNodeMapLoaded,
+    onModelReady,
     onPick,
   });
   useEffect(() => {
     callbacksRef.current = {
       onTimeUpdate,
       onDurationChange,
-      onNodeMapLoaded,
+      onModelReady,
       onPick,
     };
   });
 
-  // 2. Initialize Sketchfab Viewer Client (Runs once per modelUid)
+  // 2. Initialize Sketchfab Viewer Client
   const initViewer = useCallback(() => {
     if (!iframeRef.current) return;
     if (!window.Sketchfab) {
@@ -91,13 +92,14 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
         preload: 1,
         success: (api) => {
           apiRef.current = api;
+          window.__sfApi = api;
           api.start();
 
           api.addEventListener("viewerready", () => {
             clearTimeout(safetyTimer);
             setLoaded(true);
 
-            // Get Animation details safely
+            // Get Animation duration
             api.getAnimations((a, b) => {
               const animList = Array.isArray(a) ? a : Array.isArray(b) ? b : [];
               if (animList.length > 0 && animList[0]) {
@@ -112,14 +114,28 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
               }
             });
 
-            // Get 3D Nodes safely
+            // Extract all anatomical meshes
             api.getNodeMap((a, b) => {
-              const nodes =
-                a && typeof a === "object" && !a.message ? a : b;
+              const nodes = a && typeof a === "object" && !a.message ? a : b;
               if (nodes && typeof nodes === "object") {
-                const categorized = categorizeNodes(nodes);
-                setNodesByCategory(categorized);
-                callbacksRef.current.onNodeMapLoaded?.(categorized);
+                const parts = [];
+                Object.values(nodes).forEach((n) => {
+                  if (
+                    n.name &&
+                    (n.type === "MatrixTransform" || n.type === "Geometry") &&
+                    !n.name.includes(".fbx") &&
+                    n.name !== "RootNode"
+                  ) {
+                    parts.push({
+                      id: n.instanceID,
+                      name: n.name,
+                      lowerName: n.name.toLowerCase(),
+                      type: n.type,
+                    });
+                  }
+                });
+                setNodesList(parts);
+                callbacksRef.current.onModelReady?.(parts);
               }
             });
 
@@ -130,7 +146,7 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
               }
             });
 
-            // Click picking
+            // Click picking in 3D
             api.addEventListener("click", (info) => {
               if (info && info.instanceID != null) {
                 callbacksRef.current.onPick?.(info);
@@ -181,7 +197,7 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
     }
   }, [speed, loaded]);
 
-  // 5. External Seek Trigger
+  // 5. Seek To Time
   const seekToTime = useCallback((time) => {
     if (!apiRef.current || !loaded) return;
     try {
@@ -197,42 +213,61 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
     }
   }, [loaded]);
 
+  const recenterCamera = useCallback(() => {
+    if (!apiRef.current || !loaded) return;
+    try {
+      apiRef.current.recenterCamera();
+    } catch (e) {
+      console.warn("Error recentering camera:", e);
+    }
+  }, [loaded]);
+
   useImperativeHandle(
     ref,
     () => ({
       seekToTime,
       play: () => apiRef.current?.play(),
       pause: () => apiRef.current?.pause(),
-      recenterCamera: () => apiRef.current?.recenterCamera?.(),
+      recenterCamera,
       api: apiRef.current,
     }),
-    [seekToTime]
+    [seekToTime, recenterCamera]
   );
 
-  // 6. Node Visibility Toggling
+  // 6. Node Isolation ("One of them, not the rest")
   useEffect(() => {
-    if (!apiRef.current || !loaded || !nodesByCategory) return;
+    if (!apiRef.current || !loaded || nodesList.length === 0) return;
     const api = apiRef.current;
 
-    Object.entries(nodesByCategory).forEach(([category, instanceIds]) => {
-      const isHidden = hiddenCategories.has(category);
-      instanceIds.forEach((id) => {
-        try {
-          if (isHidden) {
-            api.hide(id);
-          } else {
-            api.show(id);
-          }
-        } catch (e) {}
-      });
+    nodesList.forEach((part) => {
+      const isVisible =
+        !activeKeywords || activeKeywords.length === 0
+          ? true
+          : activeKeywords.some((kw) => part.lowerName.includes(kw.toLowerCase()));
+
+      try {
+        if (isVisible) {
+          api.show(part.id);
+        } else {
+          api.hide(part.id);
+        }
+      } catch (e) {}
     });
-  }, [hiddenCategories, nodesByCategory, loaded]);
+
+    // Auto-recenter camera onto the isolated model
+    clearTimeout(recenterTimerRef.current);
+    recenterTimerRef.current = setTimeout(() => {
+      try {
+        api.recenterCamera();
+      } catch (e) {}
+    }, 120);
+  }, [activeKeywords, nodesList, loaded]);
 
   return (
-    <div className="w-full h-full relative bg-[#0a0a0a] overflow-hidden">
+    <div className="w-full h-full relative bg-[#090a0f] overflow-hidden select-none">
       {/* Loading Overlay */}
       {!loaded && !loadingError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] z-10 text-white pointer-events-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#090a0f] z-10 text-white pointer-events-none">
           <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
           <p className="text-emerald-400 font-bold text-sm tracking-wide">
             Sketchfab 3D Anatomiya modeli yuklanmoqda...
@@ -245,7 +280,7 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
 
       {/* Error Fallback */}
       {loadingError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] z-20 text-white p-6 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#090a0f] z-20 text-white p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
           <h3 className="text-base font-bold text-red-400 mb-1">
             Modelni yuklab bo'lmadi
@@ -278,67 +313,3 @@ const SketchfabCanvas = forwardRef(function SketchfabCanvas(
 });
 
 export default SketchfabCanvas;
-
-// -------------------------------------------------------------
-// Categorize 3D nodes by anatomical structure
-// -------------------------------------------------------------
-function categorizeNodes(nodes) {
-  const categories = {
-    skeleton: [],
-    brain: [],
-    lungs: [],
-    heart: [],
-    liver: [],
-    digestive: [],
-    diaphragm: [],
-    eyes: [],
-    circulatory: [],
-    muscles: [],
-    skin: [],
-  };
-
-  Object.values(nodes || {}).forEach((node) => {
-    if (!node.name || (node.type !== "MatrixTransform" && node.type !== "Geometry" && node.type !== "Group")) return;
-    const name = node.name.toLowerCase();
-    const id = node.instanceID;
-
-    if (
-      name.includes("ribcage") ||
-      name.includes("spine") ||
-      name.includes("pelvis") ||
-      name.includes("legs") ||
-      name.includes("hands") ||
-      name.includes("skel") ||
-      name.includes("bone")
-    ) {
-      categories.skeleton.push(id);
-    } else if (name.includes("brain")) {
-      categories.brain.push(id);
-    } else if (name.includes("lung")) {
-      categories.lungs.push(id);
-    } else if (name.includes("heart")) {
-      categories.heart.push(id);
-    } else if (name.includes("liver") || name.includes("gallbladder")) {
-      categories.liver.push(id);
-    } else if (name.includes("digest") || name.includes("stomach") || name.includes("intestin")) {
-      categories.digestive.push(id);
-    } else if (name.includes("diafrag")) {
-      categories.diaphragm.push(id);
-    } else if (name.includes("eye")) {
-      categories.eyes.push(id);
-    } else if (
-      name.includes("circulat") ||
-      name.includes("vessel") ||
-      name.includes("artery") ||
-      name.includes("vein")
-    ) {
-      categories.circulatory.push(id);
-    } else if (name.includes("muscle") || name.includes("muscul")) {
-      categories.muscles.push(id);
-    } else if (name.includes("skin") || name.includes("body")) {
-      categories.skin.push(id);
-    }
-  });
-
-  return categories;
-}
