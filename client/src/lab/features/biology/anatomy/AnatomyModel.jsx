@@ -52,23 +52,36 @@ const AnatomyModel = ({ url, onPick, frozen = false, keepMaterial = false }) => 
   // Tint every mesh by its material name; store the resolved detail per mesh.
   // Models that ship their own colours (skeleton, skull...) keep them as-is.
   useEffect(() => {
-    if (keepMaterial) {
-      invalidate();
-      return;
-    }
     model.traverse((child) => {
       if (!child.isMesh) return;
+      child.castShadow = true;
+      child.receiveShadow = true;
+
       const matName = Array.isArray(child.material)
         ? child.material[0]?.name
         : child.material?.name;
-      const resolved = resolveMaterial(matName);
-      child.userData.detail = resolved;
-      child.material = new THREE.MeshStandardMaterial({
-        color: resolved?.color || "#cfd8dc",
-        roughness: 0.7,
-        metalness: 0.05,
-      });
-      child.userData.baseColor = child.material.color.clone();
+      const meshName = child.name || "";
+      const resolved = resolveMaterial(matName) || resolveMaterial(meshName);
+
+      const fallbackDetail = {
+        label: resolved?.label || (child.name ? child.name.replace(/[-_]/g, " ") : "Anatomik tuzilma"),
+        desc: resolved?.desc || "Ushbu anatomik tuzilma tana a'zolari va tizimlari tarkibiga kiradi.",
+        color: resolved?.color || (child.material?.color ? `#${child.material.color.getHexString()}` : "#e2e8f0"),
+      };
+
+      child.userData.detail = resolved || fallbackDetail;
+
+      if (!keepMaterial) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: resolved?.color || "#cfd8dc",
+          roughness: 0.65,
+          metalness: 0.05,
+        });
+      }
+
+      if (child.material?.color) {
+        child.userData.baseColor = child.material.color.clone();
+      }
     });
     invalidate();
   }, [model, invalidate, keepMaterial]);
