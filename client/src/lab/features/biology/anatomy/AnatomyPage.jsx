@@ -6,6 +6,7 @@ import Scene from "@/lab/components/Scene";
 import LabWorkspace from "@/lab/components/LabWorkspace";
 import AnatomyModel from "./AnatomyModel";
 import AnatomyDetailModal from "./AnatomyDetailModal";
+import SketchfabHumanViewer from "./SketchfabHumanViewer";
 import { ANATOMY, getAnatomy } from "@/lab/data/anatomy";
 
 const AnatomyPage = () => {
@@ -26,34 +27,38 @@ const AnatomyPage = () => {
       // Switching system resets the open detail.
       onSelect={(id) => setFields({ activeSlug: id, selectedPart: null })}
       scene={
-        <>
-          <Scene
-            camera={[0, 1, 6]}
-            frameloop="demand"
-            controls={{
-              minDistance: 0.5,
-              maxDistance: 30,
-              enablePan: true,
-              zoomToCursor: true,
-              zoomSpeed: 1.1,
-            }}
-          >
-            {/* Soft fill from several sides so the tinted anatomy reads clearly. */}
-            <hemisphereLight args={["#ffffff", "#9ca3af", 0.9]} />
-            <directionalLight position={[4, 6, 5]} intensity={0.8} />
-            <directionalLight position={[-5, 2, -4]} intensity={0.4} />
-            <AnatomyModel
-              url={model.url}
-              keepMaterial={!!model.keepMaterial}
-              frozen={!!selectedPart}
-              onPick={(part) => setField("selectedPart", part)}
+        model.isSketchfab ? (
+          <SketchfabHumanViewer uid={model.sketchfabUid} />
+        ) : (
+          <>
+            <Scene
+              camera={[0, 1, 6]}
+              frameloop="demand"
+              controls={{
+                minDistance: 0.5,
+                maxDistance: 30,
+                enablePan: true,
+                zoomToCursor: true,
+                zoomSpeed: 1.1,
+              }}
+            >
+              {/* Soft fill from several sides so the tinted anatomy reads clearly. */}
+              <hemisphereLight args={["#ffffff", "#9ca3af", 0.9]} />
+              <directionalLight position={[4, 6, 5]} intensity={0.8} />
+              <directionalLight position={[-5, 2, -4]} intensity={0.4} />
+              <AnatomyModel
+                url={model.url}
+                keepMaterial={!!model.keepMaterial}
+                frozen={!!selectedPart}
+                onPick={(part) => setField("selectedPart", part)}
+              />
+            </Scene>
+            <AnatomyDetailModal
+              part={selectedPart}
+              onClose={() => setField("selectedPart", null)}
             />
-          </Scene>
-          <AnatomyDetailModal
-            part={selectedPart}
-            onClose={() => setField("selectedPart", null)}
-          />
-        </>
+          </>
+        )
       }
       info={
         <div className="space-y-2">

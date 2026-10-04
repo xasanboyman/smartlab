@@ -25,6 +25,16 @@ import lungsUrl from "@/shared/assets/models/realistic_human_lungs.glb?url";
 
 export const ANATOMY = [
   {
+    slug: "animated-full-body",
+    title: "To'liq Inson Tanasi (Animatsion 3D)",
+    short: "Skelet, mushaklar, yurak, o'pka va barcha a'zolar to'liq 3D animatsiyada.",
+    icon: "PersonStanding",
+    isSketchfab: true,
+    sketchfabUid: "9b0b079953b840bc9a13f524b60041e4",
+    about:
+      "To'liq animatsion inson tanasi anatomiyasi (Sketchfab). Skelet tizimi, mushaklar, bosh miya, yurak-qon tomir, nafas olish va hazm a'zolari real vaqtda harakatlanadi va ajratib ko'rish mumkin.",
+  },
+  {
     slug: "myology",
     title: "Mushaklar tizimi",
     short: "Tana mushaklarining joylashuvini 3D da ko'ring.",
