@@ -1,20 +1,47 @@
-import agenda from "../config/agenda.js";
 import logger from "../config/logger.js";
-import defineCleanupExpiredTokens, {
-  JOB_NAME as CLEANUP_JOB,
-} from "./cleanupExpiredTokens.job.js";
+import { isDbConnected } from "../config/db.js";
+import mockStore from "../services/mockStore.js";
+
+let mockIntervalId = null;
 
 export const startJobs = async () => {
-  defineCleanupExpiredTokens(agenda);
+  if (!isDbConnected()) {
+    logger.info(
+      "MongoDB ulanmagan: Agenda o'tkazib yuborildi, in-memory tozalash rejimi faol.",
+    );
+    mockIntervalId = setInterval(() => {
+      mockStore.cleanupExpiredTokens();
+    }, 60 * 60 * 1000);
+    return;
+  }
 
-  await agenda.start();
+  try {
+    const { default: agenda } = await import("../config/agenda.js");
+    const { default: defineCleanupExpiredTokens, JOB_NAME: CLEANUP_JOB } =
+      await import("./cleanupExpiredTokens.job.js");
 
-  await agenda.every("0 3 * * *", CLEANUP_JOB);
-
-  logger.info("Agenda ishga tushirildi");
+    defineCleanupExpiredTokens(agenda);
+    await agenda.start();
+    await agenda.every("0 3 * * *", CLEANUP_JOB);
+    logger.info("Agenda ishga tushirildi");
+  } catch (err) {
+    logger.warn({ err }, "Agenda ishga tushirishda xatolik, o'tkazib yuborildi");
+  }
 };
 
 export const stopJobs = async () => {
-  await agenda.stop();
-  logger.info("Agenda to'xtatildi");
+  if (mockIntervalId) {
+    clearInterval(mockIntervalId);
+    mockIntervalId = null;
+  }
+
+  if (isDbConnected()) {
+    try {
+      const { default: agenda } = await import("../config/agenda.js");
+      await agenda.stop();
+      logger.info("Agenda to'xtatildi");
+    } catch {
+      // ignore
+    }
+  }
 };

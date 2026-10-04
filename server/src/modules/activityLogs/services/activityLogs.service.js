@@ -1,6 +1,8 @@
 import ActivityLog from "../../../models/activityLog.model.js";
 import User from "../../../models/user.model.js";
 import ApiError from "../../../utils/ApiError.js";
+import { isDbConnected } from "../../../config/db.js";
+import mockStore from "../../../services/mockStore.js";
 
 const USER_PROJECTION = { firstName: 1, lastName: 1, role: 1, username: 1 };
 
@@ -13,6 +15,18 @@ export const list = async ({
   page = 1,
   limit = 30,
 }) => {
+  if (!isDbConnected()) {
+    return mockStore.listLogs({
+      userId,
+      method,
+      resourceType,
+      fromDate,
+      toDate,
+      page,
+      limit,
+    });
+  }
+
   const filter = {};
   if (userId) filter.user = userId;
   if (method) filter.method = method;
@@ -36,12 +50,22 @@ export const list = async ({
 };
 
 export const getById = async (id) => {
+  if (!isDbConnected()) {
+    const doc = mockStore.getLogById(id);
+    if (!doc) throw new ApiError(404, "Log topilmadi");
+    return doc;
+  }
+
   const doc = await ActivityLog.findById(id).populate("user", USER_PROJECTION);
   if (!doc) throw new ApiError(404, "Log topilmadi");
   return doc;
 };
 
 export const getStats = async ({ fromDate, toDate } = {}) => {
+  if (!isDbConnected()) {
+    return mockStore.getLogStats({ fromDate, toDate });
+  }
+
   const match = {};
   if (fromDate || toDate) {
     match.createdAt = {};

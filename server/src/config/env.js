@@ -1,23 +1,20 @@
 import "dotenv/config";
 
-const need = (key) => {
-  const v = process.env[key];
-  if (!v) throw new Error(`ENV o'zgaruvchisi yo'q: ${key}`);
-  return v;
-};
-
 const env = Object.freeze({
   NODE_ENV: process.env.NODE_ENV || "development",
   PORT: Number(process.env.PORT || 5000),
 
-  MONGO_URL: need("MONGO_URL"),
+  MONGO_URL: process.env.MONGO_URL || "mongodb://127.0.0.1:27017/smartlab",
 
-  JWT_ACCESS_SECRET: need("JWT_ACCESS_SECRET"),
-  JWT_REFRESH_SECRET: need("JWT_REFRESH_SECRET"),
+  JWT_ACCESS_SECRET:
+    process.env.JWT_ACCESS_SECRET || "smartlab_jwt_access_secret_key_2026_dev",
+  JWT_REFRESH_SECRET:
+    process.env.JWT_REFRESH_SECRET || "smartlab_jwt_refresh_secret_key_2026_dev",
   JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL || "15m",
   JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL || "7d",
 
-  COOKIE_SECRET: need("COOKIE_SECRET"),
+  COOKIE_SECRET:
+    process.env.COOKIE_SECRET || "smartlab_cookie_secret_key_2026_dev",
   COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || "localhost",
 
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",

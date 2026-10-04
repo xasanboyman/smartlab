@@ -2,8 +2,14 @@ import User from "../../../models/user.model.js";
 import ApiError from "../../../utils/ApiError.js";
 import { ROLES } from "../../../constants/roles.js";
 import { normalizePhone } from "../../../utils/phone.js";
+import { isDbConnected } from "../../../config/db.js";
+import mockStore from "../../../services/mockStore.js";
 
 export const list = async ({ role, search, page = 1, limit = 20 }) => {
+  if (!isDbConnected()) {
+    return mockStore.listUsers({ role, search, page, limit });
+  }
+
   const filter = {};
   if (role) filter.role = role;
 
@@ -27,12 +33,48 @@ export const list = async ({ role, search, page = 1, limit = 20 }) => {
 };
 
 export const getById = async (id) => {
+  if (!isDbConnected()) {
+    const user = mockStore.findUserById(id);
+    if (!user) throw new ApiError(404, "Foydalanuvchi topilmadi");
+    const copy = { ...user };
+    delete copy.passwordHash;
+    return copy;
+  }
+
   const user = await User.findById(id);
   if (!user) throw new ApiError(404, "Foydalanuvchi topilmadi");
   return user;
 };
 
 export const update = async (id, body) => {
+  if (!isDbConnected()) {
+    const user = mockStore.findUserById(id);
+    if (!user) throw new ApiError(404, "Foydalanuvchi topilmadi");
+    if (user.role === ROLES.OWNER) {
+      throw new ApiError(403, "Owner foydalanuvchini tahrirlab bo'lmaydi");
+    }
+
+    const updates = {};
+    if (body.firstName !== undefined) updates.firstName = body.firstName.trim();
+    if (body.lastName !== undefined) updates.lastName = body.lastName.trim();
+    if (body.isActive !== undefined) updates.isActive = !!body.isActive;
+    if (body.phone !== undefined) {
+      const phone = body.phone ? normalizePhone(body.phone) : null;
+      if (body.phone && !phone) throw new ApiError(400, "Telefon raqam noto'g'ri");
+      updates.phone = phone || undefined;
+    }
+    if (body.birthDate !== undefined) {
+      updates.birthDate = body.birthDate ? new Date(body.birthDate) : null;
+    }
+    if (body.gender !== undefined) updates.gender = body.gender || null;
+    if (body.address !== undefined) updates.address = body.address || "";
+
+    const updated = mockStore.updateUser(id, updates);
+    const copy = { ...updated };
+    delete copy.passwordHash;
+    return copy;
+  }
+
   const user = await getById(id);
   if (user.role === ROLES.OWNER) {
     throw new ApiError(403, "Owner foydalanuvchini tahrirlab bo'lmaydi");
@@ -63,6 +105,18 @@ export const update = async (id, body) => {
 };
 
 export const softRemove = async (id) => {
+  if (!isDbConnected()) {
+    const user = mockStore.findUserById(id);
+    if (!user) throw new ApiError(404, "Foydalanuvchi topilmadi");
+    if (user.role === ROLES.OWNER) {
+      throw new ApiError(403, "Owner foydalanuvchini o'chirib bo'lmaydi");
+    }
+    const removed = mockStore.removeUser(id);
+    const copy = { ...removed };
+    delete copy.passwordHash;
+    return copy;
+  }
+
   const user = await getById(id);
   if (user.role === ROLES.OWNER) {
     throw new ApiError(403, "Owner foydalanuvchini o'chirib bo'lmaydi");

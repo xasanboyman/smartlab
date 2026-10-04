@@ -1,8 +1,13 @@
 {
-  "name": "app-name-server",
-  "version": "0.1.0",
+  "name": "smartlab-server",
+  "version": "1.0.0",
   "type": "module",
   "main": "src/index.js",
+  "author": "Abdulkhayev Hasanboy <casanboyyy@gmail.com> (https://github.com/xasanboyman)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xasanboyman/smartlab.git"
+  },
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",

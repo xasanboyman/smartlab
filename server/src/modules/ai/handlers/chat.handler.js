@@ -1,6 +1,9 @@
 import asyncHandler from "../../../middleware/asyncHandler.js";
-import ApiError from "../../../utils/ApiError.js";
-import { streamChat, isConfigured } from "../services/ai.service.js";
+import {
+  streamChat,
+  fallbackStreamChat,
+  isConfigured,
+} from "../services/ai.service.js";
 
 // SSE orqali AI javobini real-time uzatadi. Har bir hodisa:
 //   data: {"type":"token","value":"..."}      - matn bo'lagi
@@ -8,10 +11,6 @@ import { streamChat, isConfigured } from "../services/ai.service.js";
 //   data: {"type":"done"}                      - tugadi
 //   data: {"type":"error","message":"..."}     - xatolik
 const chat = asyncHandler(async (req, res) => {
-  if (!isConfigured()) {
-    throw new ApiError(503, "AI yordamchi sozlanmagan (OPENAI_API_KEY yo'q)");
-  }
-
   const { history, context } = req.body;
 
   res.writeHead(200, {
@@ -24,19 +23,28 @@ const chat = asyncHandler(async (req, res) => {
 
   const send = (payload) => res.write(`data: ${JSON.stringify(payload)}\n\n`);
 
-  // Klient uzilsa - OpenAI so'rovini ham bekor qilamiz.
   const controller = new AbortController();
   req.on("close", () => controller.abort());
 
   try {
-    await streamChat(
-      { history, context },
-      { onEvent: send, signal: controller.signal },
-    );
+    if (isConfigured()) {
+      await streamChat(
+        { history, context },
+        { onEvent: send, signal: controller.signal },
+      );
+    } else {
+      await fallbackStreamChat(
+        { history, context },
+        { onEvent: send, signal: controller.signal },
+      );
+    }
     send({ type: "done" });
   } catch (err) {
     if (!controller.signal.aborted) {
-      send({ type: "error", message: "Kechirasiz, javob berishda xatolik yuz berdi." });
+      send({
+        type: "error",
+        message: "Kechirasiz, javob berishda xatolik yuz berdi.",
+      });
     }
   } finally {
     res.end();

@@ -40,7 +40,7 @@ const catalogItem = z.object({
 
 export const chatSchema = z.object({
   body: z.object({
-    history: z.array(message).min(1).max(30),
+    history: z.array(message).max(30).default([]),
     context: z
       .object({
         subject: z.string().optional(),

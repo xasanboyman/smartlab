@@ -59,7 +59,7 @@ Talablar: **Node.js 18+**, **MongoDB** (lokal yoki Atlas), va Mira AI uchun **Op
 ### 1. Repozitoriyani klonlash
 
 ```bash
-git clone <repo-url> smartlab
+git clone https://github.com/xasanboyman/smartlab.git
 cd smartlab
 ```
 
@@ -161,3 +161,12 @@ Backend tuzilmasi: [server/CLAUDE.md](server/CLAUDE.md).
 
 - **Foydalanuvchiga ko'rinadigan matn** - o'zbek tilida.
 - **Kod qiymatlari** (id, route, slug, query key) - ingliz tilida.
+
+---
+
+## 👨‍💻 Muallif va Rivojlantiruvchi
+
+**Abdulkhayev Hasanboy**
+- GitHub: [@xasanboyman](https://github.com/xasanboyman)
+- Repository: [smartlab](https://github.com/xasanboyman/smartlab)
+- Email: casanboyyy@gmail.com

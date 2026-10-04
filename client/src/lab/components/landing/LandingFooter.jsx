@@ -25,6 +25,20 @@ const LandingFooter = () => (
         ))}
       </nav>
     </div>
+
+    <div className="border-t border-pixel-ink/20 py-4">
+      <div className="container flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>© SmartLab. Interaktiv 3D Virtual Laboratoriya.</span>
+        <a
+          href="https://github.com/xasanboyman"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-pixel hover:text-foreground transition-colors"
+        >
+          Muallif: xasanboyman
+        </a>
+      </div>
+    </div>
   </footer>
 );
 

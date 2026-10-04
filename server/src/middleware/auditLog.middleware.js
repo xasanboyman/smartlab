@@ -5,6 +5,8 @@ import {
   extractResource,
   truncateBody,
 } from "../helpers/auditLog.helper.js";
+import { isDbConnected } from "../config/db.js";
+import mockStore from "../services/mockStore.js";
 
 const TRACKED_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
@@ -21,7 +23,7 @@ const auditLog = (req, res, next) => {
         const safeBody = truncateBody(sanitized);
         const resource = extractResource(req.originalUrl || req.path);
 
-        await ActivityLog.create({
+        const logData = {
           user: req.user?._id || null,
           userRole: req.user?.role || "system",
           method: req.method,
@@ -33,7 +35,13 @@ const auditLog = (req, res, next) => {
           body: safeBody,
           resourceType: resource.type,
           resourceId: resource.id,
-        });
+        };
+
+        if (!isDbConnected()) {
+          mockStore.createLog(logData);
+        } else {
+          await ActivityLog.create(logData);
+        }
       } catch (err) {
         logger.warn(
           { err, path: req.originalUrl, method: req.method },

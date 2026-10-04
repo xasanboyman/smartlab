@@ -3,11 +3,16 @@ import authRouter from "../modules/auth/auth.routes.js";
 import usersRouter from "../modules/users/users.routes.js";
 import activityLogsRouter from "../modules/activityLogs/activityLogs.routes.js";
 import aiRouter from "../modules/ai/ai.routes.js";
+import { isDbConnected } from "../config/db.js";
 
 const router = Router();
 
 router.get("/health", (_req, res) =>
-  res.json({ success: true, message: "Server ishlayapti" }),
+  res.json({
+    success: true,
+    message: "Server ishlayapti",
+    mode: isDbConnected() ? "mongodb" : "mock",
+  }),
 );
 
 router.use("/auth", authRouter);

@@ -2,6 +2,11 @@
   "name": "smartlab-client",
   "version": "0.0.0",
   "type": "module",
+  "author": "Abdulkhayev Hasanboy <casanboyyy@gmail.com> (https://github.com/xasanboyman)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xasanboyman/smartlab.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
