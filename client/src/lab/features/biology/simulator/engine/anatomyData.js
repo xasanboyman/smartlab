@@ -1,25 +1,251 @@
-export const SYSTEMS = {
-  skin: { name: 'Body silhouette', short: 'Skin', color: '#d89b8f', defaultVisible: true },
-  skeleton: { name: 'Skeletal system', short: 'Skeleton', color: '#e6dfc7', defaultVisible: true },
-  organs: { name: 'Major organs', short: 'Organs', color: '#e85d75', defaultVisible: true },
-  circulatory: { name: 'Circulatory system', short: 'Vessels', color: '#df4d64', defaultVisible: true },
+import skinUrl from "@/shared/assets/models/skin.glb?url";
+import myologyUrl from "@/shared/assets/models/myology.glb?url";
+import heartUrl from "@/shared/assets/models/human_heart_3d_model.glb?url";
+import lungsUrl from "@/shared/assets/models/realistic_human_lungs.glb?url";
+import angiologyUrl from "@/shared/assets/models/angiology.glb?url";
+import neurologyUrl from "@/shared/assets/models/neurology.glb?url";
+import splanchnologyUrl from "@/shared/assets/models/splanchnology.glb?url";
+import digestiveSystemUrl from "@/shared/assets/models/digestive_system.glb?url";
+import liverUrl from "@/shared/assets/models/human_liver_and_gallbladder.glb?url";
+import kidneyUrl from "@/shared/assets/models/human_kidney.glb?url";
+import skullUrl from "@/shared/assets/models/skull.glb?url";
+import orbitEyeUrl from "@/shared/assets/models/muscles_of_the_orbit_eye.glb?url";
+import skeletonUrl from "@/shared/assets/models/skeleton.glb?url";
+import diaphragmUrl from "@/shared/assets/models/human_diaphragm.glb?url";
+
+export const MODEL_URLS = {
+  skin: skinUrl,
+  muscles: myologyUrl,
+  myology: myologyUrl,
+  heart: heartUrl,
+  lungs: lungsUrl,
+  angiology: angiologyUrl,
+  circulatory: angiologyUrl,
+  neurology: neurologyUrl,
+  brain: neurologyUrl,
+  splanchnology: splanchnologyUrl,
+  digestive: digestiveSystemUrl,
+  stomach: digestiveSystemUrl,
+  intestines: digestiveSystemUrl,
+  liver: liverUrl,
+  kidneys: kidneyUrl,
+  kidney: kidneyUrl,
+  skull: skullUrl,
+  eye: orbitEyeUrl,
+  skeleton: skeletonUrl,
+  diaphragm: diaphragmUrl,
 };
+
+export const SYSTEMS = {
+  skin: { name: "Teri qoplami (Tana yuzasi)", short: "Teri", color: "#e8b89b", defaultVisible: true, defaultOpacity: 0.35 },
+  muscles: { name: "Mushaklar tizimi", short: "Mushaklar", color: "#dc2626", defaultVisible: true, defaultOpacity: 0.9 },
+  organs: { name: "Ichki a'zolar (Splanxnologiya)", short: "A'zolar", color: "#f43f5e", defaultVisible: true, defaultOpacity: 1.0 },
+  vessels: { name: "Qon-tomir tizimi (Angiologiya)", short: "Qon-tomir", color: "#3b82f6", defaultVisible: true, defaultOpacity: 0.95 },
+};
+
+export const BODY_LAYERS = [
+  { id: "skin", name: "Teri qoplami", short: "Teri", url: skinUrl, color: "#e8b89b", defaultOpacity: 0.35 },
+  { id: "muscles", name: "Mushaklar tizimi", short: "Mushaklar", url: myologyUrl, color: "#dc2626", defaultOpacity: 0.9 },
+  { id: "organs", name: "Ichki a'zolar", short: "A'zolar", url: splanchnologyUrl, color: "#f43f5e", defaultOpacity: 1.0 },
+  { id: "vessels", name: "Qon-tomir tizimi", short: "Qon-tomir", url: angiologyUrl, color: "#3b82f6", defaultOpacity: 0.95 },
+];
+
+export const BODY_PRESETS = [
+  {
+    id: "balanced",
+    name: "Balansli (Hammasi)",
+    layers: { skin: 0.25, muscles: 0.85, organs: 1.0, vessels: 0.95 },
+  },
+  {
+    id: "skin_only",
+    name: "Tashqi tana (Teri)",
+    layers: { skin: 1.0, muscles: 0, organs: 0, vessels: 0 },
+  },
+  {
+    id: "muscles_only",
+    name: "Mushaklar anatomiyasi",
+    layers: { skin: 0, muscles: 1.0, organs: 0, vessels: 0 },
+  },
+  {
+    id: "organs_only",
+    name: "Ichki a'zolar",
+    layers: { skin: 0, muscles: 0, organs: 1.0, vessels: 0.3 },
+  },
+  {
+    id: "vessels_only",
+    name: "Qon aylanishi",
+    layers: { skin: 0, muscles: 0.15, organs: 0, vessels: 1.0 },
+  },
+  {
+    id: "xray",
+    name: "Rentgen (X-Ray)",
+    layers: { skin: 0.15, muscles: 0.3, organs: 0.8, vessels: 0.9 },
+  },
+];
 
 export const ORGAN_INFO = {
-  brain: { name: 'Brain', system: 'Nervous system', color: '#ef9aaa', summary: 'The body’s command center, coordinating sensation, movement, memory, emotion, and vital automatic functions.', fact: 'It contains roughly 86 billion neurons and uses about 20% of the body’s resting energy.' },
-  heart: { name: 'Heart', system: 'Circulatory system', color: '#d93652', summary: 'A muscular four-chambered pump that circulates blood through the lungs and the rest of the body.', fact: 'At rest, an adult heart commonly beats 60–100 times per minute.' },
-  lungs: { name: 'Lungs', system: 'Respiratory system', color: '#e9939e', summary: 'Paired organs that exchange oxygen and carbon dioxide between inhaled air and the bloodstream.', fact: 'The right lung has three lobes; the smaller left lung has two to make room for the heart.' },
-  liver: { name: 'Liver', system: 'Digestive system', color: '#8c3541', summary: 'A large metabolic organ that processes nutrients, produces bile, stores energy, and detoxifies the blood.', fact: 'The liver can regenerate significant lost tissue, although repeated injury can overwhelm this ability.' },
-  stomach: { name: 'Stomach', system: 'Digestive system', color: '#d87971', summary: 'A muscular sac that mechanically mixes food and begins chemical digestion using acid and enzymes.', fact: 'Its protective mucus layer helps keep gastric acid from damaging the stomach wall.' },
-  kidneys: { name: 'Kidneys', system: 'Urinary system', color: '#99505d', summary: 'Paired organs that filter blood, balance fluids and electrolytes, and help regulate blood pressure.', fact: 'Each kidney contains around a million microscopic filtering units called nephrons.' },
-  intestines: { name: 'Intestines', system: 'Digestive system', color: '#d99070', summary: 'The small intestine absorbs most nutrients; the large intestine absorbs water and forms stool.', fact: 'The adult small intestine is several metres long, folded compactly within the abdomen.' },
+  heart: {
+    name: "Yurak (3D Animatsiyali)",
+    shortName: "Yurak",
+    system: "Qon-tomir tizimi",
+    color: "#e11d48",
+    url: heartUrl,
+    hasAnimation: true,
+    animatedType: "heartbeat",
+    desc: "To'rt kamerali kuchli mushak nasosi. Kislorodga to'yingan qonni butun tanaga haydab, metabolizm chiqindilari va karbonat angidridni qaytarib tozalashga yo'naltiradi.",
+    summary: "To'rt kamerali kuchli mushak nasosi bo'lib, butun tana bo'ylab uzluksiz qon aylanishini ta'minlaydi.",
+    fact: "Inson yuragi bir kunda o'rtacha 100 000 marta, bir yilda 36 million marta uradi. Hayot davomida 2.5 milliarddan ortiq qisqaradi.",
+    funFact: "Inson yuragi bir kunda o'rtacha 100 000 marta uradi va 7 500 litrdan ortiq qon haydaydi.",
+  },
+  lungs: {
+    name: "O'pka va Nafas yo'llari",
+    shortName: "O'pka",
+    system: "Nafas olish tizimi",
+    color: "#f43f5e",
+    url: lungsUrl,
+    hasAnimation: true,
+    animatedType: "breathing",
+    desc: "Nafas olish tizimining markaziy juft a'zosi. Havodagi kislorodni qonga o'tkazib, qondagi karbonat angidrid gazini tashqariga chiqarish vazifasini bajaradi.",
+    summary: "Havodan kislorodni qonga o'tkazuvchi va karbonat angidridni chiqaruvchi asosiy nafas a'zosi.",
+    fact: "O'pka alveolalarining umumiy maydoni taxminan 70-100 kvadrat metrni tashkil qiladi - bu tennis korti o'lchamiga teng.",
+    funFact: "O'pka alveolalari maydoni 70-100 kv. metrni tashkil qiladi va inson kuniga 11 000 litr havo bilan nafas oladi.",
+  },
+  brain: {
+    name: "Bosh miya va Asab tizimi",
+    shortName: "Bosh miya",
+    system: "Asab tizimi",
+    color: "#a855f7",
+    url: neurologyUrl,
+    desc: "Tananing oliy boshqaruv va axborot markazi. Sezgi, fikrlash, ixtiyoriy va avtomatik tana harakatlari hamda barcha hayotiy a'zolar faoliyatini muvofiqlashtiradi.",
+    summary: "Barcha sezgi, harakat, xotira va hayotiy jarayonlarni muvofiqlashtiruvchi markaziy a'zo.",
+    fact: "Bosh miyada taxminan 86 milliard neyron mavjud bo'lib, u tananing umumiy energiyasining 20% ini iste'mol qiladi.",
+    funFact: "Bosh miyada 86 milliard neyron bor va u tanadagi umumiy energiyaning 20 foizini iste'mol qiladi.",
+  },
+  liver: {
+    name: "Jigar va O't pufagi",
+    shortName: "Jigar",
+    system: "Hazm qilish tizimi",
+    color: "#b91c1c",
+    url: liverUrl,
+    desc: "Organizmning eng katta kimyoviy laboratoriyasi. Oziq moddalarni qayta ishlaydi, qonni toksinlardan tozalaydi, yog'larni parchalash uchun o't suyuqligi (safro) ishlab chiqaradi.",
+    summary: "Toksinlarni tozalovchi, o't suyuqligi ishlab chiqaruvchi va moddalar almashinuvini boshqaruvchi a'zo.",
+    fact: "Jigar o'z to'qimasining 75% qismi olib tashlansa ham bir necha oy ichida dastlabki hajmiga to'liq qayta o'sib yetisha oladi.",
+    funFact: "Jigar hatto 75% qismi zararlanganda ham butunlay qayta o'sib tiklana oladigan yagona ichki a'zodir.",
+  },
+  stomach: {
+    name: "Oshqozon va Hazm yo'llari",
+    shortName: "Oshqozon",
+    system: "Hazm qilish tizimi",
+    color: "#ea580c",
+    url: digestiveSystemUrl,
+    desc: "Qizilo'ngach, oshqozon, ingichka va yo'g'on ichaklardan iborat yaxlit ovqat hazm qilish tizimi. Ozuqa moddalarini parchalaydi va qonga so'radi.",
+    summary: "Ovqatni kislota va fermentlar yordamida hazm qiluvchi va oziq moddalarni so'ruvchi tizim.",
+    fact: "Oshqozon shirasi tarkibidagi xlorid kislotasi shu darajada kuchliki, oshqozon o'z-o'zini hazm qilib yubormasligi uchun har 3-4 kunda ichki shilliq qavatini yangilab turadi.",
+    funFact: "Oshqozon shillig'i kislotadan himoyalanish uchun har bir necha kunda butunlay yangilanadi.",
+  },
+  kidneys: {
+    name: "Buyraklar va Ayirish a'zolari",
+    shortName: "Buyraklar",
+    system: "Ayirish tizimi",
+    color: "#be123c",
+    url: kidneyUrl,
+    desc: "Loviya shaklidagi juft a'zo. Qonni uzluksiz filtrlaydi, toksinlar va ortiqcha suyuqlikni siydik orqali chiqaradi, arterial qon bosimini nazorat qiladi.",
+    summary: "Qonni tinimsiz tozalovchi va tana suyuqliklari muvozanatini saqlovchi filtrlash a'zosi.",
+    fact: "Har bir buyrakda taxminan 1 millionta mikroskopik nefronlar joylashgan bo'lib, ular kuniga 180 litr qon plazmasini filtrlaydi.",
+    funFact: "Har bir buyrakda 1 milliondan ortiq nefron mavjud bo'lib, ular kuniga 180 litr qonni filtrlaydi.",
+  },
+  intestines: {
+    name: "Ingichka va Yo'g'on ichak",
+    shortName: "Ichaklar",
+    system: "Hazm qilish tizimi",
+    color: "#d97706",
+    url: digestiveSystemUrl,
+    desc: "Ingichka ichak aminokislotalar, glyukoza va yog'larni so'radi; yo'g'on ichak esa suvni qayta shimib najas hosil qiladi.",
+    summary: "Oziq moddalar va suvning so'rilishini amalga oshiruvchi ichak trakti.",
+    fact: "Katta yoshli odamning ingichka ichagi uzunligi taxminan 6 metr, yo'g'on ichagi esa 1.5 metrga yetadi.",
+    funFact: "Inson ingichka ichagining umumiy ichki yuzasi mikrovorsinkalar tufayli 30 kvadrat metrga yetadi.",
+  },
+  skeleton: {
+    name: "To'liq Inson Skeleti (206 suyak)",
+    shortName: "Skelet",
+    system: "Tayanch-harakat tizimi",
+    color: "#e2e8f0",
+    url: skeletonUrl,
+    desc: "206 ta suyakdan iborat anatomik tayanch karkasi. Miya, yurak, o'pkani himoyalaydi, mushaklar birikadigan richaglarni hosil qiladi va ilikda qon hujayralarini yaratadi.",
+    summary: "Tananing 206 ta suyakdan iborat mustahkam tayanch va himoya tizimi.",
+    fact: "Inson son suyagi (femur) tanadagi eng uzun va eng baquvvat suyak bo'lib, beton kabi katta yuklanishga bardosh beradi.",
+    funFact: "Son suyagi inson tanasidagi eng baquvvat suyak bo'lib, 1 tonnagacha bo'lgan og'irlikni ko'tara oladi.",
+  },
+  muscles: {
+    name: "To'liq Mushaklar tizimi (Miologiya)",
+    shortName: "Mushaklar",
+    system: "Tayanch-harakat tizimi",
+    color: "#dc2626",
+    url: myologyUrl,
+    desc: "600 dan ortiq skelet mushaklaridan iborat majmua. Qisqarish orqali barcha tana harakatlarini ta'minlaydi, qomatni saqlaydi va issiqlik ishlab chiqaradi.",
+    summary: "Tananing harakati, qomati va tana harorati barqarorligini ta'minlovchi mushaklar.",
+    fact: "Chaynov mushagi (masseter) tana yuzasi nisbatida eng kuchli mushak hisoblanib, jag'da 90 kg dan ortiq bosim kuchi hosil qila oladi.",
+    funFact: "Chaynov mushagi 90 kg dan ortiq bosim kuchi hosil qila oladigan tanadagi eng kuchli mushakdir.",
+  },
+  circulatory: {
+    name: "Qon-tomir tizimi (Angiologiya)",
+    shortName: "Qon-tomir",
+    system: "Qon-tomir tizimi",
+    color: "#3b82f6",
+    url: angiologyUrl,
+    desc: "Arteriyalar, venalar va kapillyarlardan iborat yaxlit transport tarmog'i. Kislorod, ozuqa, gormon va immunitet hujayralarini butun tanaga yetkazadi.",
+    summary: "Arteriyalar, venalar va kapillyarlardan iborat butun tana qon transport tizimi.",
+    fact: "Odam tanasidagi barcha qon tomirlarining umumiy uzunligi taxminan 100 000 km bo'lib, Yer ekvatorini 2.5 marta aylanishga yetadi.",
+    funFact: "Barcha qon tomirlarining umumiy uzunligi 100 000 km bo'lib, Yer ekvatorini 2.5 marta o'rashga yetadi.",
+  },
+  skull: {
+    name: "Bosh suyagi (Kalla anatomiyasi)",
+    shortName: "Bosh suyagi",
+    system: "Skelet tizimi",
+    color: "#cbd5e1",
+    url: skullUrl,
+    desc: "Miya qutisi va yuz skeletini tashkil etuvchi 22 ta suyak birikmasi. Bosh miya va sezgi a'zolarini mustahkam himoya qiladi.",
+    summary: "Bosh miya va yuz tuzilmalarini himoya qiluvchi mustahkam suyak majmuasi.",
+    fact: "Kalla suyagida pastki jag'dan tashqari barcha suyaklar harakatsiz choklar orqali mahkam birlashgan.",
+    funFact: "Kalla suyagining pastki jag'dan boshqa barcha suyaklari qo'zg'almas choklar bilan birlashgan.",
+  },
+  eye: {
+    name: "Ko'z va Ko'z kosasi mushaklari",
+    shortName: "Ko'z mushaklari",
+    system: "Sezgi a'zolari",
+    color: "#06b6d4",
+    url: orbitEyeUrl,
+    desc: "Ko'z soqqasi va uni turli yo'nalishlarda chaqqon harakatlantiruvchi 6 ta asosiy ko'z mushagi (to'g'ri va qiyshiq mushaklar).",
+    summary: "Ko'rish a'zosi va uning 6 ta nozik harakatlanuvchi mushak apparati.",
+    fact: "Ko'z mushaklari inson tanasidagi eng chaqqon mushaklar bo'lib, bir kunda 100 000 dan ortiq mikrog'imirlash harakatlarini bajaradi.",
+    funFact: "Ko'z mushaklari tanadagi eng tezkor mushaklar bo'lib, soniyaning 1/100 qismida harakatlana oladi.",
+  },
+  diaphragm: {
+    name: "Diafragma mushagi",
+    shortName: "Diafragma",
+    system: "Nafas olish tizimi",
+    color: "#fb7185",
+    url: diaphragmUrl,
+    desc: "Ko'krak va qorin bo'shlig'i chegarasidagi gumbazsimon asosiy nafas mushagi. Har bir nafasda pastga tushib o'pka hajmini kengaytiradi.",
+    summary: "Nafas olishning asosiy harakatlantiruvchi gumbazsimon mushagi.",
+    fact: "Diafragma asabining (n. phrenicus) qisqa tutqanoqsimon qo'zg'alishi natijasida hammamizga tanish bo'lgan hiqichoq (singultus) paydo bo'ladi.",
+    funFact: "Diafragmaning kutilmagan qisqarishi natijasida insonlarda hiqichoq yuzaga keladi.",
+  },
 };
 
-export const DEFAULT_VISIBILITY = Object.fromEntries(
-  Object.entries(SYSTEMS).map(([key, value]) => [key, value.defaultVisible]),
-);
+export const DEFAULT_VISIBILITY = {
+  skin: true,
+  muscles: true,
+  organs: true,
+  vessels: true,
+};
 
-export const DEFAULT_SKIN_OPACITY = .3;
-export const defaultLayerOpacity = system => system === 'skin' ? DEFAULT_SKIN_OPACITY : 1;
+export const DEFAULT_SKIN_OPACITY = 0.35;
+export const defaultLayerOpacity = (system) => {
+  if (system === "skin") return DEFAULT_SKIN_OPACITY;
+  if (system === "muscles") return 0.9;
+  if (system === "vessels") return 0.95;
+  return 1.0;
+};
 
-export const DISCLAIMER = 'This simplified visualization is for education only. It is not a diagnostic tool and does not replace professional medical advice.';
+export const DISCLAIMER = "SmartLab Interaktiv 3D Anatomiya Simulyatori ta'limiy maqsadlar uchun ishlab chiqilgan.";
