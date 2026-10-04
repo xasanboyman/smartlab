@@ -37,49 +37,104 @@ export const MODEL_URLS = {
 };
 
 export const SYSTEMS = {
-  skin: { name: "Teri qoplami (Tana yuzasi)", short: "Teri", color: "#e8b89b", defaultVisible: true, defaultOpacity: 0.35 },
-  muscles: { name: "Mushaklar tizimi", short: "Mushaklar", color: "#dc2626", defaultVisible: true, defaultOpacity: 0.9 },
+  skin: { name: "Teri qoplami (Tana yuzasi)", short: "Teri", color: "#e8b89b", defaultVisible: true, defaultOpacity: 0.45 },
   organs: { name: "Ichki a'zolar (Splanxnologiya)", short: "A'zolar", color: "#f43f5e", defaultVisible: true, defaultOpacity: 1.0 },
+  skeleton: { name: "Skelet (206 ta suyak)", short: "Skelet", color: "#f1f5f9", defaultVisible: true, defaultOpacity: 1.0 },
   vessels: { name: "Qon-tomir tizimi (Angiologiya)", short: "Qon-tomir", color: "#3b82f6", defaultVisible: true, defaultOpacity: 0.95 },
+  muscles: { name: "Mushaklar tizimi (Miologiya)", short: "Mushaklar", color: "#dc2626", defaultVisible: true, defaultOpacity: 0.9 },
 };
 
 export const BODY_LAYERS = [
-  { id: "skin", name: "Teri qoplami", short: "Teri", url: skinUrl, color: "#e8b89b", defaultOpacity: 0.35 },
-  { id: "muscles", name: "Mushaklar tizimi", short: "Mushaklar", url: myologyUrl, color: "#dc2626", defaultOpacity: 0.9 },
-  { id: "organs", name: "Ichki a'zolar", short: "A'zolar", url: splanchnologyUrl, color: "#f43f5e", defaultOpacity: 1.0 },
-  { id: "vessels", name: "Qon-tomir tizimi", short: "Qon-tomir", url: angiologyUrl, color: "#3b82f6", defaultOpacity: 0.95 },
+  { id: "skin", name: "Teri qoplami", short: "Teri", icon: "🧍", url: skinUrl, color: "#e8b89b", defaultOpacity: 0.45, explodeX: -2.0 },
+  { id: "organs", name: "Ichki a'zolar", short: "A'zolar", icon: "🫁", url: splanchnologyUrl, color: "#f43f5e", defaultOpacity: 1.0, explodeX: -1.0 },
+  { id: "skeleton", name: "Skelet (Suyaklar)", short: "Skelet", icon: "💀", url: skeletonUrl, color: "#f1f5f9", defaultOpacity: 1.0, explodeX: 0 },
+  { id: "vessels", name: "Qon-tomir tizimi", short: "Qon-tomir", icon: "🩸", url: angiologyUrl, color: "#3b82f6", defaultOpacity: 0.95, explodeX: 1.0 },
+  { id: "muscles", name: "Mushaklar tizimi", short: "Mushaklar", icon: "💪", url: myologyUrl, color: "#dc2626", defaultOpacity: 0.9, explodeX: 2.0 },
+];
+
+export const THREE_STAGES = [
+  {
+    id: "stage_assembled",
+    time: 0,
+    explode: 0.0,
+    badge: "00:00",
+    label: "To'liq tana (Yig'ilgan)",
+    desc: "Barcha 5 ta anatomik tizim bitta yaxlit inson qiyofasida birlashgan.",
+    cameraDistance: 4.8,
+  },
+  {
+    id: "stage_peeling",
+    time: 6,
+    explode: 0.35,
+    badge: "00:06",
+    label: "Mushaklar va Teri ajralishi",
+    desc: "Tashqi teri va mushak tolalari alohida qatlam sifatida ochiladi.",
+    cameraDistance: 5.6,
+  },
+  {
+    id: "stage_exploded",
+    time: 14,
+    explode: 1.0,
+    badge: "00:14",
+    label: "Portlatilgan atlas (5 ta tizim)",
+    desc: "Teri, Ichki a'zolar, Skelet, Qon tomirlar va Mushaklar to'liq yonma-yon.",
+    cameraDistance: 7.6,
+  },
+  {
+    id: "stage_focus_skeleton",
+    time: 21,
+    explode: 0.75,
+    badge: "00:21",
+    label: "Skelet va Ichki a'zolar",
+    desc: "206 suyakli tayanch karkasi va hayotiy muhim ichki a'zolar markazda.",
+    cameraDistance: 6.2,
+  },
+  {
+    id: "stage_reassembly",
+    time: 28,
+    explode: 0.1,
+    badge: "00:28",
+    label: "Qayta yig'ilish",
+    desc: "Barcha qismlar qaytadan o'zaro birlashib yaxlit tanaga aylanadi.",
+    cameraDistance: 5.0,
+  },
 ];
 
 export const BODY_PRESETS = [
   {
-    id: "balanced",
-    name: "Balansli (Hammasi)",
-    layers: { skin: 0.25, muscles: 0.85, organs: 1.0, vessels: 0.95 },
+    id: "exploded",
+    name: "💥 Portlatilgan (5 Tizim)",
+    explode: 1.0,
+    layers: { skin: 1.0, organs: 1.0, skeleton: 1.0, vessels: 1.0, muscles: 1.0 },
+    opacities: { skin: 0.9, organs: 1.0, skeleton: 1.0, vessels: 0.95, muscles: 0.95 },
   },
   {
-    id: "skin_only",
-    name: "Tashqi tana (Teri)",
-    layers: { skin: 1.0, muscles: 0, organs: 0, vessels: 0 },
+    id: "assembled",
+    name: "🧍 Yaxlit Inson (Hammasi)",
+    explode: 0.0,
+    layers: { skin: 0.35, organs: 1.0, skeleton: 1.0, vessels: 0.95, muscles: 0.9 },
+    opacities: { skin: 0.35, organs: 1.0, skeleton: 1.0, vessels: 0.95, muscles: 0.9 },
+  },
+  {
+    id: "skeleton_only",
+    name: "💀 Skelet (206 suyak)",
+    explode: 0.0,
+    layers: { skin: 0, organs: 0, skeleton: 1.0, vessels: 0, muscles: 0 },
+    opacities: { skin: 0, organs: 0, skeleton: 1.0, vessels: 0, muscles: 0 },
   },
   {
     id: "muscles_only",
-    name: "Mushaklar anatomiyasi",
-    layers: { skin: 0, muscles: 1.0, organs: 0, vessels: 0 },
+    name: "💪 Mushaklar anatomiyasi",
+    explode: 0.0,
+    layers: { skin: 0, organs: 0, skeleton: 0, vessels: 0, muscles: 1.0 },
+    opacities: { skin: 0, organs: 0, skeleton: 0, vessels: 0, muscles: 1.0 },
   },
   {
-    id: "organs_only",
-    name: "Ichki a'zolar",
-    layers: { skin: 0, muscles: 0, organs: 1.0, vessels: 0.3 },
-  },
-  {
-    id: "vessels_only",
-    name: "Qon aylanishi",
-    layers: { skin: 0, muscles: 0.15, organs: 0, vessels: 1.0 },
-  },
-  {
-    id: "xray",
-    name: "Rentgen (X-Ray)",
-    layers: { skin: 0.15, muscles: 0.3, organs: 0.8, vessels: 0.9 },
+    id: "viscera_vessels",
+    name: "🫀 A'zolar va Qon aylanishi",
+    explode: 0.5,
+    layers: { skin: 0, organs: 1.0, skeleton: 0.3, vessels: 1.0, muscles: 0 },
+    opacities: { skin: 0, organs: 1.0, skeleton: 0.3, vessels: 1.0, muscles: 0 },
   },
 ];
 

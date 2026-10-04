@@ -1,6 +1,6 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Bounds, Center, useGLTF, useAnimations } from "@react-three/drei";
+import { OrbitControls, Bounds, Center, useGLTF, useAnimations, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { resolveMaterial } from "@/lab/data/anatomyMaterials";
 import { MODEL_URLS, ORGAN_INFO, BODY_LAYERS } from "./engine/anatomyData";
@@ -22,10 +22,10 @@ function restoreMesh(mesh) {
 // Highlight a mesh on hover
 function applyHover(mesh) {
   if (!mesh?.material?.color) return;
-  mesh.material.color.lerp(HOVER_COLOR, 0.4);
+  mesh.material.color.lerp(HOVER_COLOR, 0.35);
   if (mesh.material.emissive) {
     mesh.material.emissive.copy(HOVER_COLOR);
-    mesh.material.emissiveIntensity = 0.3;
+    mesh.material.emissiveIntensity = 0.25;
   }
 }
 
@@ -40,7 +40,7 @@ function applySelect(mesh) {
 }
 
 // -------------------------------------------------------------
-// Animated Heart Component
+// Animated Pulsing Heart Component
 // -------------------------------------------------------------
 function AnimatedHeartModel({ url, speed = 1, paused = false, onPick, frozen }) {
   const gltf = useGLTF(url);
@@ -260,60 +260,125 @@ function DedicatedGenericModel({ url, organId, onPick, frozen }) {
 }
 
 // -------------------------------------------------------------
-// Full Body Multi-Layer Component
+// Full Body Multi-Layer Component with Explode Separation
 // -------------------------------------------------------------
-function FullBodyLayer({ url, opacity = 1, visible = true, flatColor, onPick, frozen }) {
-  const { scene } = useGLTF(url);
+function FullBodyLayer({
+  layer,
+  targetX = 0,
+  explode = 0,
+  opacity = 1,
+  visible = true,
+  onPick,
+  frozen,
+}) {
+  const { scene } = useGLTF(layer.url);
   const invalidate = useThree((s) => s.invalidate);
   const selectedMesh = useRef(null);
   const model = useMemo(() => scene.clone(true), [scene]);
+  const groupRef = useRef();
 
+  // Smooth sliding animation along X axis
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      groupRef.current.position.x = THREE.MathUtils.damp(
+        groupRef.current.position.x,
+        targetX,
+        7.5,
+        delta
+      );
+    }
+  });
+
+  // Configure high-definition materials based on layer type
   useEffect(() => {
     model.traverse((child) => {
       if (!child.isMesh) return;
       child.castShadow = true;
       child.receiveShadow = true;
 
-      const matName = Array.isArray(child.material)
-        ? child.material[0]?.name
-        : child.material?.name;
+      const matName = (
+        Array.isArray(child.material)
+          ? child.material[0]?.name
+          : child.material?.name
+      ) || "";
       const meshName = child.name || "";
       const resolved = resolveMaterial(matName) || resolveMaterial(meshName);
 
-      const detail = {
-        name: resolved?.label || (flatColor ? "Teri qoplami" : "Anatomik to'qima"),
-        system: flatColor ? "Teri tizimi" : "Inson anatomiyasi",
-        desc: resolved?.desc || "Inson tanasining tayanch va harakat anatomik to'qimasi.",
-        fact: "Inson tanasi qatlamlari a'zolarni tashqi muhitdan himoya qiladi va hayotiy faoliyatni ta'minlaydi.",
-        color: flatColor || resolved?.color || "#cfd8dc",
+      let layerColor = layer.color || "#cbd5e1";
+      let detailName = resolved?.label || child.name || layer.name;
+      let systemName = layer.name;
+      let descText = resolved?.desc || `${layer.name}ning muhim anatomik qismi.`;
+      let roughnessVal = 0.65;
+      let metalnessVal = 0.04;
+
+      if (layer.id === "skeleton") {
+        layerColor = "#ece6d8"; // Natural bone tint
+        roughnessVal = 0.72;
+        systemName = "Tayanch-harakat (Skelet) tizimi";
+        detailName = child.name ? child.name.replace(/[-_.]/g, " ") : "Suyak";
+        descText = "Inson tanasining tayanch skeletini tashkil etuvchi 206 suyakdan biri.";
+      } else if (layer.id === "muscles") {
+        layerColor = resolved?.color || "#be382d"; // Rich muscle crimson
+        roughnessVal = 0.62;
+        systemName = "Mushaklar tizimi (Miologiya)";
+        detailName = resolved?.label || "Mushak to'qimasi";
+        descText = resolved?.desc || "Tana harakatini ta'minlovchi 600 dan ortiq mushak tolalari.";
+      } else if (layer.id === "organs") {
+        layerColor = resolved?.color || "#cd6155";
+        roughnessVal = 0.58;
+        systemName = "Ichki a'zolar (Splanxnologiya)";
+        detailName = resolved?.label || "Ichki a'zo";
+        descText = resolved?.desc || "Ko'krak va qorin bo'shlig'i hayotiy muhim ichki a'zolari.";
+      } else if (layer.id === "vessels") {
+        const isArt = (matName + meshName).toLowerCase().includes("artery");
+        const isVn = (matName + meshName).toLowerCase().includes("vein");
+        layerColor = isArt ? "#dc2626" : isVn ? "#2563eb" : "#3b82f6";
+        roughnessVal = 0.48;
+        systemName = "Qon-tomir tizimi (Angiologiya)";
+        detailName = isArt ? "Arteriya tomiri" : isVn ? "Vena tomiri" : "Qon tomiri";
+        descText = isArt ? "Kislorodga boy qonni tashiydi." : "Qonni yurakka qaytaradi.";
+      } else if (layer.id === "skin") {
+        layerColor = "#d49b7f"; // Skin tone
+        roughnessVal = 0.82;
+        systemName = "Teri tizimi";
+        detailName = "Tashqi teri qoplami";
+        descText = "Tananing eng katta tashqi himoya va termoregulyatsiya a'zosi.";
+      }
+
+      child.userData.detail = {
+        name: detailName,
+        shortName: detailName,
+        system: systemName,
+        desc: descText,
+        fact: "Har bir to'qima va a'zo inson organizmining yaxlit hayotiy faoliyatida beqiyos o'ringa ega.",
+        color: layerColor,
       };
-      child.userData.detail = detail;
 
       child.material = new THREE.MeshStandardMaterial({
-        color: flatColor || resolved?.color || "#cfd8dc",
-        roughness: flatColor ? 0.85 : 0.68,
-        metalness: 0.05,
+        color: layerColor,
+        roughness: roughnessVal,
+        metalness: metalnessVal,
       });
 
       child.userData.baseColor = child.material.color.clone();
     });
     invalidate();
-  }, [model, invalidate, flatColor]);
+  }, [model, invalidate, layer]);
 
-  // Adjust opacity and raycastability
+  // Adjust transparency and raycasting
   useEffect(() => {
     const isVisible = visible && opacity > 0.01;
     model.visible = isVisible;
 
     if (isVisible) {
       const isTransparent = opacity < 0.99;
-      const canPick = opacity >= 0.25;
+      const canPick = opacity >= 0.2;
 
       model.traverse((c) => {
         if (!c.isMesh) return;
         c.material.transparent = isTransparent;
         c.material.opacity = opacity;
-        c.material.depthWrite = opacity >= 0.75;
+        c.material.depthWrite = opacity >= 0.7;
         c.material.needsUpdate = true;
         c.raycast = canPick ? THREE.Mesh.prototype.raycast : NOOP;
       });
@@ -340,40 +405,104 @@ function FullBodyLayer({ url, opacity = 1, visible = true, flatColor, onPick, fr
     }
   }, [frozen, invalidate]);
 
+  const showPedestal = explode > 0.15 && visible && opacity > 0.05;
+
   return (
-    <primitive
-      object={model}
-      onClick={handleClick}
-      onPointerOver={(e) => {
-        e.stopPropagation();
-        document.body.style.cursor = "pointer";
-        if (e.object !== selectedMesh.current) applyHover(e.object);
-        invalidate();
-      }}
-      onPointerOut={(e) => {
-        e.stopPropagation();
-        document.body.style.cursor = "default";
-        if (e.object !== selectedMesh.current) restoreMesh(e.object);
-        invalidate();
-      }}
-    />
+    <group ref={groupRef} position={[0, 0, 0]}>
+      {/* 3D Model Scene */}
+      <primitive
+        object={model}
+        onClick={handleClick}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = "pointer";
+          if (e.object !== selectedMesh.current) applyHover(e.object);
+          invalidate();
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = "default";
+          if (e.object !== selectedMesh.current) restoreMesh(e.object);
+          invalidate();
+        }}
+      />
+
+      {/* Floating 3D Badge (when exploded) */}
+      {showPedestal && (
+        <Html
+          center
+          position={[0, 1.86, 0]}
+          style={{
+            pointerEvents: "none",
+            transform: "translate3d(-50%, -50%, 0)",
+          }}
+        >
+          <div className="px-2.5 py-1 rounded-full bg-zinc-950/90 border border-zinc-700/80 shadow-2xl backdrop-blur-md flex items-center gap-1.5 whitespace-nowrap">
+            <span
+              className="w-2 h-2 rounded-full shadow-sm"
+              style={{ backgroundColor: layer.color }}
+            />
+            <span className="text-[11px] font-bold text-zinc-100">
+              {layer.icon} {layer.short}
+            </span>
+          </div>
+        </Html>
+      )}
+
+      {/* Glowing Circular Pedestal on Floor (when exploded) */}
+      {showPedestal && (
+        <group position={[0, -0.01, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.32, 0.44, 32]} />
+            <meshBasicMaterial
+              color={layer.color}
+              transparent
+              opacity={0.45 * Math.min(1, explode * 1.5)}
+            />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.005, 0]}>
+            <circleGeometry args={[0.32, 32]} />
+            <meshStandardMaterial
+              color="#111827"
+              roughness={0.9}
+              transparent
+              opacity={0.7 * Math.min(1, explode * 1.5)}
+            />
+          </mesh>
+        </group>
+      )}
+    </group>
   );
 }
 
 // -------------------------------------------------------------
-// Main SimulatorCanvas Export
+// Main Three.js HD SimulatorCanvas
 // -------------------------------------------------------------
 export default function SimulatorCanvas({
   selectedOrgan = null,
+  isDedicated = false,
+  explode = 0, // 0 = assembled, 1 = fully exploded
   speed = 1,
   paused = false,
-  layers = { skin: true, muscles: true, organs: true, vessels: true },
-  opacities = { skin: 0.35, muscles: 0.9, organs: 1.0, vessels: 0.95 },
+  layers = {
+    skin: true,
+    organs: true,
+    skeleton: true,
+    vessels: true,
+    muscles: true,
+  },
+  opacities = {
+    skin: 0.45,
+    organs: 1.0,
+    skeleton: 1.0,
+    vessels: 0.95,
+    muscles: 0.9,
+  },
   onPick = () => {},
   frozen = false,
   controlsRef,
 }) {
-  const isDedicated = !!selectedOrgan && selectedOrgan !== "body";
+  const showDedicated = isDedicated && !!selectedOrgan && selectedOrgan !== "body";
 
   return (
     <div className="w-full h-full relative select-none">
@@ -382,33 +511,37 @@ export default function SimulatorCanvas({
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0a0a0a] z-10 text-white">
             <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-emerald-400 font-semibold tracking-wide">
-              3D Anatomiya modeli yuklanmoqda...
+              3D Inson anatomiyasi modeli yuklanmoqda...
             </p>
           </div>
         }
       >
         <Canvas
           shadows
-          camera={{ position: [0, 0, 5], fov: 45 }}
-          gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+          camera={{ position: [0, 0.8, 6.2], fov: 42 }}
+          gl={{
+            antialias: true,
+            alpha: false,
+            powerPreference: "high-performance",
+          }}
         >
           <color attach="background" args={["#0a0a0a"]} />
 
-          {/* Studio Lights */}
-          <ambientLight intensity={0.7} />
-          <hemisphereLight args={["#ffffff", "#334155", 0.85]} />
+          {/* Balanced Studio Lighting */}
+          <ambientLight intensity={0.75} />
+          <hemisphereLight args={["#ffffff", "#1e293b", 0.9]} />
           <directionalLight
-            position={[5, 8, 5]}
-            intensity={1.2}
+            position={[5, 9, 6]}
+            intensity={1.3}
             castShadow
             shadow-mapSize={[1024, 1024]}
           />
-          <directionalLight position={[-5, 4, -4]} intensity={0.7} />
-          <directionalLight position={[0, -5, 3]} intensity={0.4} />
+          <directionalLight position={[-6, 4, -4]} intensity={0.7} />
+          <directionalLight position={[0, -4, 4]} intensity={0.4} />
 
           <Bounds fit observe margin={1.2}>
             <Center>
-              {isDedicated ? (
+              {showDedicated ? (
                 selectedOrgan === "heart" ? (
                   <AnimatedHeartModel
                     key="heart"
@@ -437,18 +570,23 @@ export default function SimulatorCanvas({
                   />
                 )
               ) : (
-                <group key="fullbody">
-                  {BODY_LAYERS.map((layer) => (
-                    <FullBodyLayer
-                      key={layer.id}
-                      url={layer.url}
-                      visible={layers[layer.id] ?? true}
-                      opacity={opacities[layer.id] ?? layer.defaultOpacity}
-                      flatColor={layer.id === "skin" ? "#e8b89b" : null}
-                      onPick={onPick}
-                      frozen={frozen}
-                    />
-                  ))}
+                /* Full Multi-Layer Human Anatomy with Exploded Side-by-Side Presentation */
+                <group key="fullbody-exploded">
+                  {BODY_LAYERS.map((layer) => {
+                    const targetX = (layer.explodeX || 0) * explode;
+                    return (
+                      <FullBodyLayer
+                        key={layer.id}
+                        layer={layer}
+                        targetX={targetX}
+                        explode={explode}
+                        visible={layers[layer.id] ?? true}
+                        opacity={opacities[layer.id] ?? layer.defaultOpacity}
+                        onPick={onPick}
+                        frozen={frozen}
+                      />
+                    );
+                  })}
                 </group>
               )}
             </Center>
@@ -457,8 +595,8 @@ export default function SimulatorCanvas({
           <OrbitControls
             ref={controlsRef}
             enableDamping
-            dampingFactor={0.05}
-            minDistance={0.3}
+            dampingFactor={0.06}
+            minDistance={0.4}
             maxDistance={25}
             enablePan
             zoomSpeed={1.1}
