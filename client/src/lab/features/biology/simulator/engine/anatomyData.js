@@ -248,4 +248,44 @@ export const defaultLayerOpacity = (system) => {
   return 1.0;
 };
 
+export const SKETCHFAB_STAGES = [
+  { id: "start", time: 0, label: "To'liq tana (Teri)", badge: "00:00", desc: "Tashqi teri qoplamasi bilan yaxlit inson qomati." },
+  { id: "muscles", time: 9.5, label: "Mushaklar", badge: "00:09", desc: "Teri ajralib, 600 dan ortiq mushak tolalari ko'rinadi." },
+  { id: "exploded", time: 22.0, label: "Portlatilgan atlas", badge: "00:22", desc: "A'zolar, 206 ta suyakli skelet va qon tomirlar alohida ajraladi." },
+  { id: "organs", time: 33.5, label: "A'zolar & Qon aylanishi", badge: "00:33", desc: "Yurak, o'pka, hazm a'zolari va qon tomirlar tarmog'i." },
+  { id: "reassemble", time: 44.0, label: "Qayta yig'ilish", badge: "00:44", desc: "Barcha qismlar qaytadan yaxlit tanaga birlashadi." },
+];
+
+export const SKETCHFAB_LAYERS = [
+  { id: "skeleton", name: "Skelet (Suyaklar)", short: "Skelet", color: "#e2e8f0" },
+  { id: "muscles", name: "Mushaklar tizimi", short: "Mushaklar", color: "#dc2626" },
+  { id: "skin", name: "Teri qoplami", short: "Teri", color: "#e8b89b" },
+  { id: "circulatory", name: "Qon-tomir tizimi", short: "Qon-tomir", color: "#3b82f6" },
+  { id: "heart", name: "Yurak (Cor)", short: "Yurak", color: "#e11d48" },
+  { id: "lungs", name: "O'pka (Pulmones)", short: "O'pka", color: "#f43f5e" },
+  { id: "brain", name: "Bosh miya (Encephalon)", short: "Bosh miya", color: "#a855f7" },
+  { id: "liver", name: "Jigar va O't pufagi", short: "Jigar", color: "#b91c1c" },
+  { id: "digestive", name: "Hazm tizimi (Oshqozon)", short: "Hazm", color: "#ea580c" },
+  { id: "diaphragm", name: "Diafragma mushagi", short: "Diafragma", color: "#fb7185" },
+  { id: "eyes", name: "Ko'zlar (Oculi)", short: "Ko'zlar", color: "#06b6d4" },
+];
+
+export const ORGAN_TIMESTAMPS = {
+  heart: 24.0,
+  lungs: 22.0,
+  brain: 22.0,
+  liver: 22.0,
+  stomach: 22.0,
+  digestive: 22.0,
+  kidneys: 22.0,
+  intestines: 22.0,
+  skeleton: 20.0,
+  muscles: 9.5,
+  circulatory: 24.0,
+  diaphragm: 22.0,
+  eyes: 22.0,
+  skull: 20.0,
+};
+
 export const DISCLAIMER = "SmartLab Interaktiv 3D Anatomiya Simulyatori ta'limiy maqsadlar uchun ishlab chiqilgan.";
+
