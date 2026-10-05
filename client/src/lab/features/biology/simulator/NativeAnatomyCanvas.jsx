@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Loader2, AlertCircle, RefreshCw, Scissors, Sparkles, Eye, RotateCcw } from "lucide-react";
 
 // Texture & Material mapping for all 23 anatomical meshes
@@ -10,29 +11,48 @@ const TEXTURE_DIR = "/models/textures/";
 const MODEL_URL = "/models/human_anatomy_draco.glb";
 
 const MESH_SPECS = {
-  Brain_2: { map: "Brain_Albedo.jpeg", normal: "Brain_Normal_DirectX.jpeg", roughness: "Brain_Roughness.jpeg", layer: "organs", color: "#e2adad", roughnessVal: 0.52 },
-  Diafragma_2: { map: "Diafragma_Albedo.jpg", normal: "Diafragma_Normal_DirectX.jpeg", roughness: "Diafragma_Roughness.jpeg", layer: "organs", color: "#dc2626", roughnessVal: 0.6 },
-  Eye_2: { map: "eye_Albedo.jpeg", normal: "eye_Normal_DirectX.jpeg", roughness: "eye_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.15 },
-  Gallbladder_2: { map: "Galbladder_Mat_Albedo.jpeg", normal: "Galbladder_Mat_Normal_DirectX.jpeg", roughness: "Galbladder_Mat_Roughness.jpeg", layer: "organs", color: "#3f6212", roughnessVal: 0.45 },
-  Humanlungs_2: { map: "lungs_LP_albedo.jpeg", normal: "lungs_LP_normal.jpeg", roughness: "lungs_LP_roughness.jpeg", layer: "organs", color: "#f87171", roughnessVal: 0.55 },
-  Legs_2: { map: "Legs_Albedo.jpeg", normal: "Legs_Normal_DirectX.jpeg", roughness: "Legs_Roughness.jpeg", layer: "skeleton", color: "#e2ded4", roughnessVal: 0.72 },
-  Liver_2: { map: "Liver_Mat_Albedo.jpeg", layer: "organs", color: "#7f1d1d", roughnessVal: 0.45 },
-  Pelvis_2: { map: "Pelvis_Albedo.jpeg", normal: "Pelvis_Normal_DirectX.jpeg", roughness: "Pelvis_Roughness.jpeg", layer: "skeleton", color: "#e2ded4", roughnessVal: 0.72 },
-  Hands_2: { map: "Hands_Albedo.jpeg", normal: "Hands_Normal_DirectX.jpeg", roughness: "Hands_Roughness.jpeg", layer: "skeleton", color: "#e2ded4", roughnessVal: 0.72 },
-  Ribcage_2: { map: "Ribcage_Albedo.jpeg", normal: "Ribcage_Normal_DirectX.jpeg", roughness: "Ribcage_Roughness.jpeg", layer: "skeleton", color: "#e2ded4", roughnessVal: 0.72 },
-  Spine_2: { roughness: "Spine_Roughness.jpeg", layer: "skeleton", color: "#e2ded4", roughnessVal: 0.72 },
-  Urinary_system_2: { map: "Urinary_System_Albedo.jpeg", normal: "Urinary_System_Normal_DirectX.jpeg", roughness: "Urinary_System_Roughness.jpeg", layer: "organs", color: "#991b1b", roughnessVal: 0.45 },
-  Digestivesystem_2: { map: "DigestiveSystem_Albedo.jpeg", normal: "DigestiveSystem_Normal_DirectX.jpeg", roughness: "DigestiveSystem_Roughness.jpeg", layer: "organs", color: "#c2410c", roughnessVal: 0.5 },
-  Skull_2: { map: "Skull_Albedo.jpeg", normal: "Skull_Normal_DirectX.jpeg", roughness: "Skull_Roughness.jpeg", layer: "skeleton", color: "#e2ded4", roughnessVal: 0.72 },
-  Musclespart_3_2: { roughness: "Muscles_MusclesPart_3_Roughness.jpg", layer: "muscles", color: "#881337", roughnessVal: 0.6 },
-  Musclespart_2_2: { map: "Muscles_MusclesPart_2_BaseColor.jpg", normal: "Muscles_MusclesPart_2_Normal.jpg", roughness: "Muscles_MusclesPart_2_Roughness.jpg", layer: "muscles", color: "#881337", roughnessVal: 0.6 },
-  Musclespart_1_2: { map: "Muscles_MusclesPart_1_BaseColor.jpg", normal: "Muscles_MusclesPart_1_Normal.jpg", roughness: "Muscles_MusclesPart_1_Roughness.jpg", layer: "muscles", color: "#881337", roughnessVal: 0.6 },
-  Arteriasmesh_2: { map: "CirculatorySystem_albedo.jpeg", normal: "CirculatorySystem_normal.jpg", roughness: "CirculatorySystem_roughness.jpeg", layer: "vessels", color: "#dc2626", roughnessVal: 0.35 },
-  Venasmesh_2: { map: "CirculatorySystem_albedo.jpeg", normal: "CirculatorySystem_normal.jpg", roughness: "CirculatorySystem_roughness.jpeg", layer: "vessels", color: "#2563eb", roughnessVal: 0.35 },
-  HumanSkin_2: { roughness: "HumanSkin_Roughness.jpg", layer: "skin", color: "#c98f70", roughnessVal: 0.76 },
-  Shorts_2: { map: "Shorts_BaseColor.jpg", normal: "Shorts_Normal.jpg", roughness: "Shorts_Roughness.jpg", layer: "skin", color: "#18181b", roughnessVal: 0.85 },
-  Eyelash_2: { layer: "organs", color: "#18181b", roughnessVal: 0.9 },
-  Heart_2: { map: "Heart_Albedo.jpeg", normal: "Heart_Normal_DirectX.jpeg", roughness: "Heart_Roughness.jpeg", layer: "organs", color: "#9f1239", roughnessVal: 0.38 },
+  // Organs (Moist natural tissue)
+  Brain_2: { map: "Brain_Albedo.jpeg", normal: "Brain_Normal_DirectX.jpeg", roughness: "Brain_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.48, clearcoat: 0.12, specularIntensity: 0.3 },
+  Diafragma_2: { map: "Diafragma_Albedo.jpg", normal: "Diafragma_Normal_DirectX.jpeg", roughness: "Diafragma_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.55, specularIntensity: 0.25 },
+  Eye_2: { map: "eye_Albedo.jpeg", normal: "eye_Normal_DirectX.jpeg", roughness: "eye_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.12, clearcoat: 0.45, specularIntensity: 0.8 },
+  Gallbladder_2: { map: "Galbladder_Mat_Albedo.jpeg", normal: "Galbladder_Mat_Normal_DirectX.jpeg", roughness: "Galbladder_Mat_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.42, clearcoat: 0.15, specularIntensity: 0.3 },
+  Humanlungs_2: { map: "lungs_LP_albedo.jpeg", normal: "lungs_LP_normal.jpeg", roughness: "lungs_LP_roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.58, specularIntensity: 0.25 },
+  Liver_2: { map: "Liver_Mat_Albedo.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.45, clearcoat: 0.12, specularIntensity: 0.3 },
+  Urinary_system_2: { map: "Urinary_System_Albedo.jpeg", normal: "Urinary_System_Normal_DirectX.jpeg", roughness: "Urinary_System_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.45, clearcoat: 0.12, specularIntensity: 0.3 },
+  Digestivesystem_2: { map: "DigestiveSystem_Albedo.jpeg", normal: "DigestiveSystem_Normal_DirectX.jpeg", roughness: "DigestiveSystem_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.5, clearcoat: 0.12, specularIntensity: 0.3 },
+  Heart_2: { map: "Heart_Albedo.jpeg", normal: "Heart_Normal_DirectX.jpeg", roughness: "Heart_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.38, clearcoat: 0.2, specularIntensity: 0.35 },
+  Eyelash_2: { layer: "organs", color: "#18181b", roughnessVal: 0.9, specularIntensity: 0.1 },
+
+  // Skeleton (Matte porous ivory bone)
+  Legs_2: { map: "Legs_Albedo.jpeg", normal: "Legs_Normal_DirectX.jpeg", roughness: "Legs_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Pelvis_2: { map: "Pelvis_Albedo.jpeg", normal: "Pelvis_Normal_DirectX.jpeg", roughness: "Pelvis_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Hands_2: { map: "Hands_Albedo.jpeg", normal: "Hands_Normal_DirectX.jpeg", roughness: "Hands_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Ribcage_2: { map: "Ribcage_Albedo.jpeg", normal: "Ribcage_Normal_DirectX.jpeg", roughness: "Ribcage_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Spine_2: { map: "Spine_Albedo.jpeg", normal: "Spine_Normal_DirectX.jpeg", roughness: "Spine_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Skull_2: { map: "Skull_Albedo.jpeg", normal: "Skull_Normal_DirectX.jpeg", roughness: "Skull_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+
+  // Muscles (Anatomical striated fibers)
+  Musclespart_1_2: { map: "Muscles_MusclesPart_1_BaseColor.jpg", normal: "Muscles_MusclesPart_1_Normal.jpg", roughness: "Muscles_MusclesPart_1_Roughness.jpg", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
+  Musclespart_2_2: { map: "Muscles_MusclesPart_2_BaseColor.jpg", normal: "Muscles_MusclesPart_2_Normal.jpg", roughness: "Muscles_MusclesPart_2_Roughness.jpg", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
+  Musclespart_3_2: { map: "Muscles_MusclesPart_3_BaseColor.jpg", normal: "Muscles_MusclesPart_3_Normal.jpg", roughness: "Muscles_MusclesPart_3_Roughness.jpg", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
+
+  // Vessels (Circulatory tree)
+  Arteriasmesh_2: { map: "CirculatorySystem_albedo.jpeg", normal: "CirculatorySystem_normal.jpg", roughness: "CirculatorySystem_roughness.jpeg", layer: "vessels", color: "#ffffff", roughnessVal: 0.42, specularIntensity: 0.3 },
+  Venasmesh_2: { map: "CirculatorySystem_albedo.jpeg", normal: "CirculatorySystem_normal.jpg", roughness: "CirculatorySystem_roughness.jpeg", layer: "vessels", color: "#ffffff", roughnessVal: 0.42, specularIntensity: 0.3 },
+
+  // Skin & Outer (Natural human melanin finish)
+  HumanSkin_2: {
+    map: "HumanSkin_BaseColor.jpg",
+    normal: "HumanSkin_Normal.jpg",
+    roughness: "HumanSkin_Roughness.jpg",
+    layer: "skin",
+    color: "#ffffff",
+    roughnessVal: 0.82,
+    specularIntensity: 0.16,
+    sheen: 0.14,
+    isSkin: true,
+  },
+  Shorts_2: { map: "Shorts_BaseColor.jpg", normal: "Shorts_Normal.jpg", roughness: "Shorts_Roughness.jpg", layer: "skin", color: "#ffffff", roughnessVal: 0.9, specularIntensity: 0.08 },
 };
 
 const LAYER_RENDER_ORDER = {
@@ -155,12 +175,20 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.95;
+    renderer.toneMappingExposure = 1.0;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.localClippingEnabled = true;
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
+
+    // Realistic Medical Studio Environment (IBL for subtle softbox reflections)
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    const envMap = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+    scene.environment = envMap;
+    scene.environmentIntensity = 0.75;
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -172,32 +200,36 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     controlsRef.current = controls;
     window.__anatomyControls = controls;
 
-    // Professional Medical Studio Lighting (High quality, medium lightness, not too bright)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.38);
-    scene.add(ambientLight);
-
-    const hemiLight = new THREE.HemisphereLight(0xf1f5f9, 0x0f172a, 0.35);
-    hemiLight.position.set(0, 100, 0);
-    scene.add(hemiLight);
-
-    // Key Light - soft warm anatomical light aligned with default front-left camera view
-    const dirLight1 = new THREE.DirectionalLight(0xfff7ed, 0.85);
-    dirLight1.position.set(-120, 120, 140);
+    // Professional Medical Studio 4-Point Lighting Rig
+    // Key Light - soft warm anatomical key light aligned with default front-left camera view
+    const dirLight1 = new THREE.DirectionalLight(0xfff8f0, 0.85);
+    dirLight1.position.set(-100, 120, 130);
     dirLight1.castShadow = true;
     dirLight1.shadow.mapSize.width = 2048;
     dirLight1.shadow.mapSize.height = 2048;
-    dirLight1.shadow.bias = -0.0005;
+    dirLight1.shadow.bias = -0.0003;
+    dirLight1.shadow.radius = 2.5;
     scene.add(dirLight1);
 
-    // Fill Light - soft subtle secondary fill
-    const dirLight2 = new THREE.DirectionalLight(0xe2e8f0, 0.45);
-    dirLight2.position.set(120, 60, 60);
+    // Fill Light - soft cool studio fill to soften shadow areas
+    const dirLight2 = new THREE.DirectionalLight(0xe0f2fe, 0.4);
+    dirLight2.position.set(110, 60, 90);
     scene.add(dirLight2);
 
-    // Rim Light - highlights anatomical contours without washing out
-    const rimLight = new THREE.DirectionalLight(0x60a5fa, 0.4);
-    rimLight.position.set(0, 80, -120);
+    // Rim / Kicker Light - highlights anatomical silhouettes and muscle separation
+    const rimLight = new THREE.DirectionalLight(0xc7d2fe, 0.45);
+    rimLight.position.set(0, 90, -120);
     scene.add(rimLight);
+
+    // Under-Fill / Floor Bounce Light - prevents harsh dark voids under chin, ribs, groin
+    const bounceLight = new THREE.DirectionalLight(0x52525b, 0.3);
+    bounceLight.position.set(0, -90, 80);
+    scene.add(bounceLight);
+
+    // Soft Hemisphere ambient illumination
+    const hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x27272a, 0.45);
+    hemiLight.position.set(0, 100, 0);
+    scene.add(hemiLight);
 
     // Slicing Plane Visual Helper
     const planeGeo = new THREE.PlaneGeometry(120, 210);
@@ -326,22 +358,46 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         gltf.scene.traverse((child) => {
           if (child.isMesh) {
             const spec = MESH_SPECS[child.name] || {};
-            const mat = new THREE.MeshStandardMaterial({
-              name: child.name,
-              color: new THREE.Color(spec.color || 0xcccccc),
-              roughness: spec.roughnessVal ?? 0.68,
-              metalness: 0.0,
-              side: THREE.DoubleSide,
-              transparent: true,
-              opacity: 1.0,
-              clippingPlanes: [],
-              clipShadows: true,
-            });
+            let mat;
+
+            if (spec.isSkin) {
+              // Real Human Skin Shader with Sheen micro-scattering and natural melanin tone
+              mat = new THREE.MeshPhysicalMaterial({
+                name: child.name,
+                color: new THREE.Color(spec.color || 0xffffff),
+                roughness: spec.roughnessVal ?? 0.82,
+                metalness: 0.0,
+                sheen: spec.sheen ?? 0.14,
+                sheenColor: new THREE.Color(0xfde2d8),
+                sheenRoughness: 0.8,
+                specularIntensity: spec.specularIntensity ?? 0.16,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 1.0,
+                clippingPlanes: [],
+                clipShadows: true,
+              });
+            } else {
+              mat = new THREE.MeshPhysicalMaterial({
+                name: child.name,
+                color: new THREE.Color(spec.color || 0xffffff),
+                roughness: spec.roughnessVal ?? 0.65,
+                metalness: 0.0,
+                clearcoat: spec.clearcoat ?? 0.0,
+                clearcoatRoughness: 0.35,
+                specularIntensity: spec.specularIntensity ?? 0.25,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 1.0,
+                clippingPlanes: [],
+                clipShadows: true,
+              });
+            }
 
             if (spec.map) mat.map = getTex(spec.map, true);
             if (spec.normal) {
               mat.normalMap = getTex(spec.normal, false);
-              mat.normalScale = new THREE.Vector2(0.65, 0.65);
+              mat.normalScale = new THREE.Vector2(spec.isSkin ? 0.5 : 0.65, spec.isSkin ? 0.5 : 0.65);
             }
             if (spec.roughness) mat.roughnessMap = getTex(spec.roughness, false);
 
