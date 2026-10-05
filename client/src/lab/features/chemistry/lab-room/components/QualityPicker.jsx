@@ -15,10 +15,10 @@ const QualityPicker = ({ tier, recommended, onChange }) => (
             onClick={() => onChange(option.id)}
             aria-pressed={active}
             className={cn(
-              "h-auto flex-col items-start gap-1 whitespace-normal rounded-lg border px-4 py-3 text-left text-white hover:text-white",
+              "h-auto flex-col items-start gap-1 whitespace-normal rounded-lg border px-3.5 py-2.5 text-left text-white hover:text-white transition-all",
               active
-                ? "border-violet-400 bg-violet-500/20 hover:bg-violet-500/25"
-                : "border-white/10 bg-white/5 hover:bg-white/10",
+                ? "border-emerald-400 bg-emerald-500/15 shadow-[0_0_12px_rgba(52,211,153,0.15)]"
+                : "border-zinc-800/80 bg-zinc-900/50 text-zinc-300 hover:bg-zinc-800 hover:text-white",
             )}
           >
             <span className="flex items-center gap-2 text-sm font-semibold">

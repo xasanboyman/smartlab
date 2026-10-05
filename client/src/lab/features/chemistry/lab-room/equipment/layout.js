@@ -30,6 +30,12 @@ export const BENCH_LAYOUT = [
   { key: "measuring-cylinder", id: "measuring-cylinder", position: [-0.04, TOP, -0.94], rotation: [0, -0.3, 0] },
   { key: "thermometer", id: "thermometer", position: [-0.17, TOP, -0.56], rotation: [0, 0.06, 0] },
 
+  // Key chemical reagents directly accessible on bench_1
+  { key: "bottle-water", id: "sub:water", position: [-0.55, TOP, -1.02] },
+  { key: "bottle-hcl", id: "sub:hcl", position: [-0.42, TOP, -1.02] },
+  { key: "bottle-naoh", id: "sub:naoh", position: [-0.29, TOP, -1.02] },
+  { key: "bottle-cuso4", id: "sub:cuso4", position: [-0.16, TOP, -1.02] },
+
   { key: "hot-plate", id: "hot-plate", position: [0.3, TOP, -0.8] },
   { key: "digital-scale", id: "digital-scale", position: [0.72, TOP, -0.79] },
   { key: "ph-paper", id: "ph-paper", position: [1.02, TOP, -0.9], rotation: [0, -0.25, 0] },
@@ -38,11 +44,15 @@ export const BENCH_LAYOUT = [
   { key: "spatula", id: "spatula", position: [1.12, TOP, -0.565], rotation: [0, -0.15, 0] },
   { key: "crucible-tongs", id: "crucible-tongs", position: [1.22, TOP, -0.68], rotation: [0, 1.35, 0] },
 
+  // Bench 2 equipment and reagents
   { key: "crystallizing-dish", id: "crystallizing-dish", position: [-0.95, TOP, 1.74], volumeMl: 600, ...WATER },
   { key: "gas-jar", id: "gas-jar", position: [-0.62, TOP, 1.86] },
   { key: "evaporating-dish", id: "evaporating-dish", position: [-0.3, TOP, 1.72], rotation: [0, 0.6, 0] },
   { key: "crucible", id: "crucible", position: [-0.08, TOP, 1.8] },
   { key: "beaker-2", id: "beaker", position: [0.2, TOP, 1.72], rotation: [0, -0.4, 0] },
+  { key: "jar-zn", id: "sub:zn", position: [0.45, TOP, 1.82] },
+  { key: "jar-caco3", id: "sub:caco3", position: [0.65, TOP, 1.82] },
+  { key: "jar-fe", id: "sub:fe", position: [0.85, TOP, 1.82] },
 ];
 
 // Dev review rows (?showcase=glass-test or ?showcase=beaker,funnel): items lined up along bench_1's front edge.

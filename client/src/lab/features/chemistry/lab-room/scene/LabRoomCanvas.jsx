@@ -28,6 +28,7 @@ import LabMonitor from "../hud/LabMonitor";
 import Puddles from "../hazards/Puddles";
 import GasHaze from "../hazards/GasHaze";
 import RoomFixtures from "../hazards/RoomFixtures";
+import CardboardView from "@/lab/components/CardboardView";
 
 const FPS_WINDOW = 0.5;
 
@@ -75,6 +76,7 @@ const LabRoomCanvas = ({
   teleportRef,
   fpsStore,
   debug,
+  vrMode = false,
   onReady,
   onMonitor,
 }) => {
@@ -83,7 +85,7 @@ const LabRoomCanvas = ({
 
   return (
     <Canvas
-      dpr={tier.dpr}
+      dpr={vrMode ? 1 : tier.dpr}
       frameloop={live ? "always" : "demand"}
       gl={{ antialias: false, powerPreference: "high-performance", stencil: false }}
       shadows={tier.effects ? "percentage" : false}
@@ -92,6 +94,7 @@ const LabRoomCanvas = ({
     >
       <color attach="background" args={["#dfe6ee"]} />
       <Suspense fallback={null}>
+        <CardboardView enabled={Boolean(vrMode)} persist={true} />
         <KitProvider printScale={tier.printScale} quality={tierName} textureCap={tier.textureCap}>
           <LabContext.Provider value={lab}>
             <Physics gravity={[0, -9.81, 0]} timeStep="vary">
@@ -151,7 +154,7 @@ const LabRoomCanvas = ({
           </>
         )}
         <RoomEnvironment size={tier.envSize} />
-        <RoomEffects high={tier.effects} />
+        {!vrMode && <RoomEffects high={tier.effects} />}
         <FpsMeter store={fpsStore} />
         <ReadySignal onReady={onReady} />
       </Suspense>

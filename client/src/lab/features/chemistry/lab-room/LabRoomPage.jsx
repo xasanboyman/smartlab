@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Box, Glasses, Maximize2, Minimize2, PackageOpen, RotateCcw, Volume2, VolumeX, Menu } from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
 import { createSnapStore } from "@/shared/utils/snapStore";
 import { cn } from "@/shared/utils/cn";
@@ -67,6 +68,11 @@ const readDebugParams = () => {
 
 const LabRoomPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const vrRequested = searchParams.get("vr") === "1";
+  const [vrMode, setVrMode] = useState(vrRequested);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const rootRef = useRef(null);
   const [boot] = useState(() => ({
     device: detectDevice(),
@@ -85,6 +91,35 @@ const LabRoomPage = () => {
   const resetRef = useRef(0);
   const teleportRef = useRef({ token: 0, pose: null });
   const phaseRef = useRef("start");
+
+  useEffect(() => {
+    const handleFs = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", handleFs);
+    return () => document.removeEventListener("fullscreenchange", handleFs);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      rootRef.current?.requestFullscreen?.().catch(() => {});
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, []);
+
+  const toggleVrMode = useCallback(() => {
+    setVrMode((prev) => {
+      const next = !prev;
+      setSearchParams(
+        (params) => {
+          if (next) params.set("vr", "1");
+          else params.delete("vr");
+          return params;
+        },
+        { replace: true },
+      );
+      return next;
+    });
+  }, [setSearchParams]);
 
   const { phase, view, overlay, ready, lockMode, lockHint, notice, manifest, settings, setField, setFields } =
     useObjectState({
@@ -268,10 +303,13 @@ const LabRoomPage = () => {
 
   const updateSetting = (key, value) => setField("settings", { ...settings, [key]: value });
   const openMonitor = useCallback(() => actionsRef.current.openMonitor(), []);
+  const toggleSound = useCallback(() => {
+    updateSetting("sound", settings.sound > 0 ? 0 : 0.7);
+  }, [settings.sound]);
 
   if (!device.webgl2) return <DeviceNotice kind="webgl" />;
-  // Phones and headsets can't walk the room with keyboard and mouse; the single-bench lab works there.
-  if (device.touchOnly) return <Navigate to={CLASSIC_TO} replace />;
+  // Phones and headsets can't walk the room with keyboard and mouse unless in VR mode; the single-bench lab works there.
+  if (device.touchOnly && !vrRequested && !vrMode) return <Navigate to={CLASSIC_TO} replace />;
 
   const playing = phase === "playing";
   const live = playing || phase === "menu";
@@ -303,9 +341,107 @@ const LabRoomPage = () => {
           teleportRef={teleportRef}
           fpsStore={fpsStore}
           debug={boot.debug}
+          vrMode={vrMode}
           onReady={handleReady}
           onMonitor={openMonitor}
         />
+      )}
+
+      {/* Floating Studio Header HUD */}
+      {live && boot.debug.hud && (
+        <header className="pointer-events-none absolute inset-x-0 top-3 z-30 flex items-center justify-between px-4 select-none">
+          {/* Left: Exit & Brand */}
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-zinc-950/80 p-1.5 backdrop-blur-xl border border-zinc-800/80 shadow-2xl">
+            <button
+              type="button"
+              onClick={actions.exit}
+              title="Kimyo bo'limiga qaytish"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Kimyo</span>
+            </button>
+            <div className="h-3 w-px bg-zinc-800" />
+            <div className="flex items-center gap-1.5 px-2 text-xs font-semibold text-zinc-200">
+              <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>SmartLab 3D</span>
+            </div>
+          </div>
+
+          {/* Center: VR indicator / Quick Tools */}
+          <div className="pointer-events-auto flex items-center gap-2">
+            {vrMode && (
+              <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-400/40 backdrop-blur-xl shadow-lg">
+                <Glasses className="size-3.5" />
+                <span>VR Stereo Split</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 rounded-full bg-zinc-950/80 p-1 backdrop-blur-xl border border-zinc-800/80 shadow-2xl">
+              <button
+                type="button"
+                onClick={actions.openCabinet}
+                title="Moddalar shkafi (E)"
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+              >
+                <PackageOpen className="size-3.5 text-cyan-400" />
+                <span>Shkaf (E)</span>
+              </button>
+              <button
+                type="button"
+                onClick={actions.reset}
+                title="Laboratoriyani boshlang'ich holatga qaytarish"
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+              >
+                <RotateCcw className="size-3.5 text-amber-400" />
+                <span>Tozalash</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Right: VR Toggle, Sound, Fullscreen, Menu */}
+          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-zinc-950/80 p-1 backdrop-blur-xl border border-zinc-800/80 shadow-2xl">
+            <button
+              type="button"
+              onClick={toggleVrMode}
+              title={vrMode ? "Oddiy 3D ko'rinishga qaytish" : "Cardboard VR ko'rinishini yoqish"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition cursor-pointer",
+                vrMode
+                  ? "bg-emerald-500/20 border border-emerald-400/50 text-emerald-300"
+                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white",
+              )}
+            >
+              <Glasses className="size-3.5" />
+              <span>{vrMode ? "VR: Faol" : "VR Mode"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={toggleSound}
+              title={settings.sound > 0 ? "Ovozni o'chirish" : "Ovozni yoqish"}
+              className="grid size-7 place-items-center rounded-full text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+            >
+              {settings.sound > 0 ? <Volume2 className="size-3.5 text-emerald-400" /> : <VolumeX className="size-3.5 text-zinc-500" />}
+            </button>
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "To'liq ekrandan chiqish" : "To'liq ekran"}
+              className="grid size-7 place-items-center rounded-full text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+            >
+              {isFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
+            </button>
+            <div className="h-3 w-px bg-zinc-800" />
+            <button
+              type="button"
+              onClick={() => setters.current.setFields({ phase: "paused", view: "main" })}
+              title="Pauza menyusi (Esc)"
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+            >
+              <Menu className="size-3.5" />
+              <span>Esc</span>
+            </button>
+          </div>
+        </header>
       )}
 
       {playing && boot.debug.hud && <Crosshair />}
@@ -325,6 +461,8 @@ const LabRoomPage = () => {
           recommended={device.recommended}
           placeholder={manifest?.placeholder}
           lockHint={lockHint}
+          vrMode={vrMode}
+          onToggleVr={toggleVrMode}
           onQuality={(id) => updateSetting("quality", id)}
           onEnter={play}
         />

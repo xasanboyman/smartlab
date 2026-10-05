@@ -17,7 +17,7 @@ export const PLACEHOLDER_COLLIDERS = [
 
 export const PLACEHOLDER_META = {
   lightmapScale: 1,
-  spawn: { position: [-3.9, 0, 2.2], lookAt: [0.3, 1.2, -1.15] },
+  spawn: { position: [-0.3, 0, 0.12], lookAt: [-0.15, 0.95, -0.95] },
   anchors: {},
 };
 
