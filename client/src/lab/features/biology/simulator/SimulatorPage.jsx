@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -10,9 +10,8 @@ import {
   Maximize2,
   Minimize2,
   ChevronRight,
-  Focus,
   RotateCcw,
-  Sliders,
+  RotateCw,
   Search,
   Eye,
   EyeOff,
@@ -31,13 +30,30 @@ import {
   Plus,
   GripVertical,
   Trash2,
+  Volume2,
+  VolumeX,
+  Sun,
+  Zap,
+  MapPin,
+  ChevronLeft,
+  ChevronDown,
+  Keyboard,
+  ShieldCheck,
 } from "lucide-react";
 import NativeAnatomyCanvas from "./NativeAnatomyCanvas";
+import HtmlInCanvasOverlay from "./HtmlInCanvasOverlay";
+import AnatomiXLogo from "@/shared/components/ui/AnatomiXLogo";
 import {
-  SKETCHFAB_TOPICS,
-  SKETCHFAB_CATEGORIES,
-  getSketchfabTopic,
+  ANATOMY_TOPICS,
+  ANATOMY_CATEGORIES,
+  getAnatomyTopic,
+  DISCLAIMER,
 } from "./engine/anatomyData";
+import {
+  AnatomyNarrator,
+  LIGHTING_PRESETS,
+  ANATOMICAL_PINS,
+} from "./engine/HtmlCanvasManager";
 
 const ICON_MAP = {
   Bone,
@@ -69,24 +85,47 @@ const SimulatorPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isDetailOpen, setIsDetailOpen] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeDetailTab, setActiveDetailTab] = useState("tuzilish"); // "tuzilish" | "azolar" | "asboblar"
 
-  // Slicing Plane Tool States (matching user's screenshot + angle & X-Y sliding)
+  // 360° Turntable Auto-rotation
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [autoRotateSpeed, setAutoRotateSpeed] = useState(1.2);
+
+  // Lighting Studio Preset
+  const [lightingPreset, setLightingPreset] = useState("medical"); // "medical" | "cyber" | "xray"
+  const [isLightingOpen, setIsLightingOpen] = useState(false);
+
+  // 3D Spatial Pins (HTML-in-Canvas)
+  const [pinsEnabled, setPinsEnabled] = useState(true);
+  const [activePinId, setActivePinId] = useState(null);
+
+  // Audio Speech Narration
+  const narratorRef = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    narratorRef.current = new AnatomyNarrator();
+    return () => narratorRef.current?.stop();
+  }, []);
+
+  // Slicing Plane Tool States
   const [isSliceOpen, setIsSliceOpen] = useState(false);
-  const [sliceAxis, setSliceAxis] = useState("vertical_x"); // "horizontal" | "vertical_x" | "vertical_z" | "custom"
+  const [sliceAxis, setSliceAxis] = useState("vertical_x");
   const [sliceCutOn, setSliceCutOn] = useState(false);
   const [slicePosition, setSlicePosition] = useState(50);
-  const [sliceAngle, setSliceAngle] = useState(0); // -90 to +90 degrees
-  const [sliceTilt, setSliceTilt] = useState(0); // -45 to +45 degrees
-  const [sliceOffsetX, setSliceOffsetX] = useState(0); // -100 to +100 %
-  const [sliceOffsetY, setSliceOffsetY] = useState(0); // -100 to +100 %
+  const [sliceAngle, setSliceAngle] = useState(0);
+  const [sliceTilt, setSliceTilt] = useState(0);
+  const [sliceOffsetX, setSliceOffsetX] = useState(0);
+  const [sliceOffsetY, setSliceOffsetY] = useState(0);
   const [sliceFlipped, setSliceFlipped] = useState(false);
   const [showAdvancedSlice, setShowAdvancedSlice] = useState(false);
 
   // Vertical Lever Ref and Drag State
   const leverTrackRef = useRef(null);
   const [isDraggingLever, setIsDraggingLever] = useState(false);
+  const [isLeverCollapsed, setIsLeverCollapsed] = useState(false);
 
-  // Layer Slider ("from bones to skin 0 to 100")
+  // Layer Progress (0: Skeleton only, 100: Full skin)
   const [layerProgress, setLayerProgress] = useState(100);
   const [layerVisibilities, setLayerVisibilities] = useState({
     skeleton: true,
@@ -98,6 +137,17 @@ const SimulatorPage = () => {
 
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
+  const [cameraInstance, setCameraInstance] = useState(null);
+
+  // Capture camera instance once canvas is mounted
+  useEffect(() => {
+    const checkCamera = () => {
+      const cam = canvasRef.current?.getCamera?.();
+      if (cam) setCameraInstance(cam);
+      else setTimeout(checkCamera, 200);
+    };
+    checkCamera();
+  }, []);
 
   // Active layer info for the vertical lever
   const activeLayerInfo = useMemo(() => {
@@ -108,7 +158,7 @@ const SimulatorPage = () => {
     return { label: "Skelet tizimi", sub: "206 ta asosiy suyak", icon: Bone };
   }, [layerProgress]);
 
-  // Pointer drag handler for vertical lever (Zygote Body style)
+  // Pointer drag handler for vertical lever
   const handleLeverPointerDown = useCallback((e) => {
     const track = leverTrackRef.current;
     if (!track) return;
@@ -147,65 +197,80 @@ const SimulatorPage = () => {
 
   // Calculate layer opacities from layerProgress (0 to 100)
   const layerOpacities = useMemo(() => {
-    // 0%: Skeleton only
-    // 25%: Organs fade in
-    // 50%: Vessels fade in
-    // 75%: Muscles fade in
-    // 100%: Skin fades in
     const p = layerProgress;
-    const skeleton = 1.0;
-    const organs = Math.min(1, Math.max(0, (p - 10) / 20));
-    const vessels = Math.min(1, Math.max(0, (p - 30) / 20));
-    const muscles = Math.min(1, Math.max(0, (p - 50) / 25));
-    const skin = Math.min(1, Math.max(0, (p - 72) / 28));
+    let skeleton = 1.0;
+    let organs = 1.0;
+    let vessels = 1.0;
+    let muscles = 1.0;
+    let skin = 1.0;
+
+    if (p <= 20) {
+      skeleton = 1.0;
+      organs = p / 20;
+      vessels = 0;
+      muscles = 0;
+      skin = 0;
+    } else if (p <= 45) {
+      skeleton = 1.0;
+      organs = 1.0;
+      vessels = (p - 20) / 25;
+      muscles = 0;
+      skin = 0;
+    } else if (p <= 70) {
+      skeleton = 1.0;
+      organs = 1.0;
+      vessels = 1.0;
+      muscles = (p - 45) / 25;
+      skin = 0;
+    } else {
+      skeleton = 1.0;
+      organs = 1.0;
+      vessels = 1.0;
+      muscles = 1.0;
+      skin = (p - 70) / 30;
+    }
 
     return { skeleton, organs, vessels, muscles, skin };
   }, [layerProgress]);
 
-  // Active topic object
+  // Current active topic data
   const activeTopic = useMemo(
-    () => getSketchfabTopic(activeTopicId),
+    () => getAnatomyTopic(activeTopicId),
     [activeTopicId]
   );
 
-  // Filtered topics
+  // Filtered topics for exploration
   const filteredTopics = useMemo(() => {
-    return SKETCHFAB_TOPICS.filter((topic) => {
-      const matchesCategory =
+    return ANATOMY_TOPICS.filter((topic) => {
+      const matchCat =
         activeCategory === "all" || topic.category === activeCategory;
-      const matchesSearch =
-        searchQuery.trim() === "" ||
+      const matchQuery =
+        !searchQuery ||
         topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        topic.short.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (topic.latin && topic.latin.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
+        topic.latin.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCat && matchQuery;
     });
   }, [activeCategory, searchQuery]);
 
-  // Slicing config to pass to Three.js canvas
-  const sliceConfig = useMemo(() => {
-    return {
-      enabled: sliceCutOn && activeTopicId === "all",
-      axis: sliceAxis,
-      position: slicePosition,
-      angle: sliceAngle,
-      tilt: sliceTilt,
-      offsetX: sliceOffsetX,
-      offsetY: sliceOffsetY,
-      flipped: sliceFlipped,
-    };
-  }, [
-    sliceCutOn,
-    activeTopicId,
-    sliceAxis,
-    slicePosition,
-    sliceAngle,
-    sliceTilt,
-    sliceOffsetX,
-    sliceOffsetY,
-    sliceFlipped,
-  ]);
+  // Toggle narration playback
+  const toggleNarration = useCallback(() => {
+    if (isSpeaking) {
+      narratorRef.current?.stop();
+      setIsSpeaking(false);
+    } else {
+      const text = `${activeTopic.title}. ${activeTopic.desc}. Qiziqarli fakt: ${activeTopic.funFact}`;
+      narratorRef.current?.speak(text, () => setIsSpeaking(false));
+      setIsSpeaking(true);
+    }
+  }, [isSpeaking, activeTopic]);
 
+  // Stop narration when topic changes
+  useEffect(() => {
+    narratorRef.current?.stop();
+    setIsSpeaking(false);
+  }, [activeTopicId]);
+
+  // Fullscreen toggle
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen?.();
@@ -216,264 +281,313 @@ const SimulatorPage = () => {
     }
   };
 
-  const ActiveIcon = ICON_MAP[activeTopic.icon] || Layers;
+  // Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
-  const handlePick = useCallback((meshName) => {
-    const matchedTopic = SKETCHFAB_TOPICS.find((t) =>
+      if (e.code === "Space") {
+        e.preventDefault();
+        setAutoRotate((prev) => !prev);
+      } else if (e.code === "KeyC") {
+        setSliceCutOn((prev) => !prev);
+        setIsSliceOpen((prev) => !prev);
+      } else if (e.code === "KeyR") {
+        canvasRef.current?.recenter();
+      } else if (e.code === "KeyF") {
+        toggleFullscreen();
+      } else if (e.code === "Digit1") {
+        setLayerProgress(0); // Bones
+      } else if (e.code === "Digit2") {
+        setLayerProgress(25); // Organs
+      } else if (e.code === "Digit3") {
+        setLayerProgress(50); // Vessels
+      } else if (e.code === "Digit4") {
+        setLayerProgress(75); // Muscles
+      } else if (e.code === "Digit5") {
+        setLayerProgress(100); // Skin
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Handle 3D mesh click
+  const handlePick = (meshName) => {
+    const matchedTopic = ANATOMY_TOPICS.find((t) =>
       t.keywords?.some((kw) => meshName.toLowerCase().includes(kw.toLowerCase()))
     );
     if (matchedTopic) {
       setActiveTopicId(matchedTopic.id);
       setIsDetailOpen(true);
-      canvasRef.current?.focusTopic(matchedTopic);
+      canvasRef.current?.focusMesh(meshName);
     }
-  }, []);
+  };
+
+  // Handle 3D Pin Click
+  const handleSelectPin = (pin) => {
+    setActivePinId(pin.id);
+    canvasRef.current?.focusPosition(pin.pos, 35);
+    const matchedTopic = ANATOMY_TOPICS.find((t) =>
+      t.keywords?.some((kw) => pin.id.includes(kw) || pin.label.toLowerCase().includes(kw))
+    );
+    if (matchedTopic) {
+      setActiveTopicId(matchedTopic.id);
+      setIsDetailOpen(true);
+    }
+  };
+
+  const sliceConfig = useMemo(
+    () => ({
+      enabled: sliceCutOn,
+      axis: sliceAxis,
+      position: slicePosition,
+      angle: sliceAngle,
+      tilt: sliceTilt,
+      offsetX: sliceOffsetX,
+      offsetY: sliceOffsetY,
+      flipped: sliceFlipped,
+    }),
+    [sliceCutOn, sliceAxis, slicePosition, sliceAngle, sliceTilt, sliceOffsetX, sliceOffsetY, sliceFlipped]
+  );
+
+  const ActiveIcon = ICON_MAP[activeTopic.icon] || Sparkles;
 
   return (
     <div
       ref={containerRef}
-      className="flex h-screen w-screen overflow-hidden bg-[#08090d] text-white font-sans select-none"
+      className="w-full h-screen bg-[#08090d] text-white flex flex-col overflow-hidden font-sans select-none relative"
     >
-      {/* ---------------- LEFT SIDEBAR: TOPICS & CATEGORIES ---------------- */}
-      <aside className="w-80 md:w-96 h-full flex flex-col bg-[#0c0e15] border-r border-zinc-800/80 z-20 shrink-0">
-        {/* Top Header */}
-        <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              to="/biology"
-              className="p-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-all"
-              title="Biologiyaga qaytish"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div>
-              <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                <span>Odam Anatomiyasi</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30">
-                  WebGL 3D
-                </span>
-              </h1>
-              <p className="text-[11px] text-zinc-400 truncate max-w-[190px]">
-                3D Kesish va Qatlamlar simulyatori
-              </p>
-            </div>
-          </div>
+      {/* ---------------- TOP FLOATING GLASS NAVIGATION DOCK ---------------- */}
+      <header className="h-16 px-4 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-xl z-30 flex items-center justify-between gap-4 shrink-0 shadow-lg">
+        {/* Brand Logo & Back */}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/biology"
+            className="p-2 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white transition-all shadow-sm group"
+            title="Biologiya bo'limiga qaytish"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          </Link>
+
+          <AnatomiXLogo size="md" showSubtitle={false} />
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="flex bg-zinc-900/90 p-1 rounded-xl border border-zinc-800/80">
-            {SKETCHFAB_CATEGORIES.map((cat) => {
-              const active = activeCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                    active
-                      ? "bg-emerald-500 text-zinc-950 shadow-md font-bold"
-                      : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="px-4 py-2">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="A'zo yoki tizimni qidirish..."
-              className="w-full bg-zinc-900/90 border border-zinc-800/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Topic List */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5 scrollbar-thin scrollbar-thumb-zinc-800">
-          {filteredTopics.map((topic) => {
-            const isSelected = activeTopicId === topic.id;
-            const Icon = ICON_MAP[topic.icon] || Layers;
-
+        {/* Center: System Pills Filter (Modern Ergonomic Selector) */}
+        <div className="hidden md:flex items-center gap-1 p-1 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl shadow-inner">
+          {[
+            { id: "all", label: "To'liq Inson", p: 100, icon: User },
+            { id: "muscles", label: "Mushaklar", p: 75, icon: Dumbbell },
+            { id: "circulatory", label: "Qon-tomir", p: 50, icon: HeartPulse },
+            { id: "splanchnology", label: "A'zolar", p: 25, icon: Activity },
+            { id: "skeleton", label: "Skelet", p: 0, icon: Bone },
+          ].map((item) => {
+            const ItemIcon = item.icon;
+            const isSelected = activeTopicId === item.id;
             return (
               <button
-                key={topic.id}
+                key={item.id}
                 onClick={() => {
-                  setActiveTopicId(topic.id);
-                  setIsDetailOpen(true);
-                  if (topic.id === "all") {
-                    canvasRef.current?.recenter();
-                  } else {
-                    canvasRef.current?.focusTopic(topic);
-                  }
+                  setActiveTopicId(item.id);
+                  setLayerProgress(item.p);
+                  canvasRef.current?.recenter();
                 }}
-                className={`w-full text-left p-3 rounded-xl transition-all flex items-center justify-between border ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   isSelected
-                    ? "bg-emerald-500/10 border-emerald-500/60 shadow-lg shadow-emerald-950/30 text-white"
-                    : "bg-zinc-900/40 hover:bg-zinc-850 border-zinc-800/60 text-zinc-300 hover:text-white hover:border-zinc-700"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 shadow-md shadow-emerald-500/20 font-black scale-[1.02]"
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                      isSelected
-                        ? "bg-emerald-500 text-zinc-950 border-emerald-400 font-bold"
-                        : "bg-zinc-800/80 text-zinc-400 border-zinc-700/60"
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold truncate">
-                      {topic.title}
-                    </div>
-                    <div className="text-[10px] text-zinc-400 italic truncate">
-                      {topic.latin}
-                    </div>
-                  </div>
-                </div>
-
-                <ChevronRight
-                  className={`w-4 h-4 shrink-0 transition-transform ${
-                    isSelected
-                      ? "text-emerald-400 translate-x-0.5"
-                      : "text-zinc-600"
-                  }`}
-                />
+                <ItemIcon className="w-3.5 h-3.5" />
+                <span>{item.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Sidebar Footer Hint */}
-        <div className="p-3 border-t border-zinc-800/80 bg-zinc-950/60 text-[11px] text-zinc-400 flex items-center gap-2">
-          <Info className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-          <span>Sichqoncha bilan 360° aylantiring va yaqinlashtiring.</span>
-        </div>
-      </aside>
-
-      {/* ---------------- MAIN 3D VIEWPORT ---------------- */}
-      <main className="flex-1 h-full relative overflow-hidden flex flex-col bg-[#08090d]">
-        {/* Top Active Bar Overlay */}
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
-          <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800/90 shadow-xl pointer-events-auto">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <div className="flex items-center gap-2">
-              <ActiveIcon className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-bold text-white tracking-wide">
-                {activeTopic.title}
-              </span>
+        {/* Right Action Palette */}
+        <div className="flex items-center gap-2">
+          {/* Slicing Button */}
+          {!sliceCutOn ? (
+            <button
+              onClick={() => {
+                setSliceCutOn(true);
+                setIsSliceOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold text-xs shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
+              title="3D Kesim tekisligini qo'shish (C)"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>Kesim qo'shish</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/40 rounded-xl p-0.5">
+              <button
+                onClick={() => setIsSliceOpen((prev) => !prev)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  isSliceOpen
+                    ? "bg-amber-500 text-zinc-950 shadow-sm"
+                    : "text-amber-300 hover:text-white"
+                }`}
+              >
+                <Scissors className="w-3.5 h-3.5" />
+                <span>Kesim faol {isSliceOpen ? "▼" : "▲"}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSliceCutOn(false);
+                  setIsSliceOpen(false);
+                }}
+                className="p-1.5 rounded-lg text-red-400 hover:text-white hover:bg-red-500/20 transition-all"
+                title="Kesimni bekor qilish"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
-          </div>
+          )}
 
-          {activeTopicId === "all" && (
-            <div className="flex items-center gap-1.5 pointer-events-auto">
-              {!sliceCutOn ? (
-                <button
-                  onClick={() => {
-                    setSliceCutOn(true);
-                    setIsSliceOpen(true);
-                  }}
-                  className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-zinc-950 font-bold text-xs shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
-                  title="3D Kesim tekisligini qo'shish"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>Kesim qo'shish</span>
-                </button>
+          {/* 360° Turntable Auto-rotate */}
+          <button
+            onClick={() => setAutoRotate((prev) => !prev)}
+            className={`p-2 rounded-xl border text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 ${
+              autoRotate
+                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-cyan-500/20"
+                : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+            }`}
+            title="360° Avto-Aylantirish (Space)"
+          >
+            <RotateCw className={`w-4 h-4 ${autoRotate ? "animate-spin" : ""}`} />
+            <span className="hidden xl:inline text-xs">360°</span>
+          </button>
+
+          {/* 3D Pins Toggle */}
+          <button
+            onClick={() => setPinsEnabled((prev) => !prev)}
+            className={`p-2 rounded-xl border text-xs font-semibold shadow-sm transition-all ${
+              pinsEnabled
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-emerald-500/20"
+                : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+            }`}
+            title="3D Anatomik belgilarni ko'rsatish / yashirish"
+          >
+            <MapPin className="w-4 h-4" />
+          </button>
+
+          {/* Studio Lighting Switcher */}
+          <div className="relative">
+            <button
+              onClick={() => setIsLightingOpen((prev) => !prev)}
+              className={`p-2 rounded-xl border text-xs font-semibold shadow-sm transition-all flex items-center gap-1 ${
+                lightingPreset === "cyber"
+                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/50"
+                  : lightingPreset === "xray"
+                  ? "bg-sky-500/20 text-sky-300 border-sky-500/50"
+                  : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+              }`}
+              title="Studiya Yoritish Rejimlari"
+            >
+              {lightingPreset === "cyber" ? (
+                <Zap className="w-4 h-4 text-cyan-400" />
+              ) : lightingPreset === "xray" ? (
+                <Eye className="w-4 h-4 text-sky-400" />
               ) : (
-                <div className="flex items-center gap-1">
+                <Sun className="w-4 h-4 text-amber-400" />
+              )}
+            </button>
+
+            {isLightingOpen && (
+              <div className="absolute right-0 top-12 w-48 p-2 rounded-2xl bg-zinc-950/95 backdrop-blur-2xl border border-zinc-800 shadow-2xl z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase px-2 py-1 tracking-wider">
+                  Yoritish Rejimi
+                </div>
+                {Object.values(LIGHTING_PRESETS).map((preset) => (
                   <button
-                    onClick={() => setIsSliceOpen((prev) => !prev)}
-                    className={`px-3 py-2 rounded-xl backdrop-blur-md border text-xs font-bold shadow-xl transition-all flex items-center gap-1.5 ${
-                      isSliceOpen
-                        ? "bg-amber-500/25 text-amber-300 border-amber-500/60"
-                        : "bg-zinc-900/90 border-zinc-800/90 text-zinc-300 hover:text-white"
+                    key={preset.id}
+                    onClick={() => {
+                      setLightingPreset(preset.id);
+                      setIsLightingOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      lightingPreset === preset.id
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        : "text-zinc-300 hover:text-white hover:bg-zinc-800/60"
                     }`}
                   >
-                    <Scissors className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Kesim faol {isSliceOpen ? "▼" : "▲"}</span>
+                    <span>{preset.name}</span>
+                    {lightingPreset === preset.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    )}
                   </button>
-                  <button
-                    onClick={() => {
-                      setSliceCutOn(false);
-                      setIsSliceOpen(false);
-                    }}
-                    className="p-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 shadow-xl transition-all"
-                    title="Kesimni olib tashlash"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
 
-          {!isDetailOpen && (
-            <button
-              onClick={() => setIsDetailOpen(true)}
-              className="px-3 py-2 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800/90 hover:border-emerald-500 text-xs text-zinc-300 hover:text-white font-medium shadow-xl pointer-events-auto transition-all flex items-center gap-1.5"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Tafsilotlar</span>
-            </button>
-          )}
-        </div>
-
-        {/* Top Right Quick Controls */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+          {/* Reset Camera */}
           <button
             onClick={() => canvasRef.current?.recenter()}
-            className="p-2.5 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800/90 hover:border-emerald-500 text-zinc-300 hover:text-white shadow-xl transition-all"
-            title="Kamerani markazlash"
+            className="p-2 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white shadow-sm transition-all"
+            title="Kamerani markazlash (R)"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
+
+          {/* Fullscreen */}
           <button
             onClick={toggleFullscreen}
-            className="p-2.5 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800/90 hover:border-emerald-500 text-zinc-300 hover:text-white shadow-xl transition-all"
-            title="To'liq ekran"
+            className="p-2 rounded-xl bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-white shadow-sm transition-all"
+            title="To'liq ekran (F)"
           >
-            {isFullscreen ? (
-              <Minimize2 className="w-4 h-4" />
-            ) : (
-              <Maximize2 className="w-4 h-4" />
-            )}
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+
+          {/* Details Toggle */}
+          <button
+            onClick={() => setIsDetailOpen((prev) => !prev)}
+            className={`p-2 rounded-xl border text-xs font-semibold shadow-sm transition-all ${
+              isDetailOpen
+                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white"
+            }`}
+            title="Anatomik tafsilotlar panelini ochish / yopish"
+          >
+            <Sparkles className="w-4 h-4" />
           </button>
         </div>
+      </header>
 
-        {/* 3D Model Canvas (Native Three.js with Draco & Clipping) */}
-        <div className="flex-1 w-full h-full relative">
+      {/* ---------------- MAIN 3D INTERACTIVE VIEWPORT ---------------- */}
+      <main className="flex-1 w-full h-full relative overflow-hidden bg-[#08090d]">
+        {/* 3D Model Native Canvas */}
+        <div className="w-full h-full relative">
           <NativeAnatomyCanvas
             ref={canvasRef}
             layerOpacities={layerOpacities}
             layerVisibilities={layerVisibilities}
             activeTopic={activeTopic}
             sliceConfig={sliceConfig}
+            lightingPreset={lightingPreset}
+            autoRotate={autoRotate}
+            autoRotateSpeed={autoRotateSpeed}
             onPick={handlePick}
+          />
+
+          {/* Chrome HTML-in-Canvas Spatial Overlay */}
+          <HtmlInCanvasOverlay
+            camera={cameraInstance}
+            containerRef={containerRef}
+            enabled={pinsEnabled}
+            onSelectPin={handleSelectPin}
+            activePinId={activePinId}
           />
         </div>
 
-        {/* ---------------- ZYGOTE BODY VERTICAL ANATOMY LEVER ---------------- */}
-        {activeTopicId === "all" && (
-          <div className="absolute left-4 top-20 z-20 flex flex-col items-center pointer-events-auto select-none">
-            {/* Glassmorphic Panel */}
-            <div className="bg-[#0e111a]/90 backdrop-blur-xl border border-zinc-800/90 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-3 w-48">
-              {/* Header: Active Layer badge */}
+        {/* ---------------- LEFT FLOATING VERTICAL LEVER (ZYGOTE PRO) ---------------- */}
+        <div className="absolute left-4 top-4 z-20 flex flex-col items-start pointer-events-auto select-none">
+          {!isLeverCollapsed ? (
+            <div className="bg-zinc-950/85 backdrop-blur-2xl border border-zinc-800/80 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-3 w-48 animate-in fade-in slide-in-from-left-2 duration-200">
+              {/* Header: Active Layer badge + collapse */}
               <div className="w-full flex items-center justify-between px-1 pb-1.5 border-b border-zinc-800/60">
                 <div className="flex items-center gap-1.5 min-w-0">
                   {React.createElement(activeLayerInfo.icon, {
@@ -483,9 +597,18 @@ const SimulatorPage = () => {
                     {activeLayerInfo.label}
                   </span>
                 </div>
-                <span className="text-[11px] font-mono font-bold text-emerald-400 shrink-0 ml-1">
-                  {layerProgress}%
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-mono font-bold text-emerald-400">
+                    {layerProgress}%
+                  </span>
+                  <button
+                    onClick={() => setIsLeverCollapsed(true)}
+                    className="p-1 rounded text-zinc-500 hover:text-white transition-all ml-1"
+                    title="Tutqichni yig'ish"
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
 
               {/* Lever Body: Rail & Notches */}
@@ -588,20 +711,31 @@ const SimulatorPage = () => {
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <button
+              onClick={() => setIsLeverCollapsed(false)}
+              className="p-3 rounded-2xl bg-zinc-950/80 backdrop-blur-xl border border-zinc-800 hover:border-emerald-500/50 text-emerald-400 shadow-xl flex items-center gap-2 transition-all group"
+              title="Qatlamlar tutqichini ochish"
+            >
+              <Layers className="w-4 h-4" />
+              <span className="text-xs font-bold text-white group-hover:text-emerald-400">
+                {layerProgress}%
+              </span>
+            </button>
+          )}
+        </div>
 
         {/* ---------------- 3D SLICE CONTROL FLOATING HUD ---------------- */}
-        {activeTopicId === "all" && sliceCutOn && isSliceOpen && (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto w-full max-w-xl px-4">
-            <div className="bg-[#0e111a]/95 backdrop-blur-xl border border-zinc-800/90 rounded-2xl p-4 shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+        {sliceCutOn && isSliceOpen && (
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto w-full max-w-xl px-4 select-none">
+            <div className="bg-[#0e111a]/95 backdrop-blur-2xl border border-amber-500/40 rounded-2xl p-4 shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
               {/* Row 1: Header + Axis Selector + Close/Delete */}
               <div className="flex items-center justify-between gap-2 border-b border-zinc-800/60 pb-2.5">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <div className="flex items-center gap-1.5 mr-1">
                     <Scissors className="w-3.5 h-3.5 text-amber-400" />
                     <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
-                      Kesish:
+                      Kesish Tekisligi:
                     </span>
                   </div>
                   {[
@@ -818,105 +952,224 @@ const SimulatorPage = () => {
             </div>
           </div>
         )}
-      </main>
 
-      {/* ---------------- RIGHT SCIENTIFIC DETAIL PANEL ---------------- */}
-      {isDetailOpen && (
-        <aside className="w-80 md:w-96 h-full bg-[#0c0e15] border-l border-zinc-800/80 z-20 shrink-0 flex flex-col">
-          {/* Header */}
-          <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <h2 className="text-sm font-bold text-white">
-                Anatomik Tafsilotlar
-              </h2>
-            </div>
-            <button
-              onClick={() => setIsDetailOpen(false)}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800/60 transition-all"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Details Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-800">
-            {/* Title & Badge */}
-            <div className="bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800/70">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                  <ActiveIcon className="w-5 h-5" />
+        {/* ---------------- RIGHT FLOATING SCIENTIFIC HUD PANEL ---------------- */}
+        {isDetailOpen && (
+          <aside className="absolute right-4 top-4 bottom-4 w-80 md:w-96 bg-zinc-950/90 backdrop-blur-2xl border border-zinc-800/80 rounded-3xl shadow-2xl z-20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
+            {/* HUD Header */}
+            <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <ActiveIcon className="w-4 h-4 text-emerald-400" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">
+                <div className="min-w-0">
+                  <h2 className="text-xs font-bold text-white truncate">
                     {activeTopic.title}
-                  </h3>
-                  <p className="text-xs text-zinc-400 italic">
+                  </h2>
+                  <div className="text-[10px] text-zinc-400 italic truncate">
                     {activeTopic.latin}
-                  </p>
-                  <span className="inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-medium border border-zinc-700">
-                    {activeTopic.category === "systems"
-                      ? "Asosiy Tizim"
-                      : activeTopic.category === "all"
-                      ? "To'liq Yaxlit Tana"
-                      : "Ichki A'zo"}
-                  </span>
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Audio Voice Narration */}
+                <button
+                  onClick={toggleNarration}
+                  className={`p-2 rounded-xl border transition-all ${
+                    isSpeaking
+                      ? "bg-emerald-500 text-zinc-950 border-emerald-400 animate-pulse shadow-md"
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+                  }`}
+                  title={isSpeaking ? "Ovozni to'xtatish" : "Tushuntirishni eshitish (Audio)"}
+                >
+                  {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                </button>
+
+                <button
+                  onClick={() => setIsDetailOpen(false)}
+                  className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-white transition-all"
+                  title="Panelni yopish"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
-            {/* Scientific Description */}
-            <div className="space-y-1.5">
-              <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                Ilmiy Tuzilishi va Vazifasi
-              </h4>
-              <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-900/40 p-3.5 rounded-xl border border-zinc-800/60">
-                {activeTopic.desc}
-              </p>
+            {/* Segmented Tabs */}
+            <div className="flex items-center border-b border-zinc-800/80 px-4 pt-2 gap-2 text-xs">
+              {[
+                { id: "tuzilish", label: "Tuzilishi" },
+                { id: "azolar", label: "A'zolar" },
+                { id: "asboblar", label: "Klaviatura" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveDetailTab(tab.id)}
+                  className={`pb-2 font-semibold transition-all relative ${
+                    activeDetailTab === tab.id
+                      ? "text-emerald-400 font-bold"
+                      : "text-zinc-500 hover:text-zinc-300"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {activeDetailTab === tab.id && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-400 rounded-full" />
+                  )}
+                </button>
+              ))}
             </div>
 
-            {/* Statistics */}
-            {activeTopic.stats && (
-              <div className="space-y-2">
-                <h4 className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                  Asosiy Ko'rsatkichlar
-                </h4>
-                <div className="grid grid-cols-1 gap-2">
-                  {activeTopic.stats.map((st, i) => (
-                    <div
-                      key={i}
-                      className="bg-zinc-900/60 px-3 py-2 rounded-xl border border-zinc-800/70 flex items-center justify-between text-xs"
-                    >
-                      <span className="text-zinc-400">{st.label}:</span>
-                      <span className="font-bold text-emerald-400">
-                        {st.value}
-                      </span>
+            {/* Tab 1: Tuzilishi & Ma'lumot */}
+            {activeDetailTab === "tuzilish" && (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Description */}
+                <div className="space-y-1.5">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                    Ilmiy Tavsif va Vazifasi
+                  </div>
+                  <p className="text-xs text-zinc-300 leading-relaxed bg-zinc-900/50 p-3 rounded-2xl border border-zinc-800/60">
+                    {activeTopic.desc}
+                  </p>
+                </div>
+
+                {/* Vitals / Stats */}
+                {activeTopic.stats && activeTopic.stats.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                      Asosiy Ko'rsatkichlar
                     </div>
-                  ))}
+                    <div className="grid grid-cols-2 gap-2">
+                      {activeTopic.stats.map((st, i) => (
+                        <div
+                          key={i}
+                          className="bg-zinc-900/50 p-2.5 rounded-xl border border-zinc-800/60"
+                        >
+                          <div className="text-[10px] text-zinc-400 truncate">{st.label}</div>
+                          <div className="text-xs font-bold text-emerald-400 truncate mt-0.5">
+                            {st.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Did You Know? (Qiziqarli Fakt) */}
+                {activeTopic.funFact && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold">
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span>QIZIQARLI TIBBIY FAKT</span>
+                    </div>
+                    <p className="text-xs text-amber-200/90 leading-relaxed">
+                      {activeTopic.funFact}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 2: A'zolar ro'yxati va tezkor qidiruv */}
+            {activeDetailTab === "azolar" && (
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="A'zoni qidirish..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-900/80 border border-zinc-800 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all"
+                  />
+                </div>
+
+                {/* Topics list */}
+                <div className="space-y-1">
+                  {filteredTopics.map((topic) => {
+                    const TopicIcon = ICON_MAP[topic.icon] || Sparkles;
+                    const isSelected = activeTopicId === topic.id;
+                    return (
+                      <button
+                        key={topic.id}
+                        onClick={() => {
+                          setActiveTopicId(topic.id);
+                          canvasRef.current?.focusTopic(topic);
+                        }}
+                        className={`w-full flex items-center justify-between p-2 rounded-xl border text-left transition-all ${
+                          isSelected
+                            ? "bg-emerald-500/15 border-emerald-500/40 text-white font-bold"
+                            : "bg-zinc-900/40 border-zinc-800/60 text-zinc-300 hover:bg-zinc-800/60 hover:text-white"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TopicIcon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-emerald-400" : "text-zinc-500"}`} />
+                          <div className="min-w-0">
+                            <div className="text-xs truncate">{topic.title}</div>
+                            <div className="text-[10px] text-zinc-500 italic truncate">{topic.latin}</div>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3 h-3 text-zinc-600 shrink-0" />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Fun Fact Callout */}
-            <div className="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-2xl p-4">
-              <div className="flex items-center gap-2 text-amber-400 mb-1.5">
-                <Sparkles className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  Qiziqarli Fakt
-                </span>
-              </div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                {activeTopic.funFact}
-              </p>
-            </div>
-          </div>
+            {/* Tab 3: Klaviatura & Tezkor tugmalar */}
+            {activeDetailTab === "asboblar" && (
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
+                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                  Tezkor Klaviatura Tugmalari
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { key: "Space", desc: "360° Avto-Aylantirish (Turntable)" },
+                    { key: "C", desc: "Kesim tekisligini qo'shish / yopish" },
+                    { key: "R", desc: "Kamerani boshlang'ich holatga keltirish" },
+                    { key: "F", desc: "To'liq ekran rejimiga o'tish" },
+                    { key: "1 - 5", desc: "1: Skelet, 2: A'zolar, 3: Qon-tomir, 4: Mushaklar, 5: Teri" },
+                  ].map((item) => (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between p-2 rounded-xl bg-zinc-900/50 border border-zinc-800/60"
+                    >
+                      <span className="text-zinc-300">{item.desc}</span>
+                      <kbd className="px-2 py-0.5 text-[10px] font-mono font-bold bg-zinc-800 border border-zinc-700 text-emerald-400 rounded-md shadow-sm shrink-0 ml-2">
+                        {item.key}
+                      </kbd>
+                    </div>
+                  ))}
+                </div>
 
-          {/* Panel Footer */}
-          <div className="p-3 border-t border-zinc-800/80 bg-zinc-950/60 text-[11px] text-zinc-400 text-center">
-            SmartLab 3D Biologiya Virtual Laboratoriyasi
-          </div>
-        </aside>
-      )}
+                <div className="pt-2 border-t border-zinc-800/60">
+                  <div className="text-[10px] text-zinc-500 leading-normal">
+                    {DISCLAIMER}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* HUD Footer Branding */}
+            <div className="p-3 border-t border-zinc-800/80 bg-zinc-950/60 text-[10px] text-zinc-500 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>AnatomiX 3D WebGL Engine</span>
+              </div>
+              <span className="font-mono text-zinc-400">v2.5 Pro</span>
+            </div>
+          </aside>
+        )}
+
+        {/* ---------------- WATERMARK & DEVELOPER CREDITS ---------------- */}
+        <div className="absolute bottom-3 right-4 z-10 text-[10px] text-zinc-500 font-mono tracking-wider pointer-events-none select-none flex items-center gap-2">
+          <span>AnatomiX 3D Studio</span>
+          <span>•</span>
+          <span>Muallif: Abdulkhayev Hasanboy (@xasanboyman)</span>
+        </div>
+      </main>
     </div>
   );
 };

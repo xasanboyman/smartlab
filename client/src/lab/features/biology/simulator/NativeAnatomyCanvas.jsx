@@ -5,6 +5,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Loader2, AlertCircle, RefreshCw, Scissors, Sparkles, Eye, RotateCcw } from "lucide-react";
+import { LIGHTING_PRESETS, setupCanvasDrawable } from "./engine/HtmlCanvasManager";
 
 // Texture & Material mapping for all 23 anatomical meshes
 const TEXTURE_DIR = "/models/textures/";
@@ -69,6 +70,9 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     layerVisibilities = { skeleton: true, organs: true, vessels: true, muscles: true, skin: true },
     activeTopic = null, // e.g. "skeleton" | "heart" | null for all
     sliceConfig = { enabled: false, axis: "vertical_x", position: 50, flipped: false },
+    lightingPreset = "medical",
+    autoRotate = false,
+    autoRotateSpeed = 1.0,
     onPick = () => {},
   },
   ref
@@ -78,6 +82,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
+  const lightsRef = useRef(null);
   const meshesRef = useRef(new Map());
   const slicePlaneRef = useRef(new THREE.Plane(new THREE.Vector3(1, 0, 0), 0));
   const sliceHelperRef = useRef(null);
@@ -99,12 +104,20 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     activeTopicRef.current = activeTopic;
   }, [activeTopic]);
 
-  // Expose camera controls
+  // Expose camera controls & instances for HTML-in-Canvas overlays
   useImperativeHandle(ref, () => ({
+    getCamera: () => cameraRef.current,
+    getContainer: () => containerRef.current,
     recenter: () => {
       if (!controlsRef.current || !cameraRef.current) return;
       controlsRef.current.target.set(0, 0, 0);
       cameraRef.current.position.set(-150, 10, 150);
+      controlsRef.current.update();
+    },
+    focusPosition: (pos, distance = 45) => {
+      if (!controlsRef.current || !cameraRef.current) return;
+      controlsRef.current.target.set(pos[0], pos[1], pos[2]);
+      cameraRef.current.position.set(pos[0] - distance, pos[1] + 8, pos[2] + distance);
       controlsRef.current.update();
     },
     focusMesh: (meshName) => {
@@ -180,6 +193,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.localClippingEnabled = true;
     rendererRef.current = renderer;
+    setupCanvasDrawable(renderer.domElement);
     container.appendChild(renderer.domElement);
 
     // Realistic Medical Studio Environment (IBL for subtle softbox reflections)
@@ -230,6 +244,14 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     const hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x27272a, 0.45);
     hemiLight.position.set(0, 100, 0);
     scene.add(hemiLight);
+
+    lightsRef.current = {
+      key: dirLight1,
+      fill: dirLight2,
+      rim: rimLight,
+      bounce: bounceLight,
+      hemi: hemiLight,
+    };
 
     // Slicing Plane Visual Helper
     const planeGeo = new THREE.PlaneGeometry(120, 210);
@@ -557,6 +579,43 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       mesh.material.needsUpdate = true;
     });
   }, [sliceConfig, modelLoaded]);
+
+  // Dynamic Studio Lighting Presets
+  useEffect(() => {
+    const lights = lightsRef.current;
+    const renderer = rendererRef.current;
+    if (!lights || !renderer) return;
+
+    const preset = LIGHTING_PRESETS[lightingPreset] || LIGHTING_PRESETS.medical;
+    lights.key.color.setHex(preset.keyColor);
+    lights.key.intensity = preset.keyIntensity;
+
+    lights.fill.color.setHex(preset.fillColor);
+    lights.fill.intensity = preset.fillIntensity;
+
+    lights.rim.color.setHex(preset.rimColor);
+    lights.rim.intensity = preset.rimIntensity;
+
+    lights.bounce.color.setHex(preset.fillColor);
+    lights.bounce.intensity = preset.fillIntensity * 0.75;
+
+    lights.hemi.color.setHex(preset.hemiSky);
+    lights.hemi.groundColor.setHex(preset.hemiGround);
+    lights.hemi.intensity = preset.hemiIntensity;
+
+    renderer.toneMappingExposure = preset.exposure;
+    if (sceneRef.current) {
+      sceneRef.current.environmentIntensity = preset.envIntensity;
+    }
+  }, [lightingPreset]);
+
+  // Auto-rotate Turntable
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = autoRotate;
+      controlsRef.current.autoRotateSpeed = autoRotateSpeed;
+    }
+  }, [autoRotate, autoRotateSpeed]);
 
   return (
     <div className="w-full h-full relative select-none overflow-hidden bg-[#08090d]">

@@ -303,13 +303,14 @@ export const defaultLayerOpacity = (system) => {
   return 1.0;
 };
 
-export const SKETCHFAB_CATEGORIES = [
+export const ANATOMY_CATEGORIES = [
   { id: "all", label: "Barchasi" },
   { id: "systems", label: "Asosiy Tizimlar" },
   { id: "organs", label: "Ichki A'zolar" },
 ];
+export const SKETCHFAB_CATEGORIES = ANATOMY_CATEGORIES;
 
-export const SKETCHFAB_TOPICS = [
+export const ANATOMY_TOPICS = [
   {
     id: "all",
     title: "To'liq Inson (Kesish & Qatlamlar)",
@@ -550,9 +551,12 @@ export const SKETCHFAB_TOPICS = [
   },
 ];
 
-export const getSketchfabTopic = (id) =>
-  SKETCHFAB_TOPICS.find((t) => t.id === id) || SKETCHFAB_TOPICS[0];
+export const getAnatomyTopic = (id) =>
+  ANATOMY_TOPICS.find((t) => t.id === id) || ANATOMY_TOPICS[0];
 
-export const DISCLAIMER = "SmartLab Interaktiv 3D Anatomiya Simulyatori ta'limiy maqsadlar uchun ishlab chiqilgan.";
+export const getSketchfabTopic = getAnatomyTopic;
+export const SKETCHFAB_TOPICS = ANATOMY_TOPICS;
+
+export const DISCLAIMER = "AnatomiX 3D — Next-Gen Interaktiv Odam Anatomiyasi & Ilmiy Simulyatori ta'limiy va ilmiy maqsadlar uchun ishlab chiqilgan.";
 
 
