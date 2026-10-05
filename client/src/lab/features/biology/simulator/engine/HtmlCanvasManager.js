@@ -1,5 +1,5 @@
 /**
- * AnatomiX 3D — HTML-in-Canvas & Interactive Spatial Bridge
+ * NexusLab 3D — HTML-in-Canvas & Interactive Spatial Bridge
  * Implements Chrome 150/155 HTML-in-Canvas standards, 3D anatomical spatial pins,
  * audio narration, and multi-preset lighting engine.
  */

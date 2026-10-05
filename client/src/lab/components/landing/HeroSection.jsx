@@ -1,86 +1,84 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
-  GridBackground,
-  PixelButton,
-  PixelSprite,
-  PixelTag,
-} from "@/shared/components/ui/pixel";
+  Sparkles,
+  FlaskConical,
+  Glasses,
+  Layers,
+  ArrowRight,
+  ChevronDown,
+  Atom,
+  Dna,
+} from "lucide-react";
 import { SUBJECTS } from "@/lab/data/subjects";
-import HeroFloatingCards from "./HeroFloatingCards";
-import HeroStage from "./HeroStage";
+import HtmlClothCanvas from "@/shared/components/3d/HtmlClothCanvas";
+import WobbleRippleButton from "@/shared/components/3d/html-in-canvas/WobbleRippleButton";
 
-// Nexprint-style sprites scattered around the headline.
-const SCATTER = [
-  { name: "star", size: 52, className: "left-[7%] top-40 hidden sm:block" },
-  { name: "atom", size: 48, className: "left-[17%] top-16 hidden md:block" },
-  { name: "bolt", size: 40, className: "right-[19%] top-24 hidden md:block" },
-  { name: "heart", size: 44, className: "right-[7%] top-52 hidden sm:block" },
-  { name: "sparkle", size: 34, className: "left-[4%] top-[26rem] hidden lg:block" },
-];
-
-const HeroSection = () => {
+export const HeroSection = () => {
   const navigate = useNavigate();
-  // VR session is started by the lab page overlay (needs its own user gesture).
   const enterLabVR = () => navigate("/chemistry/lab?vr=1");
 
   return (
-    <section className="relative isolate overflow-hidden">
-      <GridBackground fade="bottom" />
+    <section className="relative isolate overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24">
+      {/* Background ambient lighting glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-gradient-to-tr from-emerald-500/15 via-cyan-500/15 to-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      {SCATTER.map(({ name, size, className }, i) => (
-        <div
-          key={name}
-          aria-hidden="true"
-          className={`pointer-events-none absolute motion-safe:animate-pixel-bob ${className}`}
-          style={{ animationDelay: `${i * 0.35}s` }}
-        >
-          <PixelSprite name={name} size={size} />
+      <div className="container mx-auto px-4 relative flex flex-col items-center text-center">
+        {/* Top Feature Pill */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold shadow-sm backdrop-blur-md mb-6 animate-in fade-in duration-300">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>4K PBR 3D • Chrome HTML-in-Canvas • VR & AI Studio</span>
         </div>
-      ))}
 
-      <div className="container relative flex flex-col items-center pt-10 text-center md:pt-14">
-        <PixelTag icon={<PixelSprite name="sparkle" size={16} />}>
-          3D · VR · AI o'quv laboratoriyasi
-        </PixelTag>
-
-        <h1 className="mt-6 font-pixel text-[2.6rem] font-bold leading-[1.02] text-foreground sm:text-6xl md:text-7xl">
-          Fanni o'qib emas,
-          <br />
-          <span className="text-primary">sinab</span> o'rganing
+        {/* Hero Title */}
+        <h1 className="font-extrabold text-4xl sm:text-6xl md:text-7xl tracking-tight text-white max-w-4xl leading-[1.08]">
+          Fanni o'qib emas,{" "}
+          <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
+            3D Tajribada
+          </span>{" "}
+          his eting
         </h1>
 
-        <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground md:text-lg">
-          Kimyo, biologiya, fizika, elektronika va tarixni brauzerning o'zida aylantirib,
-          kesib va tajriba qilib o'rganing. Yoningizda AI o'qituvchi, xohlasangiz VR.
+        {/* Hero Subtitle */}
+        <p className="mt-5 max-w-2xl text-base sm:text-lg text-zinc-300 leading-relaxed font-normal">
+          Inson anatomiyasi, molekulalar, gaz qonunlari va kvant fizikani brauzerning o'zida 
+          aylantirib, qatlamlarga ajratib va 3D kesib o'rganing. Yoningizda AI o'qituvchi, xohlasangiz VR.
         </p>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-5">
-          <PixelButton
-            to={`/${SUBJECTS[0].slug}`}
+        {/* Action Buttons with HTML-in-Canvas Wobble Ripples */}
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5 z-10">
+          <WobbleRippleButton
+            to="/biology/simulator"
+            variant="emerald"
             size="lg"
-            icon={<PixelSprite name="flask" size={22} />}
+            icon={Layers}
+            className="shadow-xl"
           >
-            Laboratoriyani ochish
-          </PixelButton>
-          <PixelButton
+            <span>3D Inson Anatomiyasi</span>
+            <ArrowRight className="w-4 h-4 ml-0.5" />
+          </WobbleRippleButton>
+
+          <WobbleRippleButton
+            to="/chemistry/lab"
+            variant="cyan"
+            size="lg"
+            icon={FlaskConical}
+          >
+            <span>Kimyo Laboratoriyasi</span>
+          </WobbleRippleButton>
+
+          <WobbleRippleButton
             onClick={enterLabVR}
-            variant="secondary"
+            variant="glass"
             size="lg"
-            icon={<PixelSprite name="headset" size={24} />}
+            icon={Glasses}
           >
-            VR rejimda sinash
-          </PixelButton>
+            <span>VR Rejim</span>
+          </WobbleRippleButton>
         </div>
 
-        <PixelSprite
-          name="arrowDown"
-          size={20}
-          className="mt-6 motion-safe:animate-pixel-bob"
-        />
-
-        <div className="relative mt-2 h-[240px] w-full max-w-6xl xs:h-[260px] md:h-[420px] lg:h-[470px]">
-          <HeroStage />
-          <HeroFloatingCards />
+        {/* Centerpiece: 3D HTML-in-Canvas Physical Cloth Simulation */}
+        <div className="relative mt-10 w-full max-w-5xl rounded-3xl bg-zinc-950/40 border border-zinc-800/80 shadow-2xl p-2 sm:p-4 backdrop-blur-xl">
+          <HtmlClothCanvas />
         </div>
       </div>
     </section>

@@ -1,77 +1,132 @@
-import { PixelCard, PixelHeading, PixelSprite } from "@/shared/components/ui/pixel";
-import Reveal from "./Reveal";
+import React from "react";
+import {
+  Layers,
+  Sparkles,
+  FlaskConical,
+  Bot,
+  Glasses,
+  Zap,
+  Cpu,
+  Scissors,
+} from "lucide-react";
 
 const FEATURES = [
   {
-    sprite: "cube",
-    tag: "3D",
-    title: "3D interaktiv modellar",
-    text: "Molekula, hujayra, anatomiya va dvigatelni aylantiring, kattalashtiring va ichidan ko'ring.",
+    icon: Layers,
+    tag: "3D PBR",
+    title: "4K 3D Anatomiya & Kesim",
+    desc: "Inson tanasining 5 ta qatlami: 206 suyak, 600+ mushak va a'zolarni 3D o'qda kesib (slice) ichini o'rganing.",
+    color: "#10b981",
   },
   {
-    sprite: "gear",
-    tag: "SIM",
-    title: "Haqiqiy simulyatsiyalar",
-    text: "Reaksiya, pH, gaz qonunlari va elektron sxemalar fizik-kimyoviy qoidalar asosida hisoblanadi.",
+    icon: Sparkles,
+    tag: "CHROME 155",
+    title: "HTML-in-Canvas Texnologiyasi",
+    desc: "Veb standartlarining eng so'nggi imkoniyati: interaktiv HTML UI to'g'ridan-to'g'ri 3D fizik mato va WebGL teksturalariga chiziladi.",
+    color: "#06b6d4",
   },
   {
-    sprite: "robot",
-    tag: "AI",
-    title: "AI o'qituvchi",
-    text: "Mavzu kontekstini biladigan sun'iy intellekt savolingizga o'sha sahnaning o'zida javob beradi.",
+    icon: FlaskConical,
+    tag: "SIMULYATSIYA",
+    title: "Kimyo & Molekulyar Laboratoriya",
+    desc: "118 ta davriy jadval elementi, pH indikatorlari va realistik kimyoviy reaksiyalar bilan xavfsiz tajribalar.",
+    color: "#3b82f6",
   },
   {
-    sprite: "headset",
-    tag: "VR",
-    title: "VR va WebXR",
-    text: "Telefon uchun Cardboard yoki Quest ko'zoynagi bilan laboratoriyaga ichkaridan kiring.",
+    icon: Bot,
+    tag: "AI ASSISTANT",
+    title: "Aqlli AI Ilmiy Hamroh",
+    desc: "Laboratoriya tajribangizni kuzatib boruvchi sun'iy intellekt savollaringizga real vaqtda javob beradi.",
+    color: "#8b5cf6",
   },
   {
-    sprite: "bubble",
-    tag: "UZ",
-    title: "To'liq o'zbek tilida",
-    text: "Barcha mavzular, atamalar va AI izohlari o'zbek tilida tayyorlangan.",
+    icon: Glasses,
+    tag: "WEBXR",
+    title: "Immersiv VR Laboratoriya",
+    desc: "Meta Quest yoki mobil Cardboard ko'zoynaklari orqali 3D virtual olamga to'liq sho'ng'ing.",
+    color: "#f43f5e",
   },
   {
-    sprite: "phone",
-    tag: "WEB",
-    title: "Brauzerda ishlaydi",
-    text: "O'rnatish va ro'yxatdan o'tish shart emas. Havolani oching, telefonda ham ishlaydi.",
+    icon: Zap,
+    tag: "60 FPS",
+    title: "O'rnatishsiz, Brauzerda Ishlaydi",
+    desc: "Hech qanday og'ir dastur o'rnatish shart emas. Havolani bosing va kompyuter yoki telefonda bir zumda ishga tushiring.",
+    color: "#f59e0b",
   },
 ];
 
-const FeaturesSection = () => (
-  <section className="border-y-2 border-pixel-ink bg-secondary/60 py-16 md:py-24">
-    <div className="container">
-      <Reveal>
-        <PixelHeading
-          centered
-          eyebrow="Imkoniyatlar"
-          eyebrowIcon={<PixelSprite name="bolt" size={14} />}
-          title="Laboratoriyadagi jihozlar"
-          description="Darslikdagi rasm jonli tajribaga aylanadi: ko'ring, o'zgartiring, natijani kuzating."
-        />
-      </Reveal>
+export const FeaturesSection = () => (
+  <section className="py-20 md:py-28 bg-[#090b12] border-y border-zinc-800/80 relative">
+    <div className="container mx-auto px-4">
+      {/* Header */}
+      <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold mb-3">
+          <Sparkles className="w-3.5 h-3.5" />
+          <span>Innovatsion Imkoniyatlar</span>
+        </div>
+        <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
+          Kelajak Ilmiy Laboratoriyasi
+        </h2>
+        <p className="mt-3 text-zinc-400 text-sm md:text-base leading-relaxed">
+          Darslikdagi statik rasmlar endi o'tmishda qoldi. 3D WebGL va sun'iy intellekt kuchi bilan har bir tajribani boshqaring.
+        </p>
+      </div>
 
-      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {FEATURES.map(({ sprite, tag, title, text }, i) => (
-          <Reveal key={title} delay={i * 60} className="h-full">
-            <PixelCard className="group relative h-full p-5">
-              <span className="absolute right-4 top-4 bg-pixel-ink px-1.5 py-0.5 font-pixel text-[11px] font-semibold tracking-wider text-pixel-coin">
-                {tag}
-              </span>
-              <span className="grid size-16 place-items-center rounded-sm border-2 border-dashed border-border bg-background">
-                <PixelSprite
-                  name={sprite}
-                  size={40}
-                  className="transition-transform duration-150 group-hover:-translate-y-1 motion-reduce:transition-none"
-                />
-              </span>
-              <h3 className="mt-4 font-pixel text-xl font-semibold">{title}</h3>
-              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{text}</p>
-            </PixelCard>
-          </Reveal>
-        ))}
+      {/* Cards Grid */}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {FEATURES.map((item) => {
+          const IconComp = item.icon;
+          return (
+            <div
+              key={item.title}
+              className="group p-6 rounded-3xl bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
+            >
+              {/* Subtle hover gradient */}
+              <div
+                className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
+                style={{
+                  background: `radial-gradient(circle at top left, ${item.color}, transparent 70%)`,
+                }}
+              />
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-transform duration-300 group-hover:scale-110"
+                    style={{
+                      backgroundColor: `${item.color}1a`,
+                      borderColor: `${item.color}40`,
+                      color: item.color,
+                    }}
+                  >
+                    <IconComp className="w-6 h-6" />
+                  </div>
+                  <span
+                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border"
+                    style={{
+                      backgroundColor: `${item.color}15`,
+                      color: item.color,
+                      borderColor: `${item.color}33`,
+                    }}
+                  >
+                    {item.tag}
+                  </span>
+                </div>
+
+                <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center text-xs font-semibold text-zinc-500 group-hover:text-emerald-400 transition-colors">
+                <span>Batafsil tanishish ➔</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   </section>

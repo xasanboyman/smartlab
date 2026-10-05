@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import NativeAnatomyCanvas from "./NativeAnatomyCanvas";
 import HtmlInCanvasOverlay from "./HtmlInCanvasOverlay";
-import AnatomiXLogo from "@/shared/components/ui/AnatomiXLogo";
+import NexusLogo from "@/shared/components/ui/NexusLogo";
 import {
   ANATOMY_TOPICS,
   ANATOMY_CATEGORIES,
@@ -371,7 +371,7 @@ const SimulatorPage = () => {
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           </Link>
 
-          <AnatomiXLogo size="md" showSubtitle={false} />
+          <NexusLogo size="sm" showSubtitle={false} />
         </div>
 
         {/* Center: System Pills Filter (Modern Ergonomic Selector) */}
@@ -1156,7 +1156,7 @@ const SimulatorPage = () => {
             <div className="p-3 border-t border-zinc-800/80 bg-zinc-950/60 text-[10px] text-zinc-500 flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>AnatomiX 3D WebGL Engine</span>
+                <span>NexusLab 3D WebGL Engine</span>
               </div>
               <span className="font-mono text-zinc-400">v2.5 Pro</span>
             </div>
@@ -1165,7 +1165,7 @@ const SimulatorPage = () => {
 
         {/* ---------------- WATERMARK & DEVELOPER CREDITS ---------------- */}
         <div className="absolute bottom-3 right-4 z-10 text-[10px] text-zinc-500 font-mono tracking-wider pointer-events-none select-none flex items-center gap-2">
-          <span>AnatomiX 3D Studio</span>
+          <span>NexusLab 3D Studio</span>
           <span>•</span>
           <span>Muallif: Abdulkhayev Hasanboy (@xasanboyman)</span>
         </div>

@@ -1,4 +1,4 @@
-const STORAGE_KEY = "smartlab:lab-room:settings";
+const STORAGE_KEY = "nexuslab:lab-room:settings";
 
 export const DEFAULT_SETTINGS = {
   quality: null,

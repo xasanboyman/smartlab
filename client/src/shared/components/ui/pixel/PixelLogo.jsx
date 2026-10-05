@@ -1,25 +1,5 @@
-import { Link } from "react-router-dom";
-import { cn } from "@/shared/utils/cn";
-import PixelSprite from "./PixelSprite";
+import NexusLogo from "@/shared/components/ui/NexusLogo";
 
-const PixelLogo = ({ to = "/", size = 30, className }) => (
-  <Link
-    to={to}
-    className={cn(
-      "group flex items-center gap-2.5 font-pixel text-2xl font-bold leading-none text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-      className,
-    )}
-  >
-    <PixelSprite
-      name="logo"
-      size={size}
-      title="Smartlab"
-      className="transition-transform duration-200 group-hover:-rotate-6 motion-reduce:transition-none"
-    />
-    <span>
-      Smart<span className="text-primary">lab</span>
-    </span>
-  </Link>
-);
+export const PixelLogo = (props) => <NexusLogo {...props} />;
 
 export default PixelLogo;
