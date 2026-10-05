@@ -557,6 +557,6 @@ export const getAnatomyTopic = (id) =>
 export const getSketchfabTopic = getAnatomyTopic;
 export const SKETCHFAB_TOPICS = ANATOMY_TOPICS;
 
-export const DISCLAIMER = "NexusLab 3D — Next-Gen Interaktiv Odam Anatomiyasi & Ilmiy Simulyatori ta'limiy va ilmiy maqsadlar uchun ishlab chiqilgan.";
+export const DISCLAIMER = "SmartLab 3D — Next-Gen Interaktiv Odam Anatomiyasi & Ilmiy Simulyatori ta'limiy va ilmiy maqsadlar uchun ishlab chiqilgan.";
 
 

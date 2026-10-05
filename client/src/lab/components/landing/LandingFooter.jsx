@@ -12,7 +12,7 @@ const LandingFooter = () => (
         <div className="space-y-4 sm:col-span-2">
           <NexusLogo size="md" showSubtitle={true} />
           <p className="max-w-md text-sm leading-relaxed text-zinc-400">
-            NexusLab 3D — fanlarni 3D interaktiv simulyatsiya, WebGL PBR, Chrome HTML-in-Canvas va sun'iy intellekt hamrohligida chuqur o'rganish uchun mo'ljallangan universal virtual laboratoriya platformasi.
+            SmartLab 3D — fanlarni 3D interaktiv simulyatsiya, WebGL PBR, Chrome HTML-in-Canvas va sun'iy intellekt hamrohligida chuqur o'rganish uchun mo'ljallangan universal virtual laboratoriya platformasi.
           </p>
           <div className="flex flex-wrap gap-2 pt-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
@@ -93,7 +93,7 @@ const LandingFooter = () => (
       {/* Bottom bar */}
       <div className="mt-12 pt-6 border-t border-zinc-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400">
         <div>
-          © {new Date().getFullYear()} <span className="text-zinc-200 font-semibold">NexusLab 3D</span>. Barcha huquqlar himoyalangan.
+          © {new Date().getFullYear()} <span className="text-zinc-200 font-semibold">SmartLab 3D</span>. Barcha huquqlar himoyalangan.
         </div>
         <div className="flex items-center gap-4">
           <a

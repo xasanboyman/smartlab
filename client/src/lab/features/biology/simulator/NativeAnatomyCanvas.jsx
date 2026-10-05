@@ -83,11 +83,16 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
   const lightsRef = useRef(null);
+  const podGroupRef = useRef(null);
   const meshesRef = useRef(new Map());
   const slicePlaneRef = useRef(new THREE.Plane(new THREE.Vector3(1, 0, 0), 0));
   const sliceHelperRef = useRef(null);
   const modelGroupRef = useRef(null);
   const modelBoundsRef = useRef(new THREE.Box3());
+
+  // Smooth camera interpolation targets
+  const cameraTargetPosRef = useRef(null);
+  const cameraTargetLookRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [loadProgress, setLoadProgress] = useState(0);
@@ -104,39 +109,46 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     activeTopicRef.current = activeTopic;
   }, [activeTopic]);
 
+  // Smoothly glide camera to destination
+  const glideCameraTo = useCallback((targetPos, targetLook) => {
+    cameraTargetPosRef.current = new THREE.Vector3(...targetPos);
+    cameraTargetLookRef.current = new THREE.Vector3(...targetLook);
+  }, []);
+
   // Expose camera controls & instances for HTML-in-Canvas overlays
   useImperativeHandle(ref, () => ({
     getCamera: () => cameraRef.current,
     getContainer: () => containerRef.current,
     recenter: () => {
-      if (!controlsRef.current || !cameraRef.current) return;
-      controlsRef.current.target.set(0, 0, 0);
-      cameraRef.current.position.set(-150, 10, 150);
-      controlsRef.current.update();
+      glideCameraTo([-105, 12, 105], [0, 0, 0]);
+    },
+    focusRegion: (region) => {
+      const regions = {
+        head: { target: [0, 68, 2], pos: [-42, 70, 42] },
+        chest: { target: [0, 38, 4], pos: [-52, 40, 52] },
+        abdomen: { target: [0, 20, 4], pos: [-48, 22, 48] },
+        pelvis: { target: [0, 4, 2], pos: [-48, 6, 48] },
+        legs: { target: [0, -42, 2], pos: [-65, -40, 65] },
+        all: { target: [0, 0, 0], pos: [-105, 12, 105] },
+      };
+      const cfg = regions[region] || regions.all;
+      glideCameraTo(cfg.pos, cfg.target);
     },
     focusPosition: (pos, distance = 45) => {
-      if (!controlsRef.current || !cameraRef.current) return;
-      controlsRef.current.target.set(pos[0], pos[1], pos[2]);
-      cameraRef.current.position.set(pos[0] - distance, pos[1] + 8, pos[2] + distance);
-      controlsRef.current.update();
+      glideCameraTo([pos[0] - distance, pos[1] + 8, pos[2] + distance], [pos[0], pos[1], pos[2]]);
     },
     focusMesh: (meshName) => {
       const mesh = meshesRef.current.get(meshName);
-      if (mesh && controlsRef.current && cameraRef.current) {
+      if (mesh) {
         const box = new THREE.Box3().setFromObject(mesh);
         const center = new THREE.Vector3();
         box.getCenter(center);
-        controlsRef.current.target.copy(center);
-        cameraRef.current.position.set(center.x - 30, center.y + 5, center.z + 35);
-        controlsRef.current.update();
+        glideCameraTo([center.x - 30, center.y + 5, center.z + 35], [center.x, center.y, center.z]);
       }
     },
     focusTopic: (topic) => {
-      if (!controlsRef.current || !cameraRef.current) return;
       if (!topic || topic.id === "all") {
-        controlsRef.current.target.set(0, 0, 0);
-        cameraRef.current.position.set(-150, 10, 150);
-        controlsRef.current.update();
+        glideCameraTo([-105, 12, 105], [0, 0, 0]);
         return;
       }
       const box = new THREE.Box3();
@@ -154,11 +166,10 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         box.getCenter(center);
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z);
-        const dist = Math.max(maxDim * 1.5, 14);
-        controlsRef.current.target.copy(center);
+        const dist = Math.max(maxDim * 1.5, 16);
         const dir = new THREE.Vector3(-1.0, 0.15, 1.0).normalize();
-        cameraRef.current.position.copy(center).addScaledVector(dir, dist);
-        controlsRef.current.update();
+        const endPos = center.clone().addScaledVector(dir, dist);
+        glideCameraTo([endPos.x, endPos.y, endPos.z], [center.x, center.y, center.z]);
       }
     },
   }));
@@ -173,28 +184,94 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color("#08090d");
+    scene.background = null; // Let the radial gradient from container shine through
     sceneRef.current = scene;
     window.__anatomyScene = scene;
 
-    // Camera
+    // Camera — positioned closer so human model stands tall and fills viewport
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
-    camera.position.set(-150, 10, 150);
+    camera.position.set(-105, 12, 105);
     cameraRef.current = camera;
     window.__anatomyCamera = camera;
 
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+    // Renderer with transparent canvas
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.localClippingEnabled = true;
     rendererRef.current = renderer;
     setupCanvasDrawable(renderer.domElement);
     container.appendChild(renderer.domElement);
+
+    // Floor Contact Shadow & Scanning Pedestal at y = -86.3
+    const podGroup = new THREE.Group();
+    podGroup.position.y = -86.3;
+
+    // 1. Soft Circular Radial Contact Shadow
+    const shadowCanvas = document.createElement("canvas");
+    shadowCanvas.width = 256;
+    shadowCanvas.height = 256;
+    const sctx = shadowCanvas.getContext("2d");
+    const sgrad = sctx.createRadialGradient(128, 128, 10, 128, 128, 128);
+    sgrad.addColorStop(0, "rgba(0, 0, 0, 0.85)");
+    sgrad.addColorStop(0.35, "rgba(0, 0, 0, 0.45)");
+    sgrad.addColorStop(0.7, "rgba(0, 0, 0, 0.15)");
+    sgrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+    sctx.fillStyle = sgrad;
+    sctx.fillRect(0, 0, 256, 256);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const shadowGeo = new THREE.PlaneGeometry(85, 85);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: shadowTex,
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.85,
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.05;
+    podGroup.add(shadowMesh);
+
+    // 2. Concentric Holographic Cyber Rings
+    const ringGeo1 = new THREE.RingGeometry(36, 36.6, 64);
+    const ringMat1 = new THREE.MeshBasicMaterial({
+      color: 0x10b981,
+      transparent: true,
+      opacity: 0.45,
+      side: THREE.DoubleSide,
+    });
+    const ringMesh1 = new THREE.Mesh(ringGeo1, ringMat1);
+    ringMesh1.rotation.x = Math.PI / 2;
+    podGroup.add(ringMesh1);
+
+    const ringGeo2 = new THREE.RingGeometry(24, 24.5, 48);
+    const ringMat2 = new THREE.MeshBasicMaterial({
+      color: 0x06b6d4,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
+    });
+    const ringMesh2 = new THREE.Mesh(ringGeo2, ringMat2);
+    ringMesh2.rotation.x = Math.PI / 2;
+    podGroup.add(ringMesh2);
+
+    const ringGeo3 = new THREE.RingGeometry(46, 46.8, 64);
+    const ringMat3 = new THREE.MeshBasicMaterial({
+      color: 0x8b5cf6,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.DoubleSide,
+    });
+    const ringMesh3 = new THREE.Mesh(ringGeo3, ringMat3);
+    ringMesh3.rotation.x = Math.PI / 2;
+    podGroup.add(ringMesh3);
+
+    scene.add(podGroup);
+    podGroupRef.current = podGroup;
 
     // Realistic Medical Studio Environment (IBL for subtle softbox reflections)
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
@@ -295,6 +372,21 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     const animate = () => {
       animId = requestAnimationFrame(animate);
       controls.update();
+
+      // Slowly rotate floor hologram rings
+      if (podGroupRef.current) {
+        podGroupRef.current.rotation.y += 0.003;
+      }
+
+      // Smooth camera glide interpolation
+      if (cameraTargetPosRef.current && cameraTargetLookRef.current) {
+        camera.position.lerp(cameraTargetPosRef.current, 0.075);
+        controls.target.lerp(cameraTargetLookRef.current, 0.075);
+        if (camera.position.distanceTo(cameraTargetPosRef.current) < 0.1) {
+          cameraTargetPosRef.current = null;
+          cameraTargetLookRef.current = null;
+        }
+      }
 
       // Subtle biological pulse when Heart is active
       if (activeTopicRef.current?.id === "heart") {
@@ -618,7 +710,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
   }, [autoRotate, autoRotateSpeed]);
 
   return (
-    <div className="w-full h-full relative select-none overflow-hidden bg-[#08090d]">
+    <div className="w-full h-full relative select-none overflow-hidden bg-[radial-gradient(ellipse_90%_80%_at_50%_35%,#131d33_0%,#090e1b_50%,#03050a_100%)]">
       <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Loading Overlay */}

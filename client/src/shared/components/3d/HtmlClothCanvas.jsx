@@ -22,14 +22,14 @@ export const HtmlClothCanvas = ({ className = "" }) => {
 
   const [activeSubject, setActiveSubject] = useState("biology");
   const [clothPreset, setClothPreset] = useState("silk"); // "silk" | "cyber" | "banner"
-  const [speechText, setSpeechText] = useState("NexusLab 3D virtual ilmiy laboratoriyasiga xush kelibsiz! 🧬");
+  const [speechText, setSpeechText] = useState("SmartLab 3D virtual ilmiy laboratoriyasiga xush kelibsiz! 🧬");
   const [isPointerDown, setIsPointerDown] = useState(false);
   const [supportInfo, setSupportInfo] = useState({ supported: false, version: null });
 
   const stateRef = useRef({
     activeSubject: "biology",
     clothPreset: "silk",
-    speechText: "NexusLab 3D virtual ilmiy laboratoriyasiga xush kelibsiz! 🧬",
+    speechText: "SmartLab 3D virtual ilmiy laboratoriyasiga xush kelibsiz! 🧬",
     lastSpeak: Date.now(),
   });
 
@@ -95,7 +95,7 @@ export const HtmlClothCanvas = ({ className = "" }) => {
 
     // SPEECH CHATTER LINES (Curtis / Mira AI from html-cloth.mjs)
     const SPEECHES = [
-      "NexusLab 3D virtual ilmiy laboratoriyasiga xush kelibsiz! 🧬",
+      "SmartLab 3D virtual ilmiy laboratoriyasiga xush kelibsiz! 🧬",
       "4K PBR inson tanasining 6 ta anatomik qatlamini 3D kesib ko'ring! 🔬",
       "Kimyo xonasida real reaksiyalar va pH simulyatsiyasi kutmoqda! 🧪",
       "Chrome HTML-in-Canvas: veb interfeys bevosita 3D teksturaga chiziladi! ✨",
@@ -175,7 +175,7 @@ export const HtmlClothCanvas = ({ className = "" }) => {
       ctx.font = "bold 16px 'Inter', sans-serif";
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
-      ctx.fillText("NEXUSLAB 3D • UNIVERSAL INTERACTIVE SCIENCE STUDIO", 60, 51);
+      ctx.fillText("SMARTLAB 3D • UNIVERSAL INTERACTIVE SCIENCE STUDIO", 60, 51);
 
       ctx.font = "bold 12px monospace";
       ctx.fillStyle = "#34d399";
