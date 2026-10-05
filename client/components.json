@@ -14,5 +14,8 @@
     "utils": "src/shared/utils/cn.js",
     "ui": "src/shared/components/shadcn",
     "components": "src/shared/components"
+  },
+  "registries": {
+    "@canvas-ui": "https://canvasui.dev/r/{name}.json"
   }
 }

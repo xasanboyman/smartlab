@@ -1,3 +1,10 @@
+export { default as Liquid, Liquid as LiquidComponent } from "./Liquid";
+export { default as Cloth, Cloth as ClothComponent } from "./Cloth";
+export { default as Shatter, Shatter as ShatterComponent } from "./Shatter";
+export { default as Laser, Laser as LaserComponent } from "./Laser";
+export { default as Ripple, Ripple as RippleComponent } from "./Ripple";
+export { default as Glass, Glass as GlassComponent } from "./Glass";
+export { default as Bubble, Bubble as BubbleComponent } from "./Bubble";
 export { default as Bend, Bend as BendComponent, supportsHtmlInCanvas as supportsBend } from "./Bend";
 export { default as DecryptReveal, DecryptReveal as DecryptRevealComponent } from "./DecryptReveal";
 export { default as FlameWrap, FlameWrap as FlameWrapComponent } from "./FlameWrap";
