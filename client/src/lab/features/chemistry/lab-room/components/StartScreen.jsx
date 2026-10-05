@@ -1,11 +1,15 @@
+import React, { useState } from "react";
 import { useProgress } from "@react-three/drei";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Box, Check, Glasses, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Box, Check, Glasses, Play, Sparkles, FlaskConical, Layers } from "lucide-react";
 import Button from "@/shared/components/ui/button/Button";
 import { cn } from "@/shared/utils/cn";
 import { BACK_LABEL, BACK_TO, SUBTITLE, TEXT, TITLE } from "../data/labRoomContent";
 import KeyCap from "./KeyCap";
 import QualityPicker from "./QualityPicker";
+import DecryptHeader from "@/shared/components/ui/DecryptHeader";
+import FlameButton from "@/shared/components/3d/html-in-canvas/FlameButton";
+import GlassShowcaseModal from "@/shared/components/ui/GlassShowcaseModal";
 
 const COMPACT_CONTROLS = [
   { keys: ["W", "A", "S", "D"], label: "Yurish" },
@@ -50,156 +54,186 @@ const StartScreen = ({
   onToggleVr,
   onQuality,
   onEnter,
-}) => (
-  <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 bg-gradient-to-b from-[#06080e]/90 via-[#070a12]/80 to-[#04060a]/95 backdrop-blur-md text-white select-none">
-    <div className="relative w-full max-w-2xl rounded-3xl bg-zinc-950/90 border border-zinc-800/80 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-2xl p-6 sm:p-7 flex flex-col gap-5">
-      {/* Header Bar */}
-      <div className="flex items-center justify-between gap-4 border-b border-zinc-800/60 pb-3">
-        <Link
-          to={BACK_TO}
-          className="group inline-flex items-center gap-2 rounded-full bg-zinc-900/90 px-3.5 py-1.5 text-xs font-medium text-zinc-400 border border-zinc-800 transition hover:bg-zinc-800 hover:text-white"
-        >
-          <ArrowLeft className="size-3.5 transition group-hover:-translate-x-0.5" />
-          {BACK_LABEL}
-        </Link>
+}) => {
+  const [isGlassModalOpen, setIsGlassModalOpen] = useState(false);
 
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
-            SmartLab 3D
-          </span>
-        </div>
-
-        {onToggleVr && (
-          <button
-            type="button"
-            onClick={onToggleVr}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold border transition-all cursor-pointer",
-              vrMode
-                ? "bg-emerald-500/20 border-emerald-400/80 text-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.3)]"
-                : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800",
-            )}
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-6 bg-gradient-to-b from-[#06080e]/90 via-[#070a12]/80 to-[#04060a]/95 backdrop-blur-md text-white select-none">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-zinc-950/90 border border-zinc-800/80 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] backdrop-blur-2xl p-6 sm:p-7 flex flex-col gap-5">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between gap-4 border-b border-zinc-800/60 pb-3">
+          <Link
+            to={BACK_TO}
+            className="group inline-flex items-center gap-2 rounded-full bg-zinc-900/90 px-3.5 py-1.5 text-xs font-medium text-zinc-400 border border-zinc-800 transition hover:bg-zinc-800 hover:text-white"
           >
-            <Glasses className="size-3.5" />
-            <span>{vrMode ? "VR Cardboard: Faol" : "VR Cardboard"}</span>
-          </button>
-        )}
-      </div>
+            <ArrowLeft className="size-3.5 transition group-hover:-translate-x-0.5" />
+            {BACK_LABEL}
+          </Link>
 
-      {/* Hero Title & Description */}
-      <div>
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-            {TITLE}
-          </h1>
-          {vrMode && (
-            <span className="rounded-full bg-emerald-500/20 border border-emerald-400/50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-300 tracking-wider uppercase">
-              VR Stereo
+          <div className="flex items-center gap-2">
+            <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
+              SmartLab 3D
             </span>
-          )}
-        </div>
-        <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-xl">
-          {SUBTITLE}
-        </p>
-      </div>
+          </div>
 
-      {/* Controls Grid (2 columns, 4 rows = compact & clean) */}
-      <section className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-4">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-3 flex items-center justify-between">
-          <span>{TEXT.controls}</span>
-          <span className="text-[10px] lowercase text-zinc-400 font-normal">Esc — menyu</span>
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-          {COMPACT_CONTROLS.map((control) => (
-            <div key={control.label} className="flex items-center justify-between gap-3 text-xs">
-              <span className="flex flex-wrap gap-1 shrink-0">
-                {control.keys.map((key) => (
-                  <KeyCap key={key}>{key}</KeyCap>
-                ))}
-              </span>
-              <span className="text-zinc-300 text-right truncate">{control.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Quality & Mode Selectors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <QualityPicker tier={tier} recommended={recommended} onChange={onQuality} />
-
-        <section>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-3">
-            Ko'rish rejimi
-          </h2>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={onToggleVr ? () => vrMode && onToggleVr() : undefined}
-              className={cn(
-                "flex flex-col items-start gap-1 rounded-lg border px-3.5 py-2.5 text-left transition-all",
-                !vrMode
-                  ? "border-emerald-400 bg-emerald-500/15 text-white shadow-[0_0_12px_rgba(52,211,153,0.15)]"
-                  : "border-zinc-800/80 bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 hover:text-white",
-              )}
+              onClick={() => setIsGlassModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all cursor-pointer"
+              title="Shisha refraksiya va dispersiya modelini ko'rish"
             >
-              <span className="flex items-center gap-1.5 text-xs font-semibold">
-                <Box className="size-3.5" />
-                Monitor 3D
-              </span>
-              <span className="text-[10px] text-zinc-400">Kompyuter ekrani</span>
+              <FlaskConical className="size-3.5" />
+              <span className="hidden sm:inline">3D Shisha Kolba</span>
             </button>
 
-            <button
-              type="button"
-              onClick={onToggleVr ? () => !vrMode && onToggleVr() : undefined}
-              className={cn(
-                "flex flex-col items-start gap-1 rounded-lg border px-3.5 py-2.5 text-left transition-all",
-                vrMode
-                  ? "border-emerald-400 bg-emerald-500/15 text-emerald-200 shadow-[0_0_12px_rgba(52,211,153,0.2)]"
-                  : "border-zinc-800/80 bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 hover:text-white",
-              )}
-            >
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+            {onToggleVr && (
+              <button
+                type="button"
+                onClick={onToggleVr}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold border transition-all cursor-pointer",
+                  vrMode
+                    ? "bg-emerald-500/20 border-emerald-400/80 text-emerald-300 shadow-[0_0_12px_rgba(52,211,153,0.3)]"
+                    : "bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800",
+                )}
+              >
                 <Glasses className="size-3.5" />
-                VR Cardboard
+                <span>{vrMode ? "VR Cardboard: Faol" : "VR Cardboard"}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Hero Title & Description with Decrypt Header */}
+        <div>
+          <div className="flex items-center gap-2.5">
+            <DecryptHeader
+              text={TITLE}
+              color="#34d399"
+              className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent"
+            />
+            {vrMode && (
+              <span className="rounded-full bg-emerald-500/20 border border-emerald-400/50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-300 tracking-wider uppercase">
+                VR Stereo
               </span>
-              <span className="text-[10px] text-zinc-400">Stereo 3D split</span>
-            </button>
+            )}
+          </div>
+          <p className="mt-1.5 text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-xl">
+            {SUBTITLE}
+          </p>
+        </div>
+
+        {/* Controls Grid */}
+        <section className="rounded-2xl bg-zinc-900/40 border border-zinc-800/60 p-4">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-3 flex items-center justify-between">
+            <span>{TEXT.controls}</span>
+            <span className="text-[10px] lowercase text-zinc-400 font-normal">Esc — menyu</span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+            {COMPACT_CONTROLS.map((control) => (
+              <div key={control.label} className="flex items-center justify-between gap-3 text-xs">
+                <span className="flex flex-wrap gap-1 shrink-0">
+                  {control.keys.map((key) => (
+                    <KeyCap key={key}>{key}</KeyCap>
+                  ))}
+                </span>
+                <span className="text-zinc-300 text-right truncate">{control.label}</span>
+              </div>
+            ))}
           </div>
         </section>
+
+        {/* Quality & Mode Selectors */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <QualityPicker tier={tier} recommended={recommended} onChange={onQuality} />
+
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-3">
+              Ko'rish rejimi
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={onToggleVr ? () => vrMode && onToggleVr() : undefined}
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-lg border px-3.5 py-2.5 text-left transition-all",
+                  !vrMode
+                    ? "border-emerald-400 bg-emerald-500/15 text-white shadow-[0_0_12px_rgba(52,211,153,0.15)]"
+                    : "border-zinc-800/80 bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                )}
+              >
+                <span className="flex items-center gap-1.5 text-xs font-semibold">
+                  <Box className="size-3.5" />
+                  Monitor 3D
+                </span>
+                <span className="text-[10px] text-zinc-400">Kompyuter ekrani</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onToggleVr ? () => !vrMode && onToggleVr() : undefined}
+                className={cn(
+                  "flex flex-col items-start gap-1 rounded-lg border px-3.5 py-2.5 text-left transition-all",
+                  vrMode
+                    ? "border-emerald-400 bg-emerald-500/15 text-emerald-200 shadow-[0_0_12px_rgba(52,211,153,0.2)]"
+                    : "border-zinc-800/80 bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 hover:text-white",
+                )}
+              >
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+                  <Glasses className="size-3.5" />
+                  VR Cardboard
+                </span>
+                <span className="text-[10px] text-zinc-400">Stereo 3D split</span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        {/* Action Footer with Flame Button */}
+        <div className="space-y-3 pt-1">
+          <LoadingProgress ready={ready} />
+          {placeholder && ready && <p className="text-xs text-amber-300/90">{TEXT.placeholder}</p>}
+          {lockHint && <p className="text-xs text-amber-300 text-center">{TEXT.lockHint}</p>}
+          
+          <FlameButton
+            flameColor={[0.2, 0.9, 0.65]}
+            height={85}
+            spread={12}
+            sparks={2.0}
+            disabled={!ready}
+            onClick={onEnter}
+            className={cn(
+              "group relative flex h-12 w-full items-center justify-center gap-2.5 rounded-xl font-bold text-sm transition-all shadow-xl cursor-pointer px-6",
+              ready
+                ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white hover:brightness-110 active:scale-[0.99] shadow-emerald-500/25"
+                : "bg-zinc-800 text-zinc-500 cursor-not-allowed",
+            )}
+          >
+            {ready ? (
+              <>
+                <Sparkles className="size-4 transition-transform group-hover:scale-110" />
+                <span>{vrMode ? "VR Laboratoriyasiga kirish" : "Laboratoriyaga kirish"}</span>
+                <Play className="size-3.5 fill-current ml-1" />
+              </>
+            ) : (
+              <span>{TEXT.loading}...</span>
+            )}
+          </FlameButton>
+        </div>
       </div>
 
-      {/* Action Footer */}
-      <div className="space-y-3 pt-1">
-        <LoadingProgress ready={ready} />
-        {placeholder && ready && <p className="text-xs text-amber-300/90">{TEXT.placeholder}</p>}
-        {lockHint && <p className="text-xs text-amber-300 text-center">{TEXT.lockHint}</p>}
-        
-        <button
-          type="button"
-          disabled={!ready}
-          onClick={onEnter}
-          className={cn(
-            "group relative flex h-12 w-full items-center justify-center gap-2.5 rounded-xl font-semibold text-sm transition-all shadow-xl cursor-pointer",
-            ready
-              ? "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white hover:brightness-110 active:scale-[0.99] shadow-emerald-500/25"
-              : "bg-zinc-800 text-zinc-500 cursor-not-allowed",
-          )}
-        >
-          {ready ? (
-            <>
-              <Sparkles className="size-4 transition-transform group-hover:scale-110" />
-              <span>{vrMode ? "VR Laboratoriyasiga kirish" : "Laboratoriyaga kirish"}</span>
-              <Play className="size-3.5 fill-current ml-1" />
-            </>
-          ) : (
-            <span>{TEXT.loading}...</span>
-          )}
-        </button>
-      </div>
+      {/* 3D Glass Object Modal */}
+      <GlassShowcaseModal
+        isOpen={isGlassModalOpen}
+        onClose={() => setIsGlassModalOpen(false)}
+        modelSrc="/models/flask-lab.glb"
+        title="Kimyoviy Shisha Kolba (3D Glass Refraction)"
+        subtitle="Haqiqiy shisha optikasi, xromatik dispersiya va yorug'lik sinishi"
+      />
     </div>
-  </div>
-);
+  );
+};
 
 export default StartScreen;

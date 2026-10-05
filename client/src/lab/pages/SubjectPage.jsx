@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import WobbleRippleButton from "@/shared/components/3d/html-in-canvas/WobbleRippleButton";
 import CompizCard from "@/shared/components/3d/html-in-canvas/CompizCard";
+import BendCard from "@/shared/components/3d/html-in-canvas/BendCard";
+import DecryptHeader from "@/shared/components/ui/DecryptHeader";
 
 const SUBJECT_ICONS = {
   chemistry: FlaskConical,
@@ -84,9 +86,11 @@ const SubjectPage = () => {
                   {subject.topics.length} ta interaktiv mavzu
                 </span>
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-                {subject.title}
-              </h1>
+              <DecryptHeader
+                text={subject.title}
+                color={subject.color || "#10b981"}
+                className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight"
+              />
               <p className="mt-1 text-sm text-zinc-400 max-w-xl">
                 {subject.short}
               </p>

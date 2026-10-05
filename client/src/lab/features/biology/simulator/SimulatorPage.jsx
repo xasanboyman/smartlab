@@ -59,6 +59,10 @@ import {
   ANATOMICAL_PINS,
 } from "./engine/HtmlCanvasManager";
 import { anatomyAudio } from "./engine/AnatomyAudio";
+import DecryptHeader from "@/shared/components/ui/DecryptHeader";
+import GlassShowcaseModal from "@/shared/components/ui/GlassShowcaseModal";
+import BendCard from "@/shared/components/3d/html-in-canvas/BendCard";
+import Canvas from "@/shared/components/canvas-ui/Canvas";
 
 const ICON_MAP = {
   Bone,
@@ -103,6 +107,8 @@ const SimulatorPage = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState("tuzilish"); // "tuzilish" | "azolar" | "asboblar"
   const [activeRegion, setActiveRegion] = useState("all");
+  const [isGlassModalOpen, setIsGlassModalOpen] = useState(false);
+  const [isCanvasMode, setIsCanvasMode] = useState(false);
 
   // 360° Turntable Auto-rotation
   const [autoRotate, setAutoRotate] = useState(false);
@@ -532,6 +538,36 @@ const SimulatorPage = () => {
             <MapPin className="w-4 h-4" />
           </button>
 
+          {/* 3D Glass Object Showcase */}
+          <button
+            onClick={() => {
+              anatomyAudio.playClick();
+              setIsGlassModalOpen(true);
+            }}
+            className="px-2.5 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border-cyan-500/30 cursor-pointer"
+            title="3D Shisha Kristal Nur Sinishi (GlassObject)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden lg:inline text-xs">3D Kristall</span>
+          </button>
+
+          {/* Da Vinci Canvas Mode Toggle */}
+          <button
+            onClick={() => {
+              anatomyAudio.playClick();
+              setIsCanvasMode((prev) => !prev);
+            }}
+            className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+              isCanvasMode
+                ? "bg-amber-500/20 text-amber-200 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                : "bg-zinc-900/90 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
+            }`}
+            title="Da Vinchi Badiiy Kanop Rejimi (CanvasUI)"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline text-xs">{isCanvasMode ? "Kanop: Faol" : "Kanop"}</span>
+          </button>
+
           {/* Studio Lighting Switcher */}
           <div className="relative">
             <button
@@ -641,29 +677,54 @@ const SimulatorPage = () => {
 
       {/* ---------------- MAIN 3D HOLODECK VIEWPORT ---------------- */}
       <main className="flex-1 w-full h-full relative overflow-hidden bg-[radial-gradient(ellipse_90%_80%_at_50%_35%,#131d33_0%,#090e1b_50%,#03050a_100%)]">
-        {/* 3D Native Three.js WebGL Canvas */}
-        <div className="w-full h-full relative">
-          <NativeAnatomyCanvas
-            ref={canvasRef}
-            layerOpacities={layerOpacities}
-            layerVisibilities={layerVisibilities}
-            activeTopic={activeTopic}
-            sliceConfig={sliceConfig}
-            lightingPreset={lightingPreset}
-            autoRotate={autoRotate}
-            autoRotateSpeed={autoRotateSpeed}
-            onPick={handlePick}
-          />
+        {/* 3D Native Three.js WebGL Canvas with Da Vinci Woven Canvas Mode */}
+        {isCanvasMode ? (
+          <Canvas className="w-full h-full relative">
+            <div className="w-full h-full relative">
+              <NativeAnatomyCanvas
+                ref={canvasRef}
+                layerOpacities={layerOpacities}
+                layerVisibilities={layerVisibilities}
+                activeTopic={activeTopic}
+                sliceConfig={sliceConfig}
+                lightingPreset={lightingPreset}
+                autoRotate={autoRotate}
+                autoRotateSpeed={autoRotateSpeed}
+                onPick={handlePick}
+              />
 
-          {/* Chrome HTML-in-Canvas Spatial Overlay with Laser Leader-Lines */}
-          <HtmlInCanvasOverlay
-            camera={cameraInstance}
-            containerRef={containerRef}
-            enabled={pinsEnabled}
-            onSelectPin={handleSelectPin}
-            activePinId={activePinId}
-          />
-        </div>
+              <HtmlInCanvasOverlay
+                camera={cameraInstance}
+                containerRef={containerRef}
+                enabled={pinsEnabled}
+                onSelectPin={handleSelectPin}
+                activePinId={activePinId}
+              />
+            </div>
+          </Canvas>
+        ) : (
+          <div className="w-full h-full relative">
+            <NativeAnatomyCanvas
+              ref={canvasRef}
+              layerOpacities={layerOpacities}
+              layerVisibilities={layerVisibilities}
+              activeTopic={activeTopic}
+              sliceConfig={sliceConfig}
+              lightingPreset={lightingPreset}
+              autoRotate={autoRotate}
+              autoRotateSpeed={autoRotateSpeed}
+              onPick={handlePick}
+            />
+
+            <HtmlInCanvasOverlay
+              camera={cameraInstance}
+              containerRef={containerRef}
+              enabled={pinsEnabled}
+              onSelectPin={handleSelectPin}
+              activePinId={activePinId}
+            />
+          </div>
+        )}
 
         {/* ---------------- FLOATING CAMERA FOCUS REGION BAR (TOP CENTER) ---------------- */}
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
@@ -851,7 +912,8 @@ const SimulatorPage = () => {
         {/* ---------------- BOTTOM 3D SLICING & SCAN CONSOLE (CT/MRI) ---------------- */}
         {sliceCutOn && (
           <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-auto w-full max-w-2xl px-4 select-none">
-            <div className="bg-zinc-950/90 backdrop-blur-2xl border border-amber-500/40 rounded-3xl p-4 shadow-2xl space-y-3.5 animate-in fade-in slide-in-from-bottom-3 duration-200">
+            <BendCard zone={30} angle={10} perspective={1400} tilt={0.15} className="w-full">
+              <div className="bg-zinc-950/90 backdrop-blur-2xl border border-amber-500/40 rounded-3xl p-4 shadow-2xl space-y-3.5 animate-in fade-in slide-in-from-bottom-3 duration-200">
               {/* Row 1: Header + Axis Selector + Close/Delete */}
               <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -1101,27 +1163,32 @@ const SimulatorPage = () => {
                 </div>
               )}
             </div>
-          </div>
-        )}
+          </BendCard>
+        </div>
+      )}
 
         {/* ---------------- RIGHT FLOATING SCIENTIFIC HUD PANEL ---------------- */}
         {isDetailOpen && (
-          <aside className="absolute right-4 top-4 bottom-4 w-80 md:w-96 bg-zinc-950/85 backdrop-blur-2xl border border-zinc-800/80 rounded-3xl shadow-2xl z-20 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
-            {/* HUD Header */}
-            <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                  <ActiveIcon className="w-5 h-5 text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-bold text-white truncate">
-                    {activeTopic.title}
-                  </h2>
-                  <div className="text-[11px] text-zinc-400 italic truncate">
-                    {activeTopic.latin}
+          <div className="absolute right-4 top-4 bottom-4 w-80 md:w-96 z-20 pointer-events-auto">
+            <BendCard zone={40} angle={12} perspective={1200} tilt={0.25} className="h-full">
+              <aside className="w-full h-full bg-zinc-950/85 backdrop-blur-2xl border border-zinc-800/80 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-200">
+                {/* HUD Header */}
+                <div className="p-4 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/40">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                      <ActiveIcon className="w-5 h-5 text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <DecryptHeader
+                        text={activeTopic.title}
+                        color="#10b981"
+                        className="text-sm font-bold text-white truncate"
+                      />
+                      <div className="text-[11px] text-zinc-400 italic truncate">
+                        {activeTopic.latin}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
                 {/* Audio Voice Narration with Visualizer Equalizer */}
@@ -1335,7 +1402,9 @@ const SimulatorPage = () => {
               <span className="font-mono text-zinc-400">v3.0 Pro</span>
             </div>
           </aside>
-        )}
+        </BendCard>
+      </div>
+    )}
 
         {/* ---------------- WATERMARK & DEVELOPER CREDITS ---------------- */}
         <div className="absolute bottom-3 right-4 z-10 text-[10px] text-zinc-500 font-mono tracking-wider pointer-events-none select-none flex items-center gap-2">
@@ -1344,6 +1413,15 @@ const SimulatorPage = () => {
           <span>Muallif: Abdulkhayev Hasanboy (@xasanboyman)</span>
         </div>
       </main>
+
+      {/* 3D Glass Object Modal (CanvasUI) */}
+      <GlassShowcaseModal
+        isOpen={isGlassModalOpen}
+        onClose={() => setIsGlassModalOpen(false)}
+        modelSrc="/models/skull.glb"
+        title="3D Shisha Bosh Suyagi (Skull Glass Refraction)"
+        subtitle="Haqiqiy shisha optikasi, xromatik dispersiya, kaustika va nur sinishi"
+      />
     </div>
   );
 };

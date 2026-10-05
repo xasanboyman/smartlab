@@ -29,6 +29,7 @@ import Puddles from "../hazards/Puddles";
 import GasHaze from "../hazards/GasHaze";
 import RoomFixtures from "../hazards/RoomFixtures";
 import CardboardView from "@/lab/components/CardboardView";
+import LabRoomClothBanner from "./LabRoomClothBanner";
 
 const FPS_WINDOW = 0.5;
 
@@ -132,6 +133,7 @@ const LabRoomCanvas = ({
                   <LabSound world={world} lab={lab} live={live} settingsRef={settingsRef} />
                   <ToolEffects lab={lab} />
                   <LabMonitor lab={lab} anchor={meta.anchors?.monitor_screen} />
+                  <LabRoomClothBanner position={[0.4, 2.05, -3.94]} lab={lab} />
                   <Puddles lab={lab} />
                   <GasHaze lab={lab} />
                   <RoomFixtures lab={lab} world={world} enabled={!placeholder} />

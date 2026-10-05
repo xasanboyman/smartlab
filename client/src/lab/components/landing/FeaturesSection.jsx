@@ -9,6 +9,8 @@ import {
   Cpu,
   Scissors,
 } from "lucide-react";
+import BendCard from "@/shared/components/3d/html-in-canvas/BendCard";
+import DecryptHeader from "@/shared/components/ui/DecryptHeader";
 
 const FEATURES = [
   {
@@ -64,67 +66,70 @@ export const FeaturesSection = () => (
           <Sparkles className="w-3.5 h-3.5" />
           <span>Innovatsion Imkoniyatlar</span>
         </div>
-        <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
-          Kelajak Ilmiy Laboratoriyasi
-        </h2>
+        <DecryptHeader
+          text="Kelajak Ilmiy Laboratoriyasi"
+          color="#10b981"
+          className="text-3xl md:text-5xl font-extrabold text-white tracking-tight"
+        />
         <p className="mt-3 text-zinc-400 text-sm md:text-base leading-relaxed">
           Darslikdagi statik rasmlar endi o'tmishda qoldi. 3D WebGL va sun'iy intellekt kuchi bilan har bir tajribani boshqaring.
         </p>
       </div>
 
-      {/* Cards Grid */}
+      {/* Cards Grid with CanvasUI 3D Bend */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((item) => {
           const IconComp = item.icon;
           return (
-            <div
-              key={item.title}
-              className="group p-6 rounded-3xl bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden"
-            >
-              {/* Subtle hover gradient */}
+            <BendCard key={item.title} zone={40} angle={14} perspective={950} tilt={0.25} className="h-full">
               <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at top left, ${item.color}, transparent 70%)`,
-                }}
-              />
+                className="group p-6 rounded-3xl bg-zinc-950/70 border border-zinc-800/90 hover:border-zinc-700/80 shadow-xl hover:shadow-2xl transition-all duration-300 flex flex-col justify-between relative overflow-hidden h-full"
+              >
+                {/* Subtle hover gradient */}
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
+                  style={{
+                    background: `radial-gradient(circle at top left, ${item.color}, transparent 70%)`,
+                  }}
+                />
 
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-transform duration-300 group-hover:scale-110"
-                    style={{
-                      backgroundColor: `${item.color}1a`,
-                      borderColor: `${item.color}40`,
-                      color: item.color,
-                    }}
-                  >
-                    <IconComp className="w-6 h-6" />
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-transform duration-300 group-hover:scale-110"
+                      style={{
+                        backgroundColor: `${item.color}1a`,
+                        borderColor: `${item.color}40`,
+                        color: item.color,
+                      }}
+                    >
+                      <IconComp className="w-6 h-6" />
+                    </div>
+                    <span
+                      className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border"
+                      style={{
+                        backgroundColor: `${item.color}15`,
+                        color: item.color,
+                        borderColor: `${item.color}33`,
+                      }}
+                    >
+                      {item.tag}
+                    </span>
                   </div>
-                  <span
-                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border"
-                    style={{
-                      backgroundColor: `${item.color}15`,
-                      color: item.color,
-                      borderColor: `${item.color}33`,
-                    }}
-                  >
-                    {item.tag}
-                  </span>
+
+                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                    {item.desc}
+                  </p>
                 </div>
 
-                <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                  {item.desc}
-                </p>
+                <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center text-xs font-semibold text-zinc-500 group-hover:text-emerald-400 transition-colors">
+                  <span>Batafsil tanishish ➔</span>
+                </div>
               </div>
-
-              <div className="mt-6 pt-4 border-t border-zinc-800/80 flex items-center text-xs font-semibold text-zinc-500 group-hover:text-emerald-400 transition-colors">
-                <span>Batafsil tanishish ➔</span>
-              </div>
-            </div>
+            </BendCard>
           );
         })}
       </div>
