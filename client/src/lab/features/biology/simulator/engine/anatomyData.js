@@ -311,6 +311,23 @@ export const SKETCHFAB_CATEGORIES = [
 
 export const SKETCHFAB_TOPICS = [
   {
+    id: "all",
+    title: "To'liq Inson (Kesish & Qatlamlar)",
+    short: "To'liq Tana",
+    latin: "Corpus humanum",
+    category: "all",
+    icon: "User",
+    keywords: [],
+    color: "#10b981",
+    desc: "Inson tanasining barcha 5 ta asosiy anatomik qatlami: 206 suyakli skelet, hayotiy ichki a'zolar, qon-tomir daraxti, 600+ mushak va tashqi teri yaxlit ko'rinishda. Slayder yordamida suyakdan terigacha (0-100%) ochish va istalgan o'qda kesib (slice) ichini ko'rish mumkin.",
+    funFact: "Inson tanasi 30 trilliondan ortiq tirik hujayradan tashkil topgan bo'lib, har bir tizim tananing ichki muvozanatini saqlash uchun uyg'un harakat qiladi.",
+    stats: [
+      { label: "Asosiy qatlamlar", value: "5 ta yaxlit tizim" },
+      { label: "Anatomik tuzilmalar", value: "23 ta asosiy a'zo" },
+      { label: "Kesish imkoniyati", value: "3D Slicing Plane" },
+    ],
+  },
+  {
     id: "skeleton",
     title: "Skelet tizimi (206 suyak)",
     short: "Skelet",
