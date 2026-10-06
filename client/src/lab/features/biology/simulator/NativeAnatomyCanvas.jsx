@@ -9,8 +9,9 @@ import { LIGHTING_PRESETS, setupCanvasDrawable, ANATOMICAL_REGIONS } from "./eng
 import { anatomyAudio } from "./engine/AnatomyAudio";
 
 // Texture & Material mapping for all 23 anatomical meshes
-const TEXTURE_DIR = "/models/textures/";
-const MODEL_URL = "/models/human_anatomy_draco.glb";
+const BASE = import.meta.env.BASE_URL || "/";
+const TEXTURE_DIR = `${BASE}models/textures/`.replace(/\/+/g, "/");
+const MODEL_URL = `${BASE}models/human_anatomy_draco.glb`.replace(/\/+/g, "/");
 
 const MESH_SPECS = {
   // Organs (Moist natural tissue)
@@ -720,7 +721,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     setLoading(true);
     setLoadError(null);
 
-    const draco = new DRACOLoader().setDecoderPath("/draco/");
+    const draco = new DRACOLoader().setDecoderPath(`${BASE}draco/`.replace(/\/+/g, "/"));
     const loader = new GLTFLoader().setDRACOLoader(draco);
     const texLoader = new THREE.TextureLoader();
 

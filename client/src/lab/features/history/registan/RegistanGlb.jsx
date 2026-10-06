@@ -6,8 +6,9 @@ import { useGLTF, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { PARTS } from "./registan";
 
-const URL = "/models/registan.glb";
-const DRACO = "/draco/";
+const BASE = import.meta.env.BASE_URL || "/";
+const URL = `${BASE}models/registan.glb`.replace(/\/+/g, "/");
+const DRACO = `${BASE}draco/`.replace(/\/+/g, "/");
 const TARGET = 60; // fit the longest dimension to ~60 units
 
 const Dot = ({ pos, name, active, onClick }) => {

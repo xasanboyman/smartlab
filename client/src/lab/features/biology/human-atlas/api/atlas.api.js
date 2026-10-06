@@ -1,6 +1,6 @@
 // Human Atlas statik fayllari (public/models/atlas). Backend emas, shuning
 // uchun axios http o'rniga oddiy fetch - baseURL API'ga emas, saytga ishora qiladi.
-export const ATLAS_MANIFEST_URL = "/models/atlas/atlas.json";
+export const ATLAS_MANIFEST_URL = `${import.meta.env.BASE_URL || "/"}models/atlas/atlas.json`.replace(/\/+/g, "/");
 
 export const atlasAPI = {
   manifest: (signal) =>
