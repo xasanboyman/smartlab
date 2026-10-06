@@ -5,7 +5,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Loader2, AlertCircle, RefreshCw, Scissors, Sparkles, Eye, RotateCcw } from "lucide-react";
-import { LIGHTING_PRESETS, setupCanvasDrawable } from "./engine/HtmlCanvasManager";
+import { LIGHTING_PRESETS, setupCanvasDrawable, ANATOMICAL_REGIONS } from "./engine/HtmlCanvasManager";
+import { anatomyAudio } from "./engine/AnatomyAudio";
 
 // Texture & Material mapping for all 23 anatomical meshes
 const TEXTURE_DIR = "/models/textures/";
@@ -69,11 +70,17 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     layerOpacities = { skeleton: 1, organs: 1, vessels: 1, muscles: 1, skin: 1 },
     layerVisibilities = { skeleton: true, organs: true, vessels: true, muscles: true, skin: true },
     activeTopic = null, // e.g. "skeleton" | "heart" | null for all
-    sliceConfig = { enabled: false, axis: "vertical_x", position: 50, flipped: false },
+    sliceConfig = { enabled: false, axis: "vertical_z", direction: "front_to_back", position: 40, flipped: false },
     lightingPreset = "medical",
+    themeMode = "night", // "day" | "night"
     autoRotate = false,
     autoRotateSpeed = 1.0,
     onPick = () => {},
+    isPhysiologicalActive = true,
+    heartBpm = 72,
+    isHeartBeating = true,
+    isBreathing = true,
+    isAcousticHeart = false,
   },
   ref
 ) {
@@ -84,11 +91,64 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
   const controlsRef = useRef(null);
   const lightsRef = useRef(null);
   const podGroupRef = useRef(null);
+  const shadowMeshRef = useRef(null);
+  const ringMeshesRef = useRef([]);
   const meshesRef = useRef(new Map());
   const slicePlaneRef = useRef(new THREE.Plane(new THREE.Vector3(1, 0, 0), 0));
   const sliceHelperRef = useRef(null);
   const modelGroupRef = useRef(null);
   const modelBoundsRef = useRef(new THREE.Box3());
+
+  // Physiological animation refs
+  const isPhysiologicalActiveRef = useRef(isPhysiologicalActive);
+  useEffect(() => {
+    isPhysiologicalActiveRef.current = isPhysiologicalActive;
+    if (!isPhysiologicalActive) {
+      // Reset mesh transforms when physiological engine is paused
+      const heart = meshesRef.current.get("Heart_2");
+      if (heart) {
+        heart.scale.set(1, 1, 1);
+        heart.position.set(0, 0, 0);
+        heart.material?.emissive?.setRGB(0, 0, 0);
+      }
+      const lungs = meshesRef.current.get("Humanlungs_2");
+      if (lungs) {
+        lungs.scale.set(1, 1, 1);
+        lungs.position.set(0, 0, 0);
+      }
+      const dia = meshesRef.current.get("Diafragma_2");
+      if (dia) dia.position.set(0, 0, 0);
+      const rib = meshesRef.current.get("Ribcage_2");
+      if (rib) {
+        rib.scale.set(1, 1, 1);
+        rib.position.set(0, 0, 0);
+      }
+      const art = meshesRef.current.get("Arteriasmesh_2");
+      if (art) art.material?.emissive?.setRGB(0, 0, 0);
+    }
+  }, [isPhysiologicalActive]);
+
+  const heartBpmRef = useRef(heartBpm);
+  useEffect(() => {
+    heartBpmRef.current = heartBpm;
+  }, [heartBpm]);
+
+  const isHeartBeatingRef = useRef(isHeartBeating);
+  useEffect(() => {
+    isHeartBeatingRef.current = isHeartBeating;
+  }, [isHeartBeating]);
+
+  const isBreathingRef = useRef(isBreathing);
+  useEffect(() => {
+    isBreathingRef.current = isBreathing;
+  }, [isBreathing]);
+
+  const isAcousticHeartRef = useRef(isAcousticHeart);
+  useEffect(() => {
+    isAcousticHeartRef.current = isAcousticHeart;
+  }, [isAcousticHeart]);
+
+  const lastBeatTriggeredRef = useRef(false);
 
   // Smooth camera interpolation targets
   const cameraTargetPosRef = useRef(null);
@@ -120,26 +180,74 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     getCamera: () => cameraRef.current,
     getContainer: () => containerRef.current,
     recenter: () => {
-      glideCameraTo([-105, 12, 105], [0, 0, 0]);
+      glideCameraTo([-195, 8, 195], [0, 0, 0]);
+    },
+    zoomIn: (scale = 0.82) => {
+      if (!cameraRef.current || !controlsRef.current) return;
+      cameraTargetPosRef.current = null;
+      cameraTargetLookRef.current = null;
+      const cam = cameraRef.current;
+      const target = controlsRef.current.target;
+      const offset = cam.position.clone().sub(target);
+      const newLen = Math.max(14, offset.length() * scale);
+      offset.setLength(newLen);
+      cam.position.copy(target).add(offset);
+      controlsRef.current.update();
+    },
+    zoomOut: (scale = 1.22) => {
+      if (!cameraRef.current || !controlsRef.current) return;
+      cameraTargetPosRef.current = null;
+      cameraTargetLookRef.current = null;
+      const cam = cameraRef.current;
+      const target = controlsRef.current.target;
+      const offset = cam.position.clone().sub(target);
+      const newLen = Math.min(450, offset.length() * scale);
+      offset.setLength(newLen);
+      cam.position.copy(target).add(offset);
+      controlsRef.current.update();
+    },
+    rotateBy: (degX = 15, degY = 0) => {
+      if (!cameraRef.current || !controlsRef.current) return;
+      cameraTargetPosRef.current = null;
+      cameraTargetLookRef.current = null;
+      const cam = cameraRef.current;
+      const target = controlsRef.current.target;
+      const offset = cam.position.clone().sub(target);
+      const radX = THREE.MathUtils.degToRad(degX);
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), radX);
+      cam.position.copy(target).add(offset);
+      controlsRef.current.update();
     },
     focusRegion: (region) => {
-      const regions = {
-        head: { target: [0, 68, 2], pos: [-42, 70, 42] },
-        chest: { target: [0, 38, 4], pos: [-52, 40, 52] },
-        abdomen: { target: [0, 20, 4], pos: [-48, 22, 48] },
-        pelvis: { target: [0, 4, 2], pos: [-48, 6, 48] },
-        legs: { target: [0, -42, 2], pos: [-65, -40, 65] },
-        all: { target: [0, 0, 0], pos: [-105, 12, 105] },
-      };
-      const cfg = regions[region] || regions.all;
-      glideCameraTo(cfg.pos, cfg.target);
+      const reg = ANATOMICAL_REGIONS[region] || ANATOMICAL_REGIONS.all;
+      glideCameraTo(reg.cameraPos, reg.cameraTarget);
     },
     focusPosition: (pos, distance = 45) => {
       glideCameraTo([pos[0] - distance, pos[1] + 8, pos[2] + distance], [pos[0], pos[1], pos[2]]);
     },
+    focusPoint: (point, distance = 42) => {
+      if (!point || !cameraRef.current || !controlsRef.current) return;
+      const pt = point instanceof THREE.Vector3 ? point : new THREE.Vector3(point.x, point.y, point.z);
+      const cam = cameraRef.current;
+      const dir = cam.position.clone().sub(pt);
+      if (dir.lengthSq() < 0.001) {
+        dir.set(-0.7, 0.2, 0.7);
+      }
+      dir.normalize();
+
+      const targetCamPos = pt.clone().addScaledVector(dir, distance);
+      glideCameraTo(
+        [targetCamPos.x, targetCamPos.y, targetCamPos.z],
+        [pt.x, pt.y, pt.z]
+      );
+    },
     focusMesh: (meshName) => {
       const mesh = meshesRef.current.get(meshName);
       if (mesh) {
+        // Skip zooming into the whole-body bounding box center (groin) for full body meshes
+        if (meshName.startsWith("Musclespart_") || meshName === "HumanSkin_2") {
+          return;
+        }
         const box = new THREE.Box3().setFromObject(mesh);
         const center = new THREE.Vector3();
         box.getCenter(center);
@@ -148,7 +256,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     },
     focusTopic: (topic) => {
       if (!topic || topic.id === "all") {
-        glideCameraTo([-105, 12, 105], [0, 0, 0]);
+        glideCameraTo([-195, 8, 195], [0, 0, 0]);
         return;
       }
       const box = new THREE.Box3();
@@ -188,16 +296,17 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     sceneRef.current = scene;
     window.__anatomyScene = scene;
 
-    // Camera — positioned closer so human model stands tall and fills viewport
+    // Camera — positioned to frame the entire human body head to toe centered at (0, 0, 0)
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
-    camera.position.set(-105, 12, 105);
+    camera.position.set(-195, 8, 195);
     cameraRef.current = camera;
     window.__anatomyCamera = camera;
 
-    // Renderer with transparent canvas
+    // High-Definition Renderer with transparent canvas & crisp anti-aliasing (Forced 2.0x minimum supersampling)
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2.0), 3.0);
+    renderer.setPixelRatio(dpr);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
@@ -229,19 +338,21 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       map: shadowTex,
       transparent: true,
       depthWrite: false,
-      opacity: 0.85,
+      opacity: themeMode === "day" ? 0.35 : 0.85,
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
     shadowMesh.rotation.x = -Math.PI / 2;
     shadowMesh.position.y = 0.05;
     podGroup.add(shadowMesh);
+    shadowMeshRef.current = shadowMesh;
 
     // 2. Concentric Holographic Cyber Rings
+    const isDay = themeMode === "day";
     const ringGeo1 = new THREE.RingGeometry(36, 36.6, 64);
     const ringMat1 = new THREE.MeshBasicMaterial({
-      color: 0x10b981,
+      color: isDay ? 0x0284c7 : 0x10b981,
       transparent: true,
-      opacity: 0.45,
+      opacity: isDay ? 0.3 : 0.45,
       side: THREE.DoubleSide,
     });
     const ringMesh1 = new THREE.Mesh(ringGeo1, ringMat1);
@@ -250,9 +361,9 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
     const ringGeo2 = new THREE.RingGeometry(24, 24.5, 48);
     const ringMat2 = new THREE.MeshBasicMaterial({
-      color: 0x06b6d4,
+      color: isDay ? 0x059669 : 0x06b6d4,
       transparent: true,
-      opacity: 0.35,
+      opacity: isDay ? 0.25 : 0.35,
       side: THREE.DoubleSide,
     });
     const ringMesh2 = new THREE.Mesh(ringGeo2, ringMat2);
@@ -261,14 +372,15 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
     const ringGeo3 = new THREE.RingGeometry(46, 46.8, 64);
     const ringMat3 = new THREE.MeshBasicMaterial({
-      color: 0x8b5cf6,
+      color: isDay ? 0x6366f1 : 0x8b5cf6,
       transparent: true,
-      opacity: 0.25,
+      opacity: isDay ? 0.2 : 0.25,
       side: THREE.DoubleSide,
     });
     const ringMesh3 = new THREE.Mesh(ringGeo3, ringMat3);
     ringMesh3.rotation.x = Math.PI / 2;
     podGroup.add(ringMesh3);
+    ringMeshesRef.current = [ringMesh1, ringMesh2, ringMesh3];
 
     scene.add(podGroup);
     podGroupRef.current = podGroup;
@@ -279,46 +391,65 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     const roomEnv = new RoomEnvironment();
     const envMap = pmremGenerator.fromScene(roomEnv, 0.04).texture;
     scene.environment = envMap;
-    scene.environmentIntensity = 0.75;
+    scene.environmentIntensity = 0.18;
 
-    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minDistance = 4;
-    controls.maxDistance = 600;
+    controls.dampingFactor = 0.06;
+    controls.screenSpacePanning = true;
+    controls.rotateSpeed = 0.75;
+    controls.zoomSpeed = 0.85;
+    controls.panSpeed = 0.85;
     controls.target.set(0, 0, 0);
+    controls.minDistance = 14;
+    controls.maxDistance = 450;
+    controls.minPolarAngle = 0.08;
+    controls.maxPolarAngle = Math.PI - 0.08;
+    controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN,
+    };
+    controls.update();
+
+    const cancelCameraGlide = () => {
+      cameraTargetPosRef.current = null;
+      cameraTargetLookRef.current = null;
+    };
+    controls.addEventListener("start", cancelCameraGlide);
     controlsRef.current = controls;
     window.__anatomyControls = controls;
 
-    // Professional Medical Studio 4-Point Lighting Rig
-    // Key Light - soft warm anatomical key light aligned with default front-left camera view
-    const dirLight1 = new THREE.DirectionalLight(0xfff8f0, 0.85);
-    dirLight1.position.set(-100, 120, 130);
+    container.addEventListener("wheel", cancelCameraGlide, { passive: true });
+    container.addEventListener("touchstart", cancelCameraGlide, { passive: true });
+
+    // Professional Medical Studio 4-Point High-Contrast Lighting Rig
+    // Key Light - intense, focused anatomical studio light for crisp relief and cast shadows
+    const dirLight1 = new THREE.DirectionalLight(0xfffaed, 1.45);
+    dirLight1.position.set(-90, 110, 120);
     dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 2048;
-    dirLight1.shadow.mapSize.height = 2048;
-    dirLight1.shadow.bias = -0.0003;
-    dirLight1.shadow.radius = 2.5;
+    dirLight1.shadow.mapSize.width = 4096;
+    dirLight1.shadow.mapSize.height = 4096;
+    dirLight1.shadow.bias = -0.0001;
+    dirLight1.shadow.radius = 1.2;
     scene.add(dirLight1);
 
-    // Fill Light - soft cool studio fill to soften shadow areas
-    const dirLight2 = new THREE.DirectionalLight(0xe0f2fe, 0.4);
-    dirLight2.position.set(110, 60, 90);
+    // Fill Light - subtle cool fill to gently light shadowed crevices
+    const dirLight2 = new THREE.DirectionalLight(0xbfdbfe, 0.35);
+    dirLight2.position.set(100, 50, 80);
     scene.add(dirLight2);
 
-    // Rim / Kicker Light - highlights anatomical silhouettes and muscle separation
-    const rimLight = new THREE.DirectionalLight(0xc7d2fe, 0.45);
-    rimLight.position.set(0, 90, -120);
+    // Rim Light - sharp specular silhouette kicker from behind
+    const rimLight = new THREE.DirectionalLight(0xe0e7ff, 0.85);
+    rimLight.position.set(0, 90, -110);
     scene.add(rimLight);
 
-    // Under-Fill / Floor Bounce Light - prevents harsh dark voids under chin, ribs, groin
-    const bounceLight = new THREE.DirectionalLight(0x52525b, 0.3);
-    bounceLight.position.set(0, -90, 80);
+    // Floor Bounce Light - soft subtle bounce
+    const bounceLight = new THREE.DirectionalLight(0x3f3f46, 0.15);
+    bounceLight.position.set(0, -80, 70);
     scene.add(bounceLight);
 
-    // Soft Hemisphere ambient illumination
-    const hemiLight = new THREE.HemisphereLight(0xf8fafc, 0x27272a, 0.45);
+    // Gentle Ambient Hemisphere
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.22);
     hemiLight.position.set(0, 100, 0);
     scene.add(hemiLight);
 
@@ -330,72 +461,222 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       hemi: hemiLight,
     };
 
-    // Slicing Plane Visual Helper
-    const planeGeo = new THREE.PlaneGeometry(120, 210);
+    // High-tech CT / MRI Slicing Laser Helper Plane (Dynamic Scalable)
+    const helperGroup = new THREE.Group();
+    const planeGeo = new THREE.PlaneGeometry(1, 1);
     const planeMat = new THREE.MeshBasicMaterial({
-      color: 0xf59e0b,
+      color: 0x06b6d4, // Laser cyan
       transparent: true,
-      opacity: 0.08,
+      opacity: 0.14,
       side: THREE.DoubleSide,
       depthWrite: false,
     });
-    const edgesGeo = new THREE.EdgesGeometry(planeGeo);
-    const edgesMat = new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.6 });
     const planeMesh = new THREE.Mesh(planeGeo, planeMat);
-    const wireMesh = new THREE.LineSegments(edgesGeo, edgesMat);
-    planeMesh.add(wireMesh);
-    planeMesh.visible = false;
-    scene.add(planeMesh);
-    sliceHelperRef.current = planeMesh;
+    helperGroup.add(planeMesh);
 
-    // Raycaster for 3D clicking
+    // Glowing laser boundary
+    const edgesGeo = new THREE.EdgesGeometry(planeGeo);
+    const edgesMat = new THREE.LineBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const wireMesh = new THREE.LineSegments(edgesGeo, edgesMat);
+    helperGroup.add(wireMesh);
+
+    // Center crosshair grid lines
+    const crossGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-0.5, 0, 0.01),
+      new THREE.Vector3(0.5, 0, 0.01),
+      new THREE.Vector3(0, -0.5, 0.01),
+      new THREE.Vector3(0, 0.5, 0.01),
+    ]);
+    const crossMat = new THREE.LineBasicMaterial({
+      color: 0x0284c7,
+      transparent: true,
+      opacity: 0.55,
+    });
+    helperGroup.add(new THREE.LineSegments(crossGeo, crossMat));
+
+    helperGroup.visible = false;
+    scene.add(helperGroup);
+    sliceHelperRef.current = helperGroup;
+
+    // Raycaster for 3D clicking - only fires on stationary tap/click (<6px movement, <350ms)
+    // to strictly prevent accidental mesh picks during pinch-to-zoom, pan, or orbit rotation gestures
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
+    let pointerDownPos = { x: 0, y: 0 };
+    let pointerDownTime = 0;
 
     const handlePointerDown = (e) => {
-      const rect = container.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
+      cancelCameraGlide();
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+      pointerDownTime = performance.now();
+    };
 
-      const activeMeshes = Array.from(meshesRef.current.values()).filter((m) => m.visible && m.material.opacity > 0.05);
-      const intersects = raycaster.intersectObjects(activeMeshes, false);
-      if (intersects.length > 0) {
-        const clickedMesh = intersects[0].object;
-        onPickRef.current?.(clickedMesh.name);
+    const handlePointerUp = (e) => {
+      const dx = e.clientX - pointerDownPos.x;
+      const dy = e.clientY - pointerDownPos.y;
+      const dist = Math.hypot(dx, dy);
+      const elapsed = performance.now() - pointerDownTime;
+
+      // Only pick if this was an intentional stationary tap/click
+      if (dist < 6 && elapsed < 350) {
+        const rect = container.getBoundingClientRect();
+        mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        const activeMeshes = Array.from(meshesRef.current.values()).filter(
+          (m) => m.visible && m.material && m.material.opacity > 0.05
+        );
+        const intersects = raycaster.intersectObjects(activeMeshes, false);
+        if (intersects.length > 0) {
+          const hit = intersects[0];
+          const clickedMesh = hit.object;
+          onPickRef.current?.(clickedMesh.name, hit.point);
+        }
       }
     };
+
     container.addEventListener("pointerdown", handlePointerDown);
+    container.addEventListener("pointerup", handlePointerUp);
 
     // Animation Loop
     let animId;
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      controls.update();
 
       // Slowly rotate floor hologram rings
       if (podGroupRef.current) {
         podGroupRef.current.rotation.y += 0.003;
       }
-
       // Smooth camera glide interpolation
       if (cameraTargetPosRef.current && cameraTargetLookRef.current) {
-        camera.position.lerp(cameraTargetPosRef.current, 0.075);
-        controls.target.lerp(cameraTargetLookRef.current, 0.075);
-        if (camera.position.distanceTo(cameraTargetPosRef.current) < 0.1) {
+        camera.position.lerp(cameraTargetPosRef.current, 0.08);
+        controls.target.lerp(cameraTargetLookRef.current, 0.08);
+        if (camera.position.distanceTo(cameraTargetPosRef.current) < 0.2) {
+          camera.position.copy(cameraTargetPosRef.current);
+          controls.target.copy(cameraTargetLookRef.current);
           cameraTargetPosRef.current = null;
           cameraTargetLookRef.current = null;
+          controls.update();
         }
+      } else {
+        controls.update();
       }
 
-      // Subtle biological pulse when Heart is active
-      if (activeTopicRef.current?.id === "heart") {
-        const heartMesh = meshesRef.current.get("Heart_2");
-        if (heartMesh) {
-          const t = performance.now() * 0.005;
-          const beat = Math.sin(t * 3.5);
-          const s = 1.0 + (beat > 0.65 ? (beat - 0.65) * 0.07 : 0);
-          heartMesh.scale.set(s, s, s);
+      // Real Anatomical Physiological Animations (Cardiac Cycle, Vascular Pulse, Pulmonary Respiration)
+      if (isPhysiologicalActiveRef.current) {
+        const now = performance.now() * 0.001; // in seconds
+        const bpm = heartBpmRef.current || 72;
+        const heartHz = bpm / 60; // beats per second
+
+        // 1. CARDIAC CYCLE (Lub-Dub rhythm & Aorta pulse)
+        if (isHeartBeatingRef.current) {
+          const heartMesh = meshesRef.current.get("Heart_2");
+          if (heartMesh) {
+            const phase = (now * heartHz) % 1.0;
+            // Dual lub-dub contraction waveform:
+            // S1 (Atrial / initial systole): phase 0.0 -> 0.12
+            // S2 (Ventricular / main systole): phase 0.15 -> 0.38
+            let beatDelta = 0;
+            if (phase < 0.12) {
+              beatDelta = Math.sin((phase / 0.12) * Math.PI) * 0.045;
+            } else if (phase >= 0.15 && phase < 0.38) {
+              beatDelta = Math.sin(((phase - 0.15) / 0.23) * Math.PI) * 0.085;
+            }
+
+            const hs = 1.0 + beatDelta;
+            heartMesh.scale.set(hs, hs, hs);
+            // Pivot around exact heart geometry center so it doesn't drift
+            heartMesh.position.set(
+              0.2518 * (hs - 1.0),
+              0.0028 * (hs - 1.0),
+              0.0041 * (hs - 1.0)
+            );
+
+            // Subtle systolic emissive flash on heart material
+            if (heartMesh.material) {
+              if (beatDelta > 0.01) {
+                const glow = beatDelta * 2.2;
+                heartMesh.material.emissive?.setRGB(glow * 0.45, glow * 0.04, glow * 0.04);
+              } else {
+                heartMesh.material.emissive?.setRGB(0, 0, 0);
+              }
+            }
+
+            // Sync arterial tree pulsation with heart systole
+            const artMesh = meshesRef.current.get("Arteriasmesh_2");
+            if (artMesh && artMesh.material) {
+              if (beatDelta > 0.02) {
+                artMesh.material.emissive?.setRGB(beatDelta * 0.28, 0, 0);
+              } else {
+                artMesh.material.emissive?.setRGB(0, 0, 0);
+              }
+            }
+
+            // Stethoscope heartbeat sound trigger
+            if (isAcousticHeartRef.current) {
+              if (phase < 0.04 && !lastBeatTriggeredRef.current) {
+                lastBeatTriggeredRef.current = true;
+                anatomyAudio.playHeartbeat(0.06);
+              } else if (phase > 0.45) {
+                lastBeatTriggeredRef.current = false;
+              }
+            }
+          }
+        }
+
+        // 2. RESPIRATORY CYCLE (Breathing Lungs, Diaphragm & Ribcage)
+        if (isBreathingRef.current) {
+          // Respiratory frequency: ~14 breaths per min = ~0.233 Hz
+          const breathHz = 0.233;
+          // Smooth asymmetrical breathing: inhalation faster (1.8s), exhalation gentle (2.4s)
+          const breathPhase = (now * breathHz) % 1.0;
+          let breathFactor = 0;
+          if (breathPhase < 0.42) {
+            // Inhalation (expansion)
+            breathFactor = 0.5 - 0.5 * Math.cos((breathPhase / 0.42) * Math.PI);
+          } else {
+            // Exhalation (gentle deflation)
+            breathFactor = 0.5 + 0.5 * Math.cos(((breathPhase - 0.42) / 0.58) * Math.PI);
+          }
+
+          // A) LUNGS expansion
+          const lungsMesh = meshesRef.current.get("Humanlungs_2");
+          if (lungsMesh) {
+            // Expand laterally and anteroposteriorly
+            const lsX = 1.0 + 0.052 * breathFactor;
+            const lsY = 1.0 + 0.044 * breathFactor;
+            const lsZ = 1.0 + 0.032 * breathFactor;
+            lungsMesh.scale.set(lsX, lsY, lsZ);
+            lungsMesh.position.set(
+              0.2905 * (lsX - 1.0),
+              -1.4063 * (lsY - 1.0),
+              -131.17 * (lsZ - 1.0)
+            );
+          }
+
+          // B) DIAPHRAGM descent/ascent
+          const diaMesh = meshesRef.current.get("Diafragma_2");
+          if (diaMesh) {
+            const diaOffsetZ = -0.45 * breathFactor;
+            diaMesh.position.set(0, 0, diaOffsetZ);
+          }
+
+          // C) RIBCAGE subtle expansion (bucket-handle motion)
+          const ribMesh = meshesRef.current.get("Ribcage_2");
+          if (ribMesh) {
+            const ribScale = 1.0 + 0.012 * breathFactor;
+            ribMesh.scale.set(ribScale, ribScale, ribScale);
+            ribMesh.position.set(
+              0.3308 * (ribScale - 1.0),
+              -1.4705 * (ribScale - 1.0),
+              -128.37 * (ribScale - 1.0)
+            );
+          }
         }
       }
 
@@ -410,6 +691,8 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       const h = container.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2.0), 3.0);
+      renderer.setPixelRatio(dpr);
       renderer.setSize(w, h);
     };
     window.addEventListener("resize", handleResize);
@@ -417,6 +700,9 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     return () => {
       window.removeEventListener("resize", handleResize);
       container.removeEventListener("pointerdown", handlePointerDown);
+      container.removeEventListener("pointerup", handlePointerUp);
+      container.removeEventListener("wheel", cancelCameraGlide);
+      container.removeEventListener("touchstart", cancelCameraGlide);
       cancelAnimationFrame(animId);
       controls.dispose();
       renderer.dispose();
@@ -456,13 +742,18 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         const box = new THREE.Box3().setFromObject(group);
         modelBoundsRef.current = box;
 
-        // Textures & Materials setup
+        // Textures & Materials setup with Ultra-Sharp Full-Resolution Texture Filtering
         const textureCache = new Map();
+        const maxAniso = rendererRef.current?.capabilities?.getMaxAnisotropy() || 16;
         const getTex = (filename, isColor = true) => {
           if (!filename) return null;
           if (!textureCache.has(filename)) {
             const t = texLoader.load(TEXTURE_DIR + filename);
             t.colorSpace = isColor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+            t.anisotropy = maxAniso;
+            t.generateMipmaps = true;
+            t.minFilter = THREE.LinearFilter; // Always sharpest 1536x1536 base texture
+            t.magFilter = THREE.LinearFilter;
             textureCache.set(filename, t);
           }
           return textureCache.get(filename);
@@ -474,19 +765,23 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
             const spec = MESH_SPECS[child.name] || {};
             let mat;
 
+            const isFrontOnly = spec.isSkin || spec.layer === "skin" || spec.layer === "muscles";
+
             if (spec.isSkin) {
               // Real Human Skin Shader with Sheen micro-scattering and natural melanin tone
               mat = new THREE.MeshPhysicalMaterial({
                 name: child.name,
                 color: new THREE.Color(spec.color || 0xffffff),
-                roughness: spec.roughnessVal ?? 0.82,
+                roughness: spec.roughnessVal ?? 0.54,
                 metalness: 0.0,
-                sheen: spec.sheen ?? 0.14,
-                sheenColor: new THREE.Color(0xfde2d8),
-                sheenRoughness: 0.8,
-                specularIntensity: spec.specularIntensity ?? 0.16,
-                side: THREE.DoubleSide,
-                transparent: true,
+                clearcoat: 0.16,
+                clearcoatRoughness: 0.28,
+                sheen: spec.sheen ?? 0.22,
+                sheenColor: new THREE.Color(0xfed7aa),
+                sheenRoughness: 0.7,
+                specularIntensity: spec.specularIntensity ?? 0.38,
+                side: THREE.FrontSide, // FrontSide lets us see right through sliced skin into organs
+                transparent: false,
                 opacity: 1.0,
                 clippingPlanes: [],
                 clipShadows: true,
@@ -495,13 +790,13 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
               mat = new THREE.MeshPhysicalMaterial({
                 name: child.name,
                 color: new THREE.Color(spec.color || 0xffffff),
-                roughness: spec.roughnessVal ?? 0.65,
+                roughness: spec.roughnessVal ?? 0.48,
                 metalness: 0.0,
-                clearcoat: spec.clearcoat ?? 0.0,
-                clearcoatRoughness: 0.35,
-                specularIntensity: spec.specularIntensity ?? 0.25,
-                side: THREE.DoubleSide,
-                transparent: true,
+                clearcoat: spec.clearcoat ?? 0.2,
+                clearcoatRoughness: 0.28,
+                specularIntensity: spec.specularIntensity ?? 0.35,
+                side: isFrontOnly ? THREE.FrontSide : THREE.DoubleSide, // Muscles: FrontSide so inner cavity is clear; Bones & Organs: DoubleSide
+                transparent: false,
                 opacity: 1.0,
                 clippingPlanes: [],
                 clipShadows: true,
@@ -511,12 +806,18 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
             if (spec.map) mat.map = getTex(spec.map, true);
             if (spec.normal) {
               mat.normalMap = getTex(spec.normal, false);
-              mat.normalScale = new THREE.Vector2(spec.isSkin ? 0.5 : 0.65, spec.isSkin ? 0.5 : 0.65);
+              mat.normalScale = new THREE.Vector2(spec.isSkin ? 1.5 : 1.7, spec.isSkin ? 1.5 : 1.7);
             }
             if (spec.roughness) mat.roughnessMap = getTex(spec.roughness, false);
 
+            if (child.name === "Shorts_2") {
+              mat.polygonOffset = true;
+              mat.polygonOffsetFactor = -2;
+              mat.polygonOffsetUnits = -2;
+            }
+
             child.material = mat;
-            child.renderOrder = LAYER_RENDER_ORDER[spec.layer] || 2;
+            child.renderOrder = child.name === "Shorts_2" ? 6 : (LAYER_RENDER_ORDER[spec.layer] || 2);
             child.castShadow = true;
             child.receiveShadow = true;
             meshesRef.current.set(child.name, child);
@@ -551,6 +852,8 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
   // 3. Update Layers & Opacities & Topic Isolation
   useEffect(() => {
+    const isSlicing = Boolean(sliceConfig?.enabled);
+
     meshesRef.current.forEach((mesh, meshName) => {
       const spec = MESH_SPECS[meshName] || {};
       const layerName = spec.layer || "organs";
@@ -558,34 +861,50 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       let visible = true;
       let opacity = 1.0;
 
-      // Single topic isolation mode
-      if (activeTopic && activeTopic.id !== "all") {
-        const isMatch = activeTopic.keywords?.some((kw) => meshName.toLowerCase().includes(kw.toLowerCase()));
-        if (!isMatch) {
-          visible = false;
-          opacity = 0;
-        } else {
-          visible = true;
-          opacity = 1.0;
-        }
-      } else {
-        // Multi-layer mode with smooth opacity slider
+      if (isSlicing || !activeTopic || activeTopic.id === "all") {
+        // Multi-layer mode with smooth opacity slider & full body slicing
         visible = layerVisibilities[layerName] ?? true;
         opacity = layerOpacities[layerName] ?? 1.0;
+      } else {
+        // Single topic focus mode: highlighted organ is prominent,
+        // while other layers stay as translucent anatomical context (instead of disappearing completely)
+        const isMatch = activeTopic.keywords?.some((kw) => meshName.toLowerCase().includes(kw.toLowerCase()));
+        if (isMatch) {
+          visible = true;
+          opacity = 1.0;
+        } else {
+          // Keep other layers as semi-transparent anatomical context if layer is visible
+          const layerVis = layerVisibilities[layerName] ?? true;
+          const baseOp = layerOpacities[layerName] ?? 1.0;
+          if (layerVis && baseOp > 0.05) {
+            visible = true;
+            opacity = Math.min(baseOp, 0.2);
+          } else {
+            visible = false;
+            opacity = 0;
+          }
+        }
       }
 
       mesh.visible = visible && opacity > 0.005;
       mesh.material.opacity = opacity;
-      mesh.material.transparent = opacity < 0.999;
+      const isTrans = opacity < 0.999;
+      if (mesh.material.transparent !== isTrans) {
+        mesh.material.transparent = isTrans;
+        mesh.material.needsUpdate = true;
+      }
       mesh.material.depthWrite = opacity > 0.6;
+      mesh.renderOrder = meshName === "Shorts_2" ? 6 : (LAYER_RENDER_ORDER[layerName] || 2);
     });
-  }, [layerOpacities, layerVisibilities, activeTopic, modelLoaded]);
+  }, [layerOpacities, layerVisibilities, activeTopic, sliceConfig?.enabled, modelLoaded]);
 
-  // 4. Update Slicing Plane Tool with Angle and X-Y Sliding (like eler.ai)
+  // 4. Update Slicing Plane Tool with Angle, Direction, and Multi-region Scaling
   useEffect(() => {
     const {
       enabled,
-      axis = "vertical_x",
+      axis = "horizontal",
+      direction = "top_to_below",
+      region = "all",
       position = 50,
       angle = 0,
       tilt = 0,
@@ -605,46 +924,66 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       return;
     }
 
-    // Normalized slider factor: -1.0 to 1.0
-    const factor = (position - 50) / 50;
-    const extraX = ((offsetX || 0) / 100) * 28;
-    const extraY = ((offsetY || 0) / 100) * 80;
+    const reg = ANATOMICAL_REGIONS[region] || ANATOMICAL_REGIONS.all;
+    const b = reg.bounds;
 
-    let cx = 0;
-    let cy = 0;
-    let cz = 0;
+    // Normalized progress strictly 0 to 1
+    const p = Math.max(0, Math.min(100, position)) / 100;
 
-    const qBase = new THREE.Quaternion();
+    let cx = reg.center[0] + ((offsetX || 0) / 100) * 16;
+    let cy = reg.center[1] + ((offsetY || 0) / 100) * 24;
+    let cz = reg.center[2];
+
     const baseNormal = new THREE.Vector3();
+    const qBase = new THREE.Quaternion();
 
     if (axis === "horizontal") {
-      cx = extraX;
-      cy = factor * 80 + extraY;
-      cz = 0;
-      qBase.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
-      baseNormal.set(0, -1, 0);
+      // Y-axis transverse cut (horizontal plane)
+      const span = b.maxY - b.minY;
+      if (direction === "below_to_top") {
+        cy = b.minY + p * span;
+        baseNormal.set(0, 1, 0); // Keep above cut
+        qBase.setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+      } else {
+        // top_to_below
+        cy = b.maxY - p * span;
+        baseNormal.set(0, -1, 0); // Keep below cut
+        qBase.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0));
+      }
     } else if (axis === "vertical_z") {
-      cx = extraX;
-      cy = extraY;
-      cz = factor * 35;
-      qBase.setFromEuler(new THREE.Euler(0, 0, 0));
-      baseNormal.set(0, 0, -1);
+      // Z-axis coronal cut (front-back plane)
+      const span = b.maxZ - b.minZ;
+      if (direction === "back_to_front") {
+        cz = b.minZ + p * span;
+        baseNormal.set(0, 0, 1);
+        qBase.setFromEuler(new THREE.Euler(0, Math.PI, 0));
+      } else {
+        // front_to_back
+        cz = b.maxZ - p * span;
+        baseNormal.set(0, 0, -1);
+        qBase.setFromEuler(new THREE.Euler(0, 0, 0));
+      }
     } else {
-      // vertical_x or custom
-      cx = factor * 28 + extraX;
-      cy = extraY;
-      cz = 0;
-      qBase.setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
-      baseNormal.set(-1, 0, 0);
+      // vertical_x (Sagittal X - side plane)
+      const span = b.maxX - b.minX;
+      if (direction === "right_to_left") {
+        cx = b.maxX - p * span;
+        baseNormal.set(-1, 0, 0);
+        qBase.setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0));
+      } else {
+        // left_to_right
+        cx = b.minX + p * span;
+        baseNormal.set(1, 0, 0);
+        qBase.setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
+      }
     }
 
-    // Convert degrees to radians
+    // 0 to 360 degree arbitrary rotation
     const radAngle = THREE.MathUtils.degToRad(angle || 0);
     const radTilt = THREE.MathUtils.degToRad(tilt || 0);
 
-    // Dynamic rotation delta for angle and tilt
     const qDelta = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(radTilt, 0, radAngle, "XYZ")
+      new THREE.Euler(radTilt, radAngle, 0, "YXZ")
     );
     const qTotal = qBase.clone().multiply(qDelta);
 
@@ -662,6 +1001,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     if (helper) {
       helper.position.copy(center);
       helper.quaternion.copy(qTotal);
+      helper.scale.set(reg.helperSize[0], reg.helperSize[1], 1);
       helper.visible = true;
     }
 
@@ -672,13 +1012,17 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     });
   }, [sliceConfig, modelLoaded]);
 
-  // Dynamic Studio Lighting Presets
+  // Dynamic Studio Lighting Presets & Theme Mode adaptation
   useEffect(() => {
     const lights = lightsRef.current;
     const renderer = rendererRef.current;
     if (!lights || !renderer) return;
 
-    const preset = LIGHTING_PRESETS[lightingPreset] || LIGHTING_PRESETS.medical;
+    const activePresetKey = themeMode === "day" && lightingPreset === "medical"
+      ? "day_clinical"
+      : lightingPreset;
+    const preset = LIGHTING_PRESETS[activePresetKey] || LIGHTING_PRESETS.day_clinical || LIGHTING_PRESETS.medical;
+
     lights.key.color.setHex(preset.keyColor);
     lights.key.intensity = preset.keyIntensity;
 
@@ -699,7 +1043,37 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     if (sceneRef.current) {
       sceneRef.current.environmentIntensity = preset.envIntensity;
     }
-  }, [lightingPreset]);
+  }, [lightingPreset, themeMode]);
+
+  // Dynamic Theme Mode Floor & Laser Helper Updates
+  useEffect(() => {
+    const isDay = themeMode === "day";
+    if (shadowMeshRef.current) {
+      shadowMeshRef.current.material.opacity = isDay ? 0.3 : 0.85;
+      shadowMeshRef.current.material.needsUpdate = true;
+    }
+    if (ringMeshesRef.current && ringMeshesRef.current.length === 3) {
+      const [r1, r2, r3] = ringMeshesRef.current;
+      if (isDay) {
+        r1.material.color.setHex(0x0284c7);
+        r1.material.opacity = 0.3;
+        r2.material.color.setHex(0x059669);
+        r2.material.opacity = 0.25;
+        r3.material.color.setHex(0x6366f1);
+        r3.material.opacity = 0.2;
+      } else {
+        r1.material.color.setHex(0x10b981);
+        r1.material.opacity = 0.45;
+        r2.material.color.setHex(0x06b6d4);
+        r2.material.opacity = 0.35;
+        r3.material.color.setHex(0x8b5cf6);
+        r3.material.opacity = 0.25;
+      }
+      r1.material.needsUpdate = true;
+      r2.material.needsUpdate = true;
+      r3.material.needsUpdate = true;
+    }
+  }, [themeMode]);
 
   // Auto-rotate Turntable
   useEffect(() => {
@@ -709,22 +1083,46 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     }
   }, [autoRotate, autoRotateSpeed]);
 
+  const isDay = themeMode === "day";
+
   return (
-    <div className="w-full h-full relative select-none overflow-hidden bg-[radial-gradient(ellipse_90%_80%_at_50%_35%,#131d33_0%,#090e1b_50%,#03050a_100%)]">
-      <div ref={containerRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+    <div
+      className={`w-full h-full relative select-none overflow-hidden transition-colors duration-500 ${
+        isDay
+          ? "bg-[radial-gradient(ellipse_90%_80%_at_50%_35%,#f8fafc_0%,#e2e8f0_50%,#cbd5e1_100%)]"
+          : "bg-[radial-gradient(ellipse_90%_80%_at_50%_35%,#131d33_0%,#090e1b_50%,#03050a_100%)]"
+      }`}
+    >
+      <div
+        ref={containerRef}
+        className="w-full h-full cursor-grab active:cursor-grabbing touch-none select-none"
+        style={{ touchAction: "none" }}
+      />
 
       {/* Loading Overlay */}
       {loading && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#08090d]/90 backdrop-blur-md z-30 text-white">
-          <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mb-4" />
-          <h3 className="text-base font-bold text-white tracking-wide">
+        <div
+          className={`absolute inset-0 flex flex-col items-center justify-center backdrop-blur-md z-30 transition-colors ${
+            isDay ? "bg-white/90 text-slate-900" : "bg-[#08090d]/90 text-white"
+          }`}
+        >
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
+          <h3
+            className={`text-base font-bold tracking-wide ${
+              isDay ? "text-slate-800" : "text-white"
+            }`}
+          >
             Anatomiya 3D modeli yuklanmoqda...
           </h3>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className={`text-xs mt-1 ${isDay ? "text-slate-500" : "text-zinc-400"}`}>
             Yuqori aniqlikdagi mahalliy WebGL modeli
           </p>
           {loadProgress > 0 && (
-            <div className="w-48 bg-zinc-800 rounded-full h-1.5 mt-3 overflow-hidden">
+            <div
+              className={`w-48 rounded-full h-1.5 mt-3 overflow-hidden ${
+                isDay ? "bg-slate-200" : "bg-zinc-800"
+              }`}
+            >
               <div
                 className="bg-emerald-500 h-full transition-all duration-200"
                 style={{ width: `${loadProgress}%` }}
@@ -736,10 +1134,16 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
       {/* Error Fallback */}
       {loadError && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#08090d] z-30 text-white p-6 text-center">
+        <div
+          className={`absolute inset-0 flex flex-col items-center justify-center z-30 p-6 text-center ${
+            isDay ? "bg-slate-50 text-slate-900" : "bg-[#08090d] text-white"
+          }`}
+        >
           <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
-          <h3 className="text-base font-bold text-red-400 mb-1">Modelni yuklab bo'lmadi</h3>
-          <p className="text-xs text-zinc-400 max-w-md mb-4">{loadError}</p>
+          <h3 className="text-base font-bold text-red-500 mb-1">Modelni yuklab bo'lmadi</h3>
+          <p className={`text-xs max-w-md mb-4 ${isDay ? "text-slate-600" : "text-zinc-400"}`}>
+            {loadError}
+          </p>
         </div>
       )}
     </div>

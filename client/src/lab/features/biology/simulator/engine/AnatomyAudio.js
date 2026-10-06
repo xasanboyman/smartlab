@@ -177,6 +177,41 @@ class AnatomyAudioEngine {
     osc.stop(this.ctx.currentTime + 0.025);
   }
 
+  // Physiological Heartbeat Sound (Dual lub-dub acoustic resonance)
+  playHeartbeat(volume = 0.08) {
+    if (this.isMuted) return;
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // S1 - "Lub" (lower frequency, deeper thump)
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(65, now);
+    osc1.frequency.exponentialRampToValueAtTime(35, now + 0.08);
+    gain1.gain.setValueAtTime(volume, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.09);
+
+    // S2 - "Dub" (slightly higher, sharper closure ~150ms later)
+    const t2 = now + 0.16;
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(82, t2);
+    osc2.frequency.exponentialRampToValueAtTime(42, t2 + 0.07);
+    gain2.gain.setValueAtTime(volume * 0.85, t2);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t2 + 0.07);
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(t2);
+    osc2.stop(t2 + 0.08);
+  }
+
   // Turntable ambient hum
   startTurntableHum() {
     if (this.isMuted) return;

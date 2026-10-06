@@ -37,6 +37,7 @@ export const HtmlInCanvasOverlay = ({
   camera,
   containerRef,
   enabled = true,
+  themeMode = "night",
   onSelectPin,
   activePinId,
 }) => {
@@ -69,20 +70,24 @@ export const HtmlInCanvasOverlay = ({
       const w = container.clientWidth;
       const h = container.clientHeight;
 
+      const scale = Math.min(1.0, Math.max(0.4, (w - 320) / 600));
+
       const projected = ANATOMICAL_PINS.map((pin) => {
         const { x, y, visible } = projectToScreen(pin.pos, camera, w, h);
 
         const isLeft = pin.side === "left";
-        const len = pin.lineLen || 110;
-        const yOff = pin.yOffset || 0;
+        const len = (pin.lineLen || 95) * scale;
+        const yOff = (pin.yOffset || 0) * scale;
 
         // Leader line endpoints:
         // (x, y) = Landmark point on the body
         // (midX, midY) = Angle elbow bend
-        // (tagX, tagY) = Floating glass tag anchor
-        const tagX = isLeft ? Math.max(16, x - len) : Math.min(w - 16, x + len);
-        const tagY = Math.max(70, Math.min(h - 60, y + yOff));
-        const midX = isLeft ? x - 28 : x + 28;
+        // (tagX, tagY) = Floating responsive tag anchor
+        const tagX = isLeft
+          ? Math.max(12, Math.min(x - 20, x - len))
+          : Math.min(w - 170, Math.max(x + 20, x + len));
+        const tagY = Math.max(65, Math.min(h - 55, y + yOff));
+        const midX = isLeft ? x - 16 * scale : x + 16 * scale;
         const midY = tagY;
 
         return {
@@ -93,7 +98,7 @@ export const HtmlInCanvasOverlay = ({
           tagY,
           midX,
           midY,
-          visible,
+          visible: visible && x > -50 && x < w + 50 && y > -50 && y < h + 50,
         };
       });
 
@@ -235,9 +240,13 @@ export const HtmlInCanvasOverlay = ({
               onClick={() => handlePinClick(pin)}
               className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-full backdrop-blur-xl border transition-all duration-200 cursor-pointer shadow-lg ${
                 isActive
-                  ? "bg-emerald-500/20 text-white border-emerald-400 shadow-emerald-500/30 scale-105 ring-2 ring-emerald-400/30"
+                  ? "bg-emerald-500/25 text-emerald-800 dark:text-white border-emerald-400 shadow-emerald-500/30 scale-105 ring-2 ring-emerald-400/30 font-bold"
                   : isHovered
-                  ? "bg-zinc-900/90 text-white border-cyan-400/80 shadow-cyan-500/25 scale-105"
+                  ? themeMode === "day"
+                    ? "bg-white text-slate-900 border-sky-400 shadow-sky-400/20 scale-105"
+                    : "bg-zinc-900/90 text-white border-cyan-400/80 shadow-cyan-500/25 scale-105"
+                  : themeMode === "day"
+                  ? "bg-white/90 text-slate-700 border-slate-200 hover:border-emerald-500/60 hover:bg-white shadow-sm"
                   : "bg-zinc-950/70 text-zinc-300 border-zinc-800/80 hover:border-emerald-500/60 hover:bg-zinc-900/80"
               }`}
               title={`${pin.label} (${pin.latin}) — 3D Fokus`}
@@ -246,9 +255,11 @@ export const HtmlInCanvasOverlay = ({
               <div
                 className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                   isActive
-                    ? "bg-emerald-400 text-zinc-950 font-bold"
+                    ? "bg-emerald-500 text-white font-bold"
                     : isHovered
-                    ? "bg-cyan-500/25 text-cyan-300"
+                    ? "bg-cyan-500/25 text-cyan-500"
+                    : themeMode === "day"
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
                     : "bg-zinc-800/80 text-emerald-400"
                 }`}
               >
@@ -257,10 +268,16 @@ export const HtmlInCanvasOverlay = ({
 
               {/* Label & Latin name */}
               <div className="flex flex-col text-left pr-1 leading-tight">
-                <span className="text-[11px] font-bold tracking-tight text-white group-hover:text-emerald-300 transition-colors">
+                <span
+                  className={`text-[11px] font-bold tracking-tight transition-colors ${
+                    themeMode === "day"
+                      ? "text-slate-900 group-hover:text-emerald-600"
+                      : "text-white group-hover:text-emerald-300"
+                  }`}
+                >
                   {pin.label}
                 </span>
-                <span className="text-[9px] text-zinc-400 italic">
+                <span className={`text-[9px] italic ${themeMode === "day" ? "text-slate-500" : "text-zinc-400"}`}>
                   {pin.latin}
                 </span>
               </div>
@@ -269,7 +286,9 @@ export const HtmlInCanvasOverlay = ({
               <Crosshair
                 className={`w-3 h-3 transition-transform ${
                   isHovered || isActive
-                    ? "text-emerald-400 rotate-90 scale-110"
+                    ? "text-emerald-500 rotate-90 scale-110"
+                    : themeMode === "day"
+                    ? "text-slate-400 group-hover:text-slate-600"
                     : "text-zinc-600 group-hover:text-zinc-400"
                 }`}
               />
@@ -281,28 +300,42 @@ export const HtmlInCanvasOverlay = ({
                 onClick={() => handlePinClick(pin)}
                 className={`absolute ${
                   isLeft ? "right-0 mr-1" : "left-0 ml-1"
-                } top-full mt-2 w-64 p-3 rounded-2xl bg-zinc-950/95 backdrop-blur-2xl border border-emerald-500/50 shadow-2xl shadow-emerald-950/60 pointer-events-auto animate-in fade-in zoom-in-95 duration-150 z-40 cursor-pointer`}
+                } top-full mt-2 w-64 p-3 rounded-2xl backdrop-blur-2xl border shadow-2xl pointer-events-auto animate-in fade-in zoom-in-95 duration-150 z-40 cursor-pointer ${
+                  themeMode === "day"
+                    ? "bg-white/95 text-slate-900 border-emerald-400 shadow-slate-300/60"
+                    : "bg-zinc-950/95 text-white border-emerald-500/50 shadow-emerald-950/60"
+                }`}
               >
                 <div className="flex items-start justify-between gap-1.5 mb-1.5">
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <div
+                      className={`text-xs font-bold flex items-center gap-1.5 ${
+                        themeMode === "day" ? "text-slate-900" : "text-white"
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="truncate">{pin.label}</span>
                     </div>
-                    <div className="text-[10px] text-zinc-400 italic truncate">
+                    <div className={`text-[10px] italic truncate ${themeMode === "day" ? "text-slate-500" : "text-zinc-400"}`}>
                       {pin.latin}
                     </div>
                   </div>
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold shrink-0 border border-emerald-500/30">
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 font-bold shrink-0 border border-emerald-500/30">
                     {pin.system}
                   </span>
                 </div>
 
-                <p className="text-[11px] text-zinc-300 leading-snug mb-2.5">
+                <p className={`text-[11px] leading-snug mb-2.5 ${themeMode === "day" ? "text-slate-600" : "text-zinc-300"}`}>
                   {pin.desc}
                 </p>
 
-                <div className="flex items-center justify-between text-[10px] text-emerald-400 font-bold pt-2 border-t border-zinc-800/80">
+                <div
+                  className={`flex items-center justify-between text-[10px] font-bold pt-2 border-t ${
+                    themeMode === "day"
+                      ? "text-emerald-600 border-slate-200"
+                      : "text-emerald-400 border-zinc-800/80"
+                  }`}
+                >
                   <span className="flex items-center gap-1">
                     <Crosshair className="w-3 h-3" />
                     <span>3D markazlash</span>

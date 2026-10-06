@@ -376,33 +376,11 @@ function patchHoverRules() {
   if (typeof document === "undefined") return;
   if (document.documentElement.dataset.canvasuiHoverRules === "") return;
   document.documentElement.dataset.canvasuiHoverRules = "";
-  const walk = (rules: CSSRuleList) => {
-    for (const rule of Array.from(rules)) {
-      if (rule instanceof CSSStyleRule) {
-        if (rule.selectorText.includes(":hover")) {
-          try {
-            rule.selectorText = rule.selectorText.replace(
-              /:hover\b/g,
-              HOVER_REWRITE,
-            );
-          } catch {}
-        }
-        if (rule.cssRules.length) walk(rule.cssRules);
-      } else if ("cssRules" in rule) {
-        try {
-          walk((rule as CSSGroupingRule).cssRules);
-        } catch {}
-      }
-    }
-  };
-  for (const sheet of Array.from(document.styleSheets)) {
-    try {
-      walk(sheet.cssRules);
-    } catch {}
-  }
-  const style = document.createElement("style");
-  style.textContent = `[${CONTENT_ATTR}][${CURSOR_ATTR}], [${CONTENT_ATTR}][${CURSOR_ATTR}] * { cursor: var(--canvasui-cursor) !important; }`;
-  document.head.appendChild(style);
+  try {
+    const style = document.createElement("style");
+    style.textContent = `[${CONTENT_ATTR}][${CURSOR_ATTR}], [${CONTENT_ATTR}][${CURSOR_ATTR}] * { cursor: var(--canvasui-cursor) !important; }`;
+    document.head.appendChild(style);
+  } catch {}
 }
 
 export function createBend(

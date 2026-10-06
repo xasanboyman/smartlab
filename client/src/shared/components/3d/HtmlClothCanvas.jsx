@@ -409,12 +409,12 @@ export const HtmlClothCanvas = ({ className = "" }) => {
 
     // 5. Physics Simulation Loop
     let animId;
-    let clock = new THREE.Clock();
+    const startTime = performance.now();
     let lastSpeakTime = 0;
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
-      const time = clock.getElapsedTime();
+      const time = (performance.now() - startTime) * 0.001;
       const dt = 0.016;
 
       // Periodically rotate speech chatter every 8 seconds
@@ -517,7 +517,7 @@ export const HtmlClothCanvas = ({ className = "" }) => {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [navigate, isPointerDown]);
+  }, [navigate]);
 
   return (
     <div className="relative w-full">

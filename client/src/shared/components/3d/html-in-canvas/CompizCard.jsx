@@ -49,7 +49,7 @@ export const CompizCard = ({
             s.isHovered ? 1.02 : 1
           }, ${s.isHovered ? 1.02 : 1}, 1)`
         );
-      } else if (!s.isHovered && transformStyle !== "") {
+      } else if (!s.isHovered && s.rx === 0 && s.ry === 0) {
         setTransformStyle("");
       }
 
@@ -58,7 +58,7 @@ export const CompizCard = ({
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [wobbleIntensity, transformStyle]);
+  }, [wobbleIntensity]);
 
   const handlePointerMove = useCallback(
     (e) => {
