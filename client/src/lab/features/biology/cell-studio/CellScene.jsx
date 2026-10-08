@@ -192,7 +192,97 @@ function createEukaryoticOrganelleMaterial(node, asset, crossSection) {
   return mat;
 }
 
-function AssetCellModel({ cell, asset, viewMode, crossSection }) {
+function getMuscleOrganelleId(name = "") {
+  const n = name.toLowerCase();
+  if (n.includes("actin")) return "actin";
+  if (n.includes("myosin")) return "myosin";
+  if (n.includes("myofibril")) return "myofibril";
+  if (n.includes("sarcoplasmic")) return "sarcoplasmic";
+  if (n.includes("mitochondria")) return "mitochondria";
+  if (n.includes("muscle_fiber")) return "sarcolemma";
+  if (n.includes("fascicle")) return "fascicle";
+  if (n.includes("epimysium") || n.includes("perimysium") || n.includes("muscle_muscle")) return "epimysium";
+  return "myofibril";
+}
+
+function isSheathForActive(nameLower, activeOrganelle) {
+  const isWholeMuscleOrEpimysium =
+    nameLower.includes("epimysium") ||
+    nameLower.includes("perimysium") ||
+    nameLower.includes("muscle_muscle");
+
+  const isFascicle = nameLower.includes("fascicle");
+  const isFiber = nameLower.includes("muscle_fiber") || nameLower.includes("muscle_fibers");
+
+  if (["actin", "myosin", "myofibril", "sarcoplasmic", "mitochondria"].includes(activeOrganelle)) {
+    return isWholeMuscleOrEpimysium || isFascicle || isFiber;
+  }
+  if (activeOrganelle === "sarcolemma") {
+    return isWholeMuscleOrEpimysium || isFascicle;
+  }
+  if (activeOrganelle === "fascicle") {
+    return isWholeMuscleOrEpimysium;
+  }
+  return false;
+}
+
+function createMuscleOrganelleMaterial(mesh, activeOrganelle, crossSection, cell, viewMode) {
+  const name = mesh.name || "";
+  const nameLower = name.toLowerCase();
+  const orgId = getMuscleOrganelleId(name);
+  const origMat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+
+  // Clone original material to preserve the rich WebP PBR maps (map, normalMap, etc.)
+  const mat = origMat ? origMat.clone() : new MeshStandardMaterial();
+
+  mat.side = DoubleSide;
+  // White base color allows the texture's native colors to display with 100% fidelity
+  mat.color = new Color(0xffffff);
+
+  if (!mat.map && origMat?.map) mat.map = origMat.map;
+  if (!mat.normalMap && origMat?.normalMap) mat.normalMap = origMat.normalMap;
+  if (!mat.roughnessMap && origMat?.roughnessMap) mat.roughnessMap = origMat.roughnessMap;
+
+  const orgConfig = cell?.organelles?.find((o) => o.id === orgId);
+  const highlightColor = new Color(orgConfig?.color || cell?.accent || "#38bdf8");
+
+  const isCurrentActive = orgId === activeOrganelle;
+
+  if (viewMode === "focus") {
+    if (isCurrentActive) {
+      mat.transparent = false;
+      mat.opacity = 1.0;
+      mat.depthWrite = true;
+    } else {
+      mat.transparent = true;
+      mat.opacity = 0.12;
+      mat.depthWrite = false;
+    }
+  } else {
+    const shouldBeSheer = crossSection
+      ? (nameLower.includes("epimysium") || nameLower.includes("perimysium") || nameLower.includes("muscle_muscle") || nameLower.includes("fascicle") || nameLower.includes("muscle_fiber"))
+      : isSheathForActive(nameLower, activeOrganelle);
+
+    if (shouldBeSheer) {
+      mat.transparent = true;
+      mat.opacity = crossSection ? 0.18 : 0.35;
+      mat.depthWrite = false;
+    } else {
+      mat.transparent = false;
+      mat.opacity = 1.0;
+      mat.depthWrite = true;
+    }
+  }
+
+  mesh.userData.organelleId = orgId;
+  mesh.userData.highlightColor = highlightColor;
+  mesh.userData.baseEmissive = mat.emissive ? mat.emissive.clone() : new Color(0x000000);
+  mesh.userData.baseEmissiveIntensity = mat.emissiveIntensity || 0;
+
+  return mat;
+}
+
+function AssetCellModel({ cell, asset, activeOrganelle, viewMode, crossSection }) {
   const base = import.meta.env.BASE_URL || "/";
   const dracoPath = `${base}draco/`.replace(/\/+/g, "/");
   const modelUrl = asset.url.startsWith("http") ? asset.url : `${base}${asset.url.replace(/^\//, "")}`;
@@ -210,6 +300,12 @@ function AssetCellModel({ cell, asset, viewMode, crossSection }) {
         }
         mesh.material = createEukaryoticOrganelleMaterial(mesh, asset, crossSection);
         mesh.material.vertexColors = false;
+      } else if (asset.url?.includes("skeletal-muscle")) {
+        if (mesh.geometry?.attributes?.color) {
+          mesh.geometry.deleteAttribute("color");
+        }
+        mesh.material = createMuscleOrganelleMaterial(mesh, activeOrganelle, crossSection, cell, viewMode);
+        mesh.material.vertexColors = false;
       } else if (asset.materialMode === "native") {
         mesh.material = createNativeAssetMaterial({ original: mesh.material, asset, crossSection });
       } else {
@@ -219,7 +315,23 @@ function AssetCellModel({ cell, asset, viewMode, crossSection }) {
       }
     });
     return clone;
-  }, [cell, scene, viewMode, crossSection, asset]);
+  }, [cell, scene, viewMode, crossSection, asset, activeOrganelle]);
+
+  useFrame(({ clock }) => {
+    if (!asset.url?.includes("skeletal-muscle")) return;
+    const pulse = Math.sin(clock.getElapsedTime() * 3.5) * 0.5 + 0.5;
+    clonedScene.traverse((node) => {
+      if (node.isMesh && node.material && node.userData.organelleId) {
+        if (node.userData.organelleId === activeOrganelle) {
+          node.material.emissive = node.userData.highlightColor || new Color("#38bdf8");
+          node.material.emissiveIntensity = 0.45 + pulse * 0.45;
+        } else {
+          node.material.emissive = node.userData.baseEmissive || new Color(0x000000);
+          node.material.emissiveIntensity = node.userData.baseEmissiveIntensity || 0;
+        }
+      }
+    });
+  });
 
   return (
     <group
@@ -518,10 +630,10 @@ export default function CellScene({ cell, activeOrganelle, viewMode, crossSectio
       style={{ width: "100%", height: "100%" }}
     >
       <color attach="background" args={["#0c0f17"]} />
-      <ambientLight intensity={0.65} />
-      <directionalLight position={[4.2, 5.2, 5.8]} intensity={1.15} castShadow />
-      <directionalLight position={[-4.4, 2.2, 3.6]} intensity={0.45} color="#cbd5e1" />
-      <pointLight position={[2.8, -1.2, 3.2]} intensity={0.35} color="#94a3b8" />
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[4.2, 5.2, 5.8]} intensity={1.25} castShadow />
+      <directionalLight position={[-4.4, 2.2, 3.6]} intensity={0.65} color="#cbd5e1" />
+      <pointLight position={[2.8, -1.2, 3.2]} intensity={0.45} color="#94a3b8" />
       <Suspense fallback={null}>
         <Float speed={1.25} rotationIntensity={0.08} floatIntensity={0.18}>
           <CellModel cell={cell} activeOrganelle={activeOrganelle} viewMode={viewMode} crossSection={crossSection} autoRotate={autoRotate} />
