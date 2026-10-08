@@ -8,6 +8,7 @@ import {
   FrontSide,
   Float32BufferAttribute,
   MeshStandardMaterial,
+  PCFShadowMap,
   TubeGeometry,
   Vector3,
 } from "three";
@@ -511,7 +512,7 @@ export default function CellScene({ cell, activeOrganelle, viewMode, crossSectio
     <Canvas
       key={resetKey}
       dpr={[1, 2]}
-      shadows
+      shadows={{ type: PCFShadowMap }}
       gl={{ antialias: true, alpha: true, premultipliedAlpha: false }}
       camera={{ position: [0, 0.2, 5.8], fov: 38 }}
       style={{ width: "100%", height: "100%" }}
