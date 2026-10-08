@@ -57,8 +57,8 @@ export const SUBJECTS = [
     topics: [
       {
         slug: "cell",
-        title: "Hujayra",
-        short: "Hujayra organoidlari bilan tanishing.",
+        title: "Eukariot Hujayra",
+        short: "Batafsil 3D eukariot hujayra va uning barcha organoidlari.",
         icon: "Microscope",
       },
       {

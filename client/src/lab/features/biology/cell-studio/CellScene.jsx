@@ -133,8 +133,66 @@ function createNativeAssetMaterial({ original, asset, crossSection }) {
   return Array.isArray(original) ? original.map(cloneMaterial) : cloneMaterial(original);
 }
 
+function createEukaryoticOrganelleMaterial(node, asset, crossSection) {
+  const name = node.name || "";
+  const isOuterMembrane = name.includes("Plasma_membrane_outlide");
+  const isInnerMembrane = name.includes("Plasma_membrane_inside");
+
+  const mat = new MeshStandardMaterial();
+  if (name.includes("UMesh_Nucleolous")) {
+    mat.color = new Color("#ec4899");
+    mat.roughness = 0.25;
+  } else if (name.includes("Nucleolus1")) {
+    mat.color = new Color("#8b5cf6");
+    mat.roughness = 0.4;
+  } else if (name.includes("Golgi")) {
+    mat.color = new Color("#f97316");
+    mat.roughness = 0.35;
+  } else if (name.includes("Rough_endoplasmic")) {
+    mat.color = new Color("#e11d48");
+    mat.roughness = 0.42;
+  } else if (name.includes("Smooth_endoplasmic")) {
+    mat.color = new Color("#06b6d4");
+    mat.roughness = 0.32;
+  } else if (name.includes("Centriole")) {
+    mat.color = new Color("#f59e0b");
+    mat.roughness = 0.25;
+  } else if (name.includes("Microtubule")) {
+    mat.color = new Color("#38bdf8");
+    mat.roughness = 0.3;
+  } else if (name.includes("Twisted_Fibers")) {
+    mat.color = new Color("#0284c7");
+    mat.roughness = 0.3;
+  } else if (name.includes("Vesicles")) {
+    mat.color = new Color("#a855f7");
+    mat.roughness = 0.2;
+  } else if (name.includes("Periox")) {
+    mat.color = new Color("#10b981");
+    mat.roughness = 0.3;
+  } else if (name.includes("Mitochondrium")) {
+    mat.color = new Color("#ef4444");
+    mat.roughness = 0.35;
+  } else if (isOuterMembrane) {
+    mat.color = new Color("#60a5fa");
+    mat.transparent = true;
+    mat.opacity = crossSection ? 0.08 : 0.18;
+    mat.depthWrite = false;
+  } else if (isInnerMembrane) {
+    mat.color = new Color("#3b82f6");
+    mat.transparent = true;
+    mat.opacity = 0.22;
+    mat.depthWrite = false;
+  } else {
+    mat.color = new Color("#94a3b8");
+  }
+  return mat;
+}
+
 function AssetCellModel({ cell, asset, viewMode, crossSection }) {
-  const { scene } = useGLTF(asset.url);
+  const base = import.meta.env.BASE_URL || "/";
+  const dracoPath = `${base}draco/`.replace(/\/+/g, "/");
+  const modelUrl = asset.url.startsWith("http") ? asset.url : `${base}${asset.url.replace(/^\//, "")}`;
+  const { scene } = useGLTF(modelUrl, dracoPath);
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true);
     clone.traverse((node) => {
@@ -142,7 +200,9 @@ function AssetCellModel({ cell, asset, viewMode, crossSection }) {
       if (!mesh.isMesh) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      if (asset.materialMode === "native") {
+      if (asset.url?.includes("eukaryotic-cell")) {
+        mesh.material = createEukaryoticOrganelleMaterial(mesh, asset, crossSection);
+      } else if (asset.materialMode === "native") {
         mesh.material = createNativeAssetMaterial({ original: mesh.material, asset, crossSection });
       } else {
         mesh.geometry.computeVertexNormals();
@@ -456,7 +516,7 @@ export default function CellScene({ cell, activeOrganelle, viewMode, crossSectio
       {nativeMaterial && <directionalLight position={[-4.4, 2.2, 3.6]} intensity={0.82} color="#fff1df" />}
       <spotLight position={[-3.6, 3.2, 4.6]} angle={0.42} penumbra={0.74} intensity={nativeMaterial ? 0.78 : 1.45} color={nativeMaterial ? "#fff8ec" : cell.accentSoft} />
       <pointLight position={[2.8, -1.2, 3.2]} intensity={nativeMaterial ? 0.46 : 0.6} color={nativeMaterial ? "#ffffff" : cell.accent} />
-      <Suspense fallback={<ModelLoadingOverlay cell={cell} />}>
+      <Suspense fallback={null}>
         <Float speed={1.25} rotationIntensity={0.08} floatIntensity={0.18}>
           <CellModel cell={cell} activeOrganelle={activeOrganelle} viewMode={viewMode} crossSection={crossSection} autoRotate={autoRotate} />
         </Float>
