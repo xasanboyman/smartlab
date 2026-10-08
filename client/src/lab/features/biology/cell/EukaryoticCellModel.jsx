@@ -43,6 +43,10 @@ const EukaryoticCellModel = ({ activeId, onSelect, autoRotate = true }) => {
         child.castShadow = true;
         child.receiveShadow = true;
 
+        if (child.geometry?.attributes?.color) {
+          child.geometry.deleteAttribute("color");
+        }
+
         const orgId = getOrganelleIdForName(child.name);
         const name = child.name || "";
 
@@ -55,6 +59,7 @@ const EukaryoticCellModel = ({ activeId, onSelect, autoRotate = true }) => {
 
         // Create clean PBR material per mesh
         const newMat = new THREE.MeshStandardMaterial();
+        newMat.vertexColors = false;
 
         if (name.includes("UMesh_Nucleolous")) {
           // Nucleolus (Yadrocha - inner core)
@@ -115,16 +120,16 @@ const EukaryoticCellModel = ({ activeId, onSelect, autoRotate = true }) => {
           // Outer plasma membrane: delicate translucent glass shell
           newMat.color = new THREE.Color("#60a5fa");
           newMat.transparent = true;
-          newMat.opacity = 0.18;
-          newMat.roughness = 0.2;
+          newMat.opacity = 0.08;
+          newMat.roughness = 0.15;
           newMat.metalness = 0.05;
           newMat.depthWrite = false;
         } else if (isInnerMembrane) {
           // Inner plasma membrane / cut bed
           newMat.color = new THREE.Color("#3b82f6");
           newMat.transparent = true;
-          newMat.opacity = 0.22;
-          newMat.roughness = 0.35;
+          newMat.opacity = 0.14;
+          newMat.roughness = 0.3;
           newMat.metalness = 0.05;
           newMat.depthWrite = false;
         } else {
@@ -169,19 +174,19 @@ const EukaryoticCellModel = ({ activeId, onSelect, autoRotate = true }) => {
           }
           child.material.emissiveIntensity = 0.5 + pulse * 0.5;
           if (isMembrane) {
-            child.material.opacity = 0.5;
+            child.material.opacity = 0.35;
           }
         } else if (activeId && activeId !== "eukaryotic-cell") {
           // Dim non-selected organelles slightly so active one pops
           child.material.emissiveIntensity = 0;
           if (isMembrane) {
-            child.material.opacity = 0.08; // Make membrane super sheer to see selected inner organelle
+            child.material.opacity = 0.03; // Super sheer so selected inner organelle pops clearly
           }
         } else {
           // Default state (overview)
           child.material.emissiveIntensity = 0;
           if (isMembrane) {
-            child.material.opacity = child.userData.defaultOpacity ?? 0.18;
+            child.material.opacity = child.userData.defaultOpacity ?? 0.08;
           }
         }
       }

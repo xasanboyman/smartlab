@@ -15,16 +15,6 @@ export const cells = [
     clinicalContext:
       "Nega bemor to'qimalarida hujayra devori va xloroplast bo'lmasligini tushuntirish uchun qulay noinsoniy namuna.",
     renderImage: { url: "/cell-renders-transparent/plant.png", aspect: "square" },
-    modelAsset: {
-      url: "/models/plant-cell-first001.glb",
-      previewUrl: "/cell-renders-transparent/plant.png",
-      sourceLabel: "User Plant Cell GLB first001",
-      sourceUrl: "local:/Users/lank/Downloads/first001.glb",
-      scale: 2.36,
-      rotation: [0.08, -1.42, -0.02],
-      exposure: 1.08,
-      materialMode: "native",
-    },
     occurrence: {
       title: "Barg, poya, ildiz",
       body: "O'simlik hujayralari energiya to'playdigan, suvni yuritadigan va quyosh nurini shakarga aylantiradigan to'qimalarni hosil qiladi.",
@@ -103,16 +93,6 @@ export const cells = [
     clinicalContext:
       "Immun hujayra morfologiyasi asosiy hujayra biologiyasini infeksiya, yallig'lanish va qon surtmalarini talqin qilish bilan bog'laydi.",
     renderImage: { url: "/cell-renders-transparent/white-blood.png", aspect: "square" },
-    modelAsset: {
-      url: "/models/white-blood-cell-user.glb",
-      previewUrl: "/cell-renders-transparent/white-blood.png",
-      sourceLabel: "User White Blood Cell GLB",
-      sourceUrl: "local:/Users/lank/Downloads/second.glb",
-      scale: 3.18,
-      rotation: [0.02, -0.18, 0],
-      exposure: 1.08,
-      materialMode: "native",
-    },
     occurrence: {
       title: "Qon, limfa, to'qimalar",
       body: "Oq qon tanachalari qon va to'qimalar orasida harakatlanib tahdidlarni aniqlaydi va immun himoyani muvofiqlashtiradi.",

@@ -5,6 +5,7 @@ import {
   Color,
   CatmullRomCurve3,
   DoubleSide,
+  FrontSide,
   Float32BufferAttribute,
   MeshStandardMaterial,
   TubeGeometry,
@@ -12,7 +13,7 @@ import {
 } from "three";
 
 // Highlight/dim a procedural organelle based on the active selection + view mode.
-function CellMaterial({ id, activeOrganelle, viewMode, color, opacity = 1, roughness = 0.66, metalness = 0.03 }) {
+function CellMaterial({ id, activeOrganelle, viewMode, color, opacity = 1, roughness = 0.36, metalness = 0.08 }) {
   const active = id === activeOrganelle;
   const dimmed = viewMode === "focus" && !active;
   const material = {
@@ -22,7 +23,7 @@ function CellMaterial({ id, activeOrganelle, viewMode, color, opacity = 1, rough
     transparent: opacity < 1 || dimmed,
     opacity: dimmed ? Math.min(opacity, 0.18) : opacity,
     emissive: active ? color : "#000000",
-    emissiveIntensity: active ? 0.34 : 0,
+    emissiveIntensity: active ? 0.55 : 0,
   };
   return <meshStandardMaterial {...material} />;
 }
@@ -175,13 +176,15 @@ function createEukaryoticOrganelleMaterial(node, asset, crossSection) {
   } else if (isOuterMembrane) {
     mat.color = new Color("#60a5fa");
     mat.transparent = true;
-    mat.opacity = crossSection ? 0.08 : 0.18;
+    mat.opacity = crossSection ? 0.05 : 0.12;
     mat.depthWrite = false;
+    mat.side = FrontSide;
   } else if (isInnerMembrane) {
     mat.color = new Color("#3b82f6");
     mat.transparent = true;
-    mat.opacity = 0.22;
+    mat.opacity = 0.15;
     mat.depthWrite = false;
+    mat.side = FrontSide;
   } else {
     mat.color = new Color("#94a3b8");
   }
@@ -201,7 +204,11 @@ function AssetCellModel({ cell, asset, viewMode, crossSection }) {
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       if (asset.url?.includes("eukaryotic-cell")) {
+        if (mesh.geometry?.attributes?.color) {
+          mesh.geometry.deleteAttribute("color");
+        }
         mesh.material = createEukaryoticOrganelleMaterial(mesh, asset, crossSection);
+        mesh.material.vertexColors = false;
       } else if (asset.materialMode === "native") {
         mesh.material = createNativeAssetMaterial({ original: mesh.material, asset, crossSection });
       } else {
@@ -285,16 +292,16 @@ function PlantModel({ activeOrganelle, viewMode, crossSection }) {
   return (
     <group rotation={[0.1, -0.28, 0]}>
       <RoundedBox args={[4.7, 2.7, 0.42]} radius={0.18} smoothness={8} position={[0, 0, 0]}>
-        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#84ad4a" opacity={crossSection ? 0.34 : 0.5} />
+        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#65a30d" opacity={crossSection ? 0.15 : 0.28} />
       </RoundedBox>
       <RoundedBox args={[4.18, 2.24, 0.24]} radius={0.12} smoothness={8} position={[0.02, 0.02, 0.08]}>
-        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#4f9f83" opacity={0.24} />
+        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#15803d" opacity={0.12} />
       </RoundedBox>
       <mesh position={[-0.45, -0.12, 0.32]} scale={[1.05, 0.78, 0.28]} castShadow>
         <sphereGeometry args={[0.78, 46, 46]} />
-        <CellMaterial id="vacuole" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#62bdd2" opacity={0.74} />
+        <CellMaterial id="vacuole" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#38bdf8" opacity={0.7} />
       </mesh>
-      <Nucleus position={[0.92, 0.42, 0.45]} scale={[0.52, 0.52, 0.38]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Nucleus position={[0.92, 0.42, 0.45]} scale={[0.52, 0.52, 0.38]} color="#8b5cf6" activeOrganelle={activeOrganelle} viewMode={viewMode} />
       {[
         [-1.65, 0.48, 0.28],
         [1.68, -0.38, 0.3],
@@ -303,17 +310,17 @@ function PlantModel({ activeOrganelle, viewMode, crossSection }) {
         <group key={index} position={position} rotation={[0, 0, index * 0.7]}>
           <mesh scale={[0.35, 0.18, 0.12]} castShadow>
             <sphereGeometry args={[1, 30, 20]} />
-            <CellMaterial id="chloroplast" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#67ad46" />
+            <CellMaterial id="chloroplast" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#22c55e" />
           </mesh>
           <mesh rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.82, 1]}>
             <torusGeometry args={[0.22, 0.012, 8, 42]} />
-            <CellMaterial id="chloroplast" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#9ed36a" />
+            <CellMaterial id="chloroplast" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#86efac" />
           </mesh>
         </group>
       ))}
       <Mitochondrion position={[0.28, -0.72, 0.42]} rotation={[0.3, 0.2, 1.35]} scale={[0.95, 0.95, 0.95]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <CurveTube id="nucleus" color="#ce785c" points={[[0.42, 0.12, 0.42], [0.62, -0.06, 0.5], [1.05, -0.08, 0.46], [1.44, 0.06, 0.38]]} radius={0.05} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <Dots id="vacuole" color="#c76ac5" count={18} spread={[1.72, 0.92, 0.42]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <CurveTube id="nucleus" color="#f97316" points={[[0.42, 0.12, 0.42], [0.62, -0.06, 0.5], [1.05, -0.08, 0.46], [1.44, 0.06, 0.38]]} radius={0.05} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="vacuole" color="#a855f7" count={18} spread={[1.72, 0.92, 0.42]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
     </group>
   );
 }
@@ -323,17 +330,17 @@ function WhiteBloodModel({ activeOrganelle, viewMode, crossSection }) {
     <group scale={[1.2, 1.2, 1.2]}>
       <mesh castShadow receiveShadow>
         <sphereGeometry args={[1.35, 64, 64]} />
-        <CellMaterial id="membrane" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#d6d7e6" opacity={crossSection ? 0.28 : 0.45} />
+        <CellMaterial id="membrane" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#e2e8f0" opacity={crossSection ? 0.12 : 0.22} />
       </mesh>
       {[
         [-0.42, 0.22, 0.34],
         [0.28, 0.06, 0.36],
         [0.02, -0.42, 0.28],
       ].map((position, index) => (
-        <Nucleus key={index} id="nucleus" position={position} scale={[0.42, 0.36, 0.28]} color="#6c35a0" activeOrganelle={activeOrganelle} viewMode={viewMode} />
+        <Nucleus key={index} id="nucleus" position={position} scale={[0.42, 0.36, 0.28]} color="#7c3aed" activeOrganelle={activeOrganelle} viewMode={viewMode} />
       ))}
-      <Dots id="granules" color="#c06696" count={30} spread={[1.05, 1.02, 0.72]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <Dots id="lysosome" color="#8b54b7" count={12} spread={[0.92, 0.88, 0.62]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="granules" color="#ec4899" count={30} spread={[1.05, 1.02, 0.72]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="lysosome" color="#06b6d4" count={12} spread={[0.92, 0.88, 0.62]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
     </group>
   );
 }
@@ -341,16 +348,16 @@ function WhiteBloodModel({ activeOrganelle, viewMode, crossSection }) {
 function NeuronModel({ activeOrganelle, viewMode, crossSection }) {
   return (
     <group rotation={[0.02, -0.2, 0]} scale={[1.05, 1.05, 1.05]}>
-      <Nucleus id="soma" position={[-0.55, 0, 0.08]} scale={[0.64, 0.58, 0.44]} color="#774eb2" activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Nucleus id="soma" position={[-0.55, 0, 0.08]} scale={[0.64, 0.58, 0.44]} color="#8b5cf6" activeOrganelle={activeOrganelle} viewMode={viewMode} />
       <mesh position={[-0.55, 0, 0]} scale={[0.94, 0.82, 0.62]} castShadow receiveShadow>
         <sphereGeometry args={[1, 52, 52]} />
-        <CellMaterial id="soma" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#8db5d8" opacity={crossSection ? 0.36 : 0.55} />
+        <CellMaterial id="soma" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#6366f1" opacity={crossSection ? 0.18 : 0.38} />
       </mesh>
-      <CurveTube id="axon" color="#6b7dc6" points={[[0.04, 0.02, 0.04], [0.72, -0.02, 0.02], [1.56, 0.04, 0.02], [2.35, -0.04, 0]]} radius={0.08} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <CurveTube id="axon" color="#06b6d4" points={[[0.04, 0.02, 0.04], [0.72, -0.02, 0.02], [1.56, 0.04, 0.02], [2.35, -0.04, 0]]} radius={0.08} activeOrganelle={activeOrganelle} viewMode={viewMode} />
       {[0.55, 1.06, 1.58, 2.08].map((x, index) => (
         <mesh key={index} position={[x, 0, 0.02]} rotation={[0, 0, Math.PI / 2]} castShadow>
           <capsuleGeometry args={[0.16, 0.24, 8, 24]} />
-          <CellMaterial id="axon" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#bfd1df" opacity={0.94} />
+          <CellMaterial id="axon" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#f59e0b" opacity={0.94} />
         </mesh>
       ))}
       {[
@@ -359,9 +366,9 @@ function NeuronModel({ activeOrganelle, viewMode, crossSection }) {
         [[-0.78, 0.58, 0.04], [-0.82, 1.16, 0.02], [-1.12, 1.58, 0]],
         [[-0.9, -0.55, 0.04], [-0.92, -1.04, 0], [-1.2, -1.44, 0.02]],
       ].map((points, index) => (
-        <CurveTube key={index} id="dendrites" color="#7d9bcf" points={points} radius={0.052} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+        <CurveTube key={index} id="dendrites" color="#38bdf8" points={points} radius={0.052} activeOrganelle={activeOrganelle} viewMode={viewMode} />
       ))}
-      <Dots id="dendrites" color="#b46ac7" count={12} spread={[2.2, 1.4, 0.2]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="dendrites" color="#ec4899" count={12} spread={[2.2, 1.4, 0.2]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
     </group>
   );
 }
@@ -370,17 +377,17 @@ function EpithelialModel({ activeOrganelle, viewMode, crossSection }) {
   return (
     <group rotation={[0.08, -0.22, 0]} scale={[1.08, 1.08, 1.08]}>
       <RoundedBox args={[2.4, 2.0, 0.72]} radius={0.1} smoothness={8} position={[0, -0.12, 0]}>
-        <CellMaterial id="membrane" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#d79baa" opacity={crossSection ? 0.32 : 0.52} />
+        <CellMaterial id="membrane" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#fb7185" opacity={crossSection ? 0.16 : 0.28} />
       </RoundedBox>
       {Array.from({ length: 12 }, (_, index) => (
         <mesh key={index} position={[-1.1 + index * 0.2, 1.04, 0.08]} castShadow>
           <capsuleGeometry args={[0.045, 0.34, 8, 14]} />
-          <CellMaterial id="microvilli" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#c86f80" />
+          <CellMaterial id="microvilli" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#e11d48" />
         </mesh>
       ))}
-      <Nucleus position={[0.15, -0.2, 0.32]} scale={[0.55, 0.5, 0.36]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <CurveTube id="junctions" color="#9f6cbd" points={[[-1.18, 0.74, 0.38], [-0.6, 0.7, 0.44], [0.1, 0.73, 0.4], [0.96, 0.68, 0.42]]} radius={0.04} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <Dots id="nucleus" color="#d082a2" count={18} spread={[0.96, 0.72, 0.38]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Nucleus position={[0.15, -0.2, 0.32]} scale={[0.55, 0.5, 0.36]} color="#8b5cf6" activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <CurveTube id="junctions" color="#06b6d4" points={[[-1.18, 0.74, 0.38], [-0.6, 0.7, 0.44], [0.1, 0.73, 0.4], [0.96, 0.68, 0.42]]} radius={0.04} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="nucleus" color="#ec4899" count={18} spread={[0.96, 0.72, 0.38]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
     </group>
   );
 }
@@ -390,15 +397,15 @@ function BacteriaModel({ activeOrganelle, viewMode, crossSection }) {
     <group rotation={[0.02, 0.1, -0.02]} scale={[1.12, 1.12, 1.12]}>
       <mesh rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
         <capsuleGeometry args={[0.78, 2.9, 14, 48]} />
-        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#65b8ae" opacity={crossSection ? 0.36 : 0.62} />
+        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#0d9488" opacity={crossSection ? 0.18 : 0.38} />
       </mesh>
       <mesh rotation={[0, 0, Math.PI / 2]} scale={[0.88, 0.88, 0.82]}>
         <capsuleGeometry args={[0.62, 2.6, 12, 40]} />
-        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#235a74" opacity={0.44} />
+        <CellMaterial id="cellWall" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#047857" opacity={0.22} />
       </mesh>
-      <CurveTube id="nucleoid" color="#7a43ad" points={[[-0.9, 0.12, 0.3], [-0.42, -0.14, 0.38], [0.1, 0.18, 0.34], [0.62, -0.12, 0.36], [1.02, 0.06, 0.32]]} radius={0.12} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <CurveTube id="flagellum" color="#b87438" points={[[1.82, -0.22, 0.08], [2.35, -0.72, 0], [2.95, -0.5, 0.02], [3.55, -0.95, 0]]} radius={0.055} activeOrganelle={activeOrganelle} viewMode={viewMode} />
-      <Dots id="nucleoid" color="#e59b3a" count={34} spread={[1.42, 0.48, 0.36]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <CurveTube id="nucleoid" color="#eab308" points={[[-0.9, 0.12, 0.3], [-0.42, -0.14, 0.38], [0.1, 0.18, 0.34], [0.62, -0.12, 0.36], [1.02, 0.06, 0.32]]} radius={0.12} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <CurveTube id="flagellum" color="#38bdf8" points={[[1.82, -0.22, 0.08], [2.35, -0.72, 0], [2.95, -0.5, 0.02], [3.55, -0.95, 0]]} radius={0.055} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="nucleoid" color="#f59e0b" count={34} spread={[1.42, 0.48, 0.36]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
     </group>
   );
 }
@@ -408,18 +415,18 @@ function AnimalModel({ activeOrganelle, viewMode, crossSection }) {
     <group rotation={[0.06, -0.34, 0]} scale={[1.08, 1.08, 1.08]}>
       <mesh scale={[1.7, 1.25, 0.72]} castShadow receiveShadow>
         <sphereGeometry args={[1, 64, 64]} />
-        <CellMaterial id="membrane" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#9db6dc" opacity={crossSection ? 0.28 : 0.48} />
+        <CellMaterial id="membrane" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#60a5fa" opacity={crossSection ? 0.12 : 0.25} />
       </mesh>
-      <Nucleus position={[0.22, 0.18, 0.36]} scale={[0.55, 0.55, 0.42]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Nucleus position={[0.22, 0.18, 0.36]} scale={[0.55, 0.55, 0.42]} color="#8b5cf6" activeOrganelle={activeOrganelle} viewMode={viewMode} />
       <Mitochondrion position={[-0.82, 0.44, 0.32]} rotation={[0.4, 0.1, 1.12]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
       <Mitochondrion position={[0.82, -0.42, 0.25]} rotation={[0.1, 0.35, -0.75]} scale={[0.9, 0.9, 0.9]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
       {[0, 1, 2, 3].map((index) => (
         <mesh key={index} position={[-0.24 + index * 0.18, -0.56 + index * 0.08, 0.46]} rotation={[0.2, 0, 0.7]}>
           <torusGeometry args={[0.38 + index * 0.035, 0.025, 10, 52]} />
-          <CellMaterial id="golgi" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#d49057" />
+          <CellMaterial id="golgi" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#f97316" />
         </mesh>
       ))}
-      <Dots id="nucleus" color="#b35fc8" count={28} spread={[1.25, 0.85, 0.46]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+      <Dots id="nucleus" color="#ec4899" count={28} spread={[1.25, 0.85, 0.46]} activeOrganelle={activeOrganelle} viewMode={viewMode} />
     </group>
   );
 }
@@ -429,21 +436,21 @@ function MuscleModel({ activeOrganelle, viewMode, crossSection }) {
     <group rotation={[0.15, -0.26, -0.03]} scale={[1.08, 1.08, 1.08]}>
       <mesh rotation={[0, 0, Math.PI / 2]} scale={[0.95, 1, 0.82]} castShadow receiveShadow>
         <capsuleGeometry args={[0.76, 2.9, 14, 48]} />
-        <CellMaterial id="sarcolemma" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#d7b284" opacity={crossSection ? 0.26 : 0.42} />
+        <CellMaterial id="sarcolemma" activeOrganelle={activeOrganelle} viewMode={viewMode} color="#ea580c" opacity={crossSection ? 0.14 : 0.28} />
       </mesh>
       {[-0.42, 0, 0.42].map((y, row) =>
         [-0.58, 0.24, 1.06].map((x, index) => (
           <mesh key={`${row}-${index}`} position={[x, y, 0.15]} rotation={[0, Math.PI / 2, 0]} castShadow>
             <cylinderGeometry args={[0.13, 0.13, 0.86, 24]} />
-            <CellMaterial id="myofibril" activeOrganelle={activeOrganelle} viewMode={viewMode} color={index % 2 === 0 ? "#bd3d51" : "#cf6272"} />
+            <CellMaterial id="myofibril" activeOrganelle={activeOrganelle} viewMode={viewMode} color={index % 2 === 0 ? "#dc2626" : "#b91c1c"} />
           </mesh>
         )),
       )}
       {[-1.1, 1.42].map((x, index) => (
-        <Nucleus key={index} id="mitochondria" position={[x, 0.54 - index * 0.92, 0.36]} scale={[0.26, 0.2, 0.18]} color="#cf7042" activeOrganelle={activeOrganelle} viewMode={viewMode} />
+        <Nucleus key={index} id="mitochondria" position={[x, 0.54 - index * 0.92, 0.36]} scale={[0.26, 0.2, 0.18]} color="#ef4444" activeOrganelle={activeOrganelle} viewMode={viewMode} />
       ))}
       {[0, 1, 2, 3, 4].map((index) => (
-        <CurveTube key={index} id="sarcolemma" color="#ead2a7" points={[[-1.55 + index * 0.65, -0.86, 0.26], [-1.45 + index * 0.65, -0.24, 0.34], [-1.55 + index * 0.65, 0.72, 0.28]]} radius={0.035} activeOrganelle={activeOrganelle} viewMode={viewMode} />
+        <CurveTube key={index} id="sarcolemma" color="#f97316" points={[[-1.55 + index * 0.65, -0.86, 0.26], [-1.45 + index * 0.65, -0.24, 0.34], [-1.55 + index * 0.65, 0.72, 0.28]]} radius={0.035} activeOrganelle={activeOrganelle} viewMode={viewMode} />
       ))}
     </group>
   );
@@ -509,13 +516,11 @@ export default function CellScene({ cell, activeOrganelle, viewMode, crossSectio
       camera={{ position: [0, 0.2, 5.8], fov: 38 }}
       style={{ width: "100%", height: "100%" }}
     >
-      {!nativeMaterial && <color attach="background" args={["#fbf7ee"]} />}
-      <ambientLight intensity={nativeMaterial ? 1.42 : 1.28} />
-      <hemisphereLight args={[nativeMaterial ? "#fffaf0" : "#fff8ea", nativeMaterial ? "#efe3d2" : "#e3ded2", nativeMaterial ? 1.26 : 1.18]} />
-      <directionalLight position={[4.2, 5.2, 5.8]} intensity={nativeMaterial ? 2.72 : 2.75} castShadow />
-      {nativeMaterial && <directionalLight position={[-4.4, 2.2, 3.6]} intensity={0.82} color="#fff1df" />}
-      <spotLight position={[-3.6, 3.2, 4.6]} angle={0.42} penumbra={0.74} intensity={nativeMaterial ? 0.78 : 1.45} color={nativeMaterial ? "#fff8ec" : cell.accentSoft} />
-      <pointLight position={[2.8, -1.2, 3.2]} intensity={nativeMaterial ? 0.46 : 0.6} color={nativeMaterial ? "#ffffff" : cell.accent} />
+      <color attach="background" args={["#0c0f17"]} />
+      <ambientLight intensity={0.65} />
+      <directionalLight position={[4.2, 5.2, 5.8]} intensity={1.15} castShadow />
+      <directionalLight position={[-4.4, 2.2, 3.6]} intensity={0.45} color="#cbd5e1" />
+      <pointLight position={[2.8, -1.2, 3.2]} intensity={0.35} color="#94a3b8" />
       <Suspense fallback={null}>
         <Float speed={1.25} rotationIntensity={0.08} floatIntensity={0.18}>
           <CellModel cell={cell} activeOrganelle={activeOrganelle} viewMode={viewMode} crossSection={crossSection} autoRotate={autoRotate} />

@@ -210,7 +210,7 @@ const CellStudioPage = () => {
               </div>
             </div>
 
-            <div className="h-[46vh] min-h-[320px] overflow-hidden rounded-xl border border-border bg-[#fbf7ee]">
+            <div className="h-[46vh] min-h-[320px] overflow-hidden rounded-xl border border-white/10 bg-[#0c0f17]">
               <CellScene
                 cell={cell}
                 activeOrganelle={s.activeOrganelle}
