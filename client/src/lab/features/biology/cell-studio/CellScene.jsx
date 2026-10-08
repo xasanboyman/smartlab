@@ -257,7 +257,7 @@ function MuscleLandmarkPins({ activeLandmarkNum, onSelectLandmark, showLabels = 
         const isHovered = hovered === lm.num;
         return (
           <group key={lm.num} position={lm.position}>
-            <Html center distanceFactor={14} zIndexRange={[100, 0]}>
+            <Html center zIndexRange={[100, 0]}>
               <div style={{ display: showLabels ? "block" : "none" }}>
                 <button
                   type="button"
@@ -267,16 +267,17 @@ function MuscleLandmarkPins({ activeLandmarkNum, onSelectLandmark, showLabels = 
                   }}
                   onMouseEnter={() => setHovered(lm.num)}
                   onMouseLeave={() => setHovered(null)}
-                  className={`group pointer-events-auto relative flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer shadow-2xl select-none ${
+                  className={`group pointer-events-auto relative flex items-center justify-center rounded-full transition-all duration-150 cursor-pointer shadow-md select-none ${
                     isActive
-                      ? "h-7 w-7 bg-amber-500 text-black font-extrabold ring-4 ring-amber-400/80 scale-125"
-                      : "h-6 w-6 bg-black/85 text-white/95 font-bold ring-1 ring-white/50 hover:scale-125 hover:bg-amber-500 hover:text-black"
+                      ? "h-6 w-6 bg-neutral-950 text-amber-400 font-extrabold border-2 border-amber-400 ring-4 ring-amber-400/40 scale-110"
+                      : "h-5 w-5 bg-neutral-900/85 text-white font-bold border border-white/90 hover:scale-125 hover:bg-neutral-950"
                   }`}
                   style={{ transform: "translate3d(0,0,0)" }}
+                  title={`${lm.num}. ${lm.nameUz || lm.name}`}
                 >
-                  <span className="text-[11px] leading-none font-black">{lm.num}</span>
-                  {(isActive || isHovered) && (
-                    <div className="absolute bottom-full mb-1.5 whitespace-nowrap rounded-md bg-black/90 px-2.5 py-1 text-[11px] font-semibold text-white shadow-2xl pointer-events-none border border-white/20 backdrop-blur-md">
+                  <span className="text-[10px] leading-none font-bold">{lm.num}</span>
+                  {isHovered && (
+                    <div className="absolute bottom-full mb-1.5 whitespace-nowrap rounded-lg bg-neutral-950/95 px-2.5 py-1 text-[11px] font-semibold text-white shadow-xl pointer-events-none border border-white/20 backdrop-blur-md">
                       <span className="text-amber-400 font-bold mr-1">{lm.num}.</span>
                       {lm.nameUz || lm.name}
                     </div>
@@ -291,6 +292,56 @@ function MuscleLandmarkPins({ activeLandmarkNum, onSelectLandmark, showLabels = 
   );
 }
 
+function MuscleCameraSetup({ isMuscle, controlsRef }) {
+  const { camera } = useThree();
+  useEffect(() => {
+    if (isMuscle) {
+      camera.up.set(0, 0, 1);
+      camera.position.set(...MUSCLE_OVERVIEW_CAMERA.eye);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(...MUSCLE_OVERVIEW_CAMERA.target);
+        controlsRef.current.update();
+      }
+    } else {
+      camera.up.set(0, 1, 0);
+      camera.position.set(0, 0.2, 5.8);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
+    }
+  }, [isMuscle, camera, controlsRef]);
+  return null;
+}
+
+function MuscleSmoothZoom({ controlsRef }) {
+  const { camera, gl } = useThree();
+  useEffect(() => {
+    const dom = gl.domElement;
+    if (!dom) return;
+
+    const onWheel = (e) => {
+      const controls = controlsRef.current;
+      if (!controls) return;
+      // When zooming inward and practically touching the target, nudge target forward
+      if (e.deltaY < 0) {
+        const dist = camera.position.distanceTo(controls.target);
+        if (dist < 0.06) {
+          const forward = new Vector3();
+          camera.getWorldDirection(forward);
+          controls.target.addScaledVector(forward, 0.03);
+          controls.update();
+        }
+      }
+    };
+
+    dom.addEventListener("wheel", onWheel, { passive: true });
+    return () => dom.removeEventListener("wheel", onWheel);
+  }, [camera, gl, controlsRef]);
+
+  return null;
+}
+
 function MuscleCameraController({ activeLandmarkNum, controlsRef, isOverview = false }) {
   const { camera } = useThree();
   const animRef = useRef({
@@ -303,7 +354,7 @@ function MuscleCameraController({ activeLandmarkNum, controlsRef, isOverview = f
   });
 
   useEffect(() => {
-    camera.up.set(0, 1, 0);
+    camera.up.set(0, 0, 1);
     const lm = MUSCLE_ANNOTATIONS.find((a) => a.num === activeLandmarkNum);
     const targetEye = isOverview || !lm
       ? new Vector3(...MUSCLE_OVERVIEW_CAMERA.eye)
@@ -334,6 +385,7 @@ function MuscleCameraController({ activeLandmarkNum, controlsRef, isOverview = f
 
   useFrame((_, delta) => {
     if (!animRef.current.active) return;
+    camera.up.set(0, 0, 1);
     const anim = animRef.current;
     anim.progress += delta * 2.2;
     if (anim.progress >= 1) {
@@ -785,15 +837,15 @@ function CameraResetWatcher({ resetKey, isMuscle, controlsRef }) {
   useEffect(() => {
     if (resetKey > 0) {
       if (isMuscle) {
+        camera.up.set(0, 0, 1);
         camera.position.set(...MUSCLE_OVERVIEW_CAMERA.eye);
-        camera.up.set(0, 1, 0);
         if (controlsRef.current) {
           controlsRef.current.target.set(...MUSCLE_OVERVIEW_CAMERA.target);
           controlsRef.current.update();
         }
       } else {
-        camera.position.set(0, 0.2, 5.8);
         camera.up.set(0, 1, 0);
+        camera.position.set(0, 0.2, 5.8);
         if (controlsRef.current) {
           controlsRef.current.target.set(0, 0, 0);
           controlsRef.current.update();
@@ -816,7 +868,7 @@ export default function CellScene({
   onSelectLandmark,
   showLabels = true,
   isOverview = false,
-  studioTheme = "dark",
+  studioTheme = "light",
 }) {
   const isMuscle = !!cell.modelAsset?.isSketchfabSkeletalMuscle;
   const controlsRef = useRef(null);
@@ -828,7 +880,7 @@ export default function CellScene({
         fov: MUSCLE_OVERVIEW_CAMERA.fov,
         near: 0.01,
         far: 500,
-        up: [0, 1, 0],
+        up: [0, 0, 1],
       };
     }
     return {
@@ -858,17 +910,34 @@ export default function CellScene({
         camera={initialCamera}
         style={{ width: "100%", height: "100%" }}
       >
-        <color attach="background" args={[bgColor]} />
+        {!isMuscle && <color attach="background" args={[bgColor]} />}
         <StudioEnvironment />
         <CameraResetWatcher resetKey={resetKey} isMuscle={isMuscle} controlsRef={controlsRef} />
+        {isMuscle && <MuscleCameraSetup isMuscle={isMuscle} controlsRef={controlsRef} />}
+        {isMuscle && <MuscleSmoothZoom controlsRef={controlsRef} />}
 
       {/* Studio Lighting */}
       {isMuscle ? (
         <>
-          <directionalLight position={[10, 24, 15]} intensity={1.6} castShadow color="#ffffff" />
-          <directionalLight position={[-15, 10, 8]} intensity={0.9} color="#e0f2fe" />
-          <pointLight position={[15, -12, 10]} intensity={1.2} color="#fef08a" />
-          <ambientLight intensity={0.7} />
+          <directionalLight
+            position={[8.93, 38.39, 18.5]}
+            intensity={1.75}
+            castShadow
+            shadow-mapSize={[1024, 1024]}
+            shadow-bias={-0.001}
+            color="#fff8f0"
+          />
+          <directionalLight
+            position={[-10.6, 16.2, 6.0]}
+            intensity={1.1}
+            color="#dbeafe"
+          />
+          <directionalLight
+            position={[21.2, -12.7, 4.0]}
+            intensity={0.8}
+            color="#bae6fd"
+          />
+          <ambientLight intensity={0.75} />
         </>
       ) : (
         <>
@@ -899,13 +968,18 @@ export default function CellScene({
               controlsRef={controlsRef}
               isOverview={isOverview}
             />
+            <mesh position={[6.45, 9.57, -1.945]} receiveShadow>
+              <planeGeometry args={[36, 36]} />
+              <shadowMaterial transparent opacity={0.24} />
+            </mesh>
             <ContactShadows
-              position={[3.605, -2.95, -12.659]}
+              position={[6.45, 9.57, -1.944]}
+              rotation={[Math.PI, 0, 0]}
               opacity={0.35}
-              scale={45}
+              scale={32}
               blur={2.4}
-              far={12}
-              color="#020617"
+              far={14}
+              color="#0f172a"
             />
           </>
         ) : (
@@ -936,13 +1010,13 @@ export default function CellScene({
         ref={controlsRef}
         makeDefault
         enableDamping
-        dampingFactor={0.06}
+        dampingFactor={0.07}
         enablePan
         screenSpacePanning
-        minDistance={0.005}
-        maxDistance={100.0}
-        zoomSpeed={1.2}
-        rotateSpeed={0.8}
+        minDistance={0.001}
+        maxDistance={250.0}
+        zoomSpeed={1.0}
+        rotateSpeed={0.75}
         panSpeed={0.8}
       />
     </Canvas>

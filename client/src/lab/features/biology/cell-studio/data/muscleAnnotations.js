@@ -1,3 +1,6 @@
+// Official Sketchfab Annotation Hotspots & Camera Coordinates
+// Directly aligned with the official 3D model coordinate space (Z is Up)
+
 export const MUSCLE_ANNOTATIONS = [
   {
     num: 1,
@@ -5,9 +8,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Epimysium",
     nameUz: "Epimiziy",
     subtitle: "Tashqi biriktiruvchi to'qima fassiyasi",
-    position: [10.494, 1.45, -20.99],
-    eye: [23.122, 7.529, -10.359],
-    target: [10.494, 0.1, -20.99],
+    position: [-1.512279, 5.736292, -0.252412],
+    eye: [-3.946494, 14.939428, 0.525985],
+    target: [-0.822699, 6.604886, -0.054173],
     desc: "Butun skelet mushagini tashqaridan o'rab turuvchi zich biriktiruvchi to'qima fassiyasi.",
   },
   {
@@ -16,9 +19,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Fascicle",
     nameUz: "Mushak tutami",
     subtitle: "Fasikula kesimi va pardasi",
-    position: [10.471, 1.25, -20.062],
-    eye: [25.137, 8.608, -7.716],
-    target: [10.471, -0.019, -20.062],
+    position: [1.37726, 7.608471, -0.696648],
+    eye: [0.138566, 16.29997, 0.540865],
+    target: [1.639681, 7.526753, -0.039293],
     desc: "O'nlab mushak tolalari to'plami (tutam) va uning ichki tuzilishi.",
   },
   {
@@ -27,9 +30,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Perimysium",
     nameUz: "Perimiziy",
     subtitle: "Tutamni o'rab turuvchi qobiq",
-    position: [7.065, 0.2, -14.52],
-    eye: [11.594, 1.298, -10.707],
-    target: [7.065, -1.366, -14.52],
+    position: [4.544017, 8.298158, -0.105691],
+    eye: [3.063502, 16.810158, 0.393788],
+    target: [4.564617, 8.036941, -0.18637],
     desc: "Har bir fasikula tutamini ajratib turuvchi va qon tomirlarni o'tkazuvchi parda.",
   },
   {
@@ -38,9 +41,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Muscle fibers",
     nameUz: "Tolalar tutami",
     subtitle: "Mushak tolalari dumi",
-    position: [2.816, 1.1, -12.423],
-    eye: [11.343, 4.969, -5.245],
-    target: [2.816, -0.047, -12.423],
+    position: [8.250606, 9.412739, 1.04365],
+    eye: [7.350195, 17.496929, 1.099847],
+    target: [8.85131, 8.723712, 0.519689],
     desc: "Tutam ichidan chiqadigan bir guruh parallel mushak tolalari dastalari.",
   },
   {
@@ -49,9 +52,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Myofibril",
     nameUz: "Miofibrilla (Mushak tolasi)",
     subtitle: "Yakka mushak hujayrasi",
-    position: [4.573, 0.35, -13.641],
-    eye: [12.461, 3.803, -7.0],
-    target: [4.573, -0.837, -13.641],
+    position: [10.00598, 12.617028, 3.712543],
+    eye: [6.191971, 13.997235, 3.762093],
+    target: [12.342789, 10.657587, 3.351729],
     desc: "Sarkolemma bilan o'ralgan yakka silindrsimon ko'ndalang-targ'il mushak tolasi.",
   },
   {
@@ -60,9 +63,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Sarcoplasmic reticulum",
     nameUz: "Sarkoplazmatik to'r",
     subtitle: "Kalsiy (Ca²⁺) deposi",
-    position: [-1.17, 2.35, -7.715],
-    eye: [1.859, 3.341, -5.165],
-    target: [-1.17, 1.559, -7.715],
+    position: [10.219617, 14.99694, 4.04858],
+    eye: [7.118179, 15.663261, 4.086172],
+    target: [13.268996, 12.323613, 3.675808],
     desc: "Miofibrillalarni to'r kabi o'rab turuvchi va Ca²⁺ saqlovchi silliq ER tizimi.",
   },
   {
@@ -71,9 +74,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Mitochondrion",
     nameUz: "Mitoxondriyalar",
     subtitle: "ATF energiya zavodi",
-    position: [-1.006, 3.05, -7.092],
-    eye: [1.672, 3.769, -4.838],
-    target: [-1.006, 2.194, -7.092],
+    position: [10.55215, 14.890489, 4.867621],
+    eye: [9.226704, 17.595942, 4.492615],
+    target: [13.75061, 9.989577, 3.380525],
     desc: "Mushak qisqarishiga doimiy aerob ATF energiyasini yetkazib beruvchi organoid.",
   },
   {
@@ -82,9 +85,9 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Actin thin filament",
     nameUz: "Aktin mikrofilamenti",
     subtitle: "Yupqa qisqaruvchi ip",
-    position: [-3.824, 0.45, -3.764],
-    eye: [5.658, 5.117, 4.218],
-    target: [-3.824, -0.461, -3.764],
+    position: [10.806639, 17.35765, 3.335173],
+    eye: [8.554771, 22.290665, 4.538346],
+    target: [15.284949, 10.974738, 2.8839],
     desc: "Ikki qatorli spiral F-aktin oqsili, miozin boshchalari bilan birikadi.",
   },
   {
@@ -93,15 +96,21 @@ export const MUSCLE_ANNOTATIONS = [
     name: "Myosin",
     nameUz: "Miozin tolalari",
     subtitle: "Qalin motor oqsili",
-    position: [-3.46, 1.25, -2.804],
-    eye: [5.66, 5.644, 4.873],
-    target: [-3.46, 0.279, -2.804],
+    position: [12.904342, 19.907408, 4.153149],
+    eye: [10.998467, 23.769548, 4.364012],
+    target: [17.728644, 12.453622, 2.709565],
     desc: "ATF gidrolizlab harakat hosil qiluvchi binafsharang motor boshchali qalin filament.",
   },
 ];
 
 export const MUSCLE_OVERVIEW_CAMERA = {
-  eye: [23.5, 7.8, 4.2],
-  target: [3.605, 0.029, -12.659],
-  fov: 42,
+  eye: [9.167782, 22.065939, 4.425327],
+  target: [10.054001, 9.097558, 1.222784],
+  fov: 45,
+  up: [0, 0, 1],
+};
+
+export const MUSCLE_GROUND = {
+  position: [6.44959, 9.57323, -1.94444],
+  scale: 32,
 };

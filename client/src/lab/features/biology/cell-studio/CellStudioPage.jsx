@@ -56,6 +56,7 @@ const buildTutorPrompts = (cell, organelle) => [
 const SketchfabAnnotationBar = ({
   landmarks,
   activeNum,
+  isOverview = false,
   onSelect,
   showLabels,
   onToggleLabels,
@@ -69,14 +70,14 @@ const SketchfabAnnotationBar = ({
 
   const handlePrev = (e) => {
     e.stopPropagation();
-    const prevNum = activeNum <= 1 ? landmarks.length : activeNum - 1;
+    const prevNum = isOverview || activeNum <= 1 ? landmarks.length : activeNum - 1;
     const lm = landmarks.find((l) => l.num === prevNum);
     if (lm) onSelect(lm.num, lm.id);
   };
 
   const handleNext = (e) => {
     e.stopPropagation();
-    const nextNum = activeNum >= landmarks.length ? 1 : activeNum + 1;
+    const nextNum = isOverview || activeNum >= landmarks.length ? 1 : activeNum + 1;
     const lm = landmarks.find((l) => l.num === nextNum);
     if (lm) onSelect(lm.num, lm.id);
   };
@@ -102,10 +103,19 @@ const SketchfabAnnotationBar = ({
             }}
             className="flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/15 cursor-pointer"
           >
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-black text-black">
-              {current.num}
-            </span>
-            <span className="max-w-[130px] sm:max-w-[200px] truncate">{current.nameUz || current.name}</span>
+            {isOverview ? (
+              <>
+                <RotateCcw size={12} className="text-sky-400" />
+                <span className="max-w-[130px] sm:max-w-[200px] truncate">Umumiy ko'rinish</span>
+              </>
+            ) : (
+              <>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-black text-black">
+                  {current.num}
+                </span>
+                <span className="max-w-[130px] sm:max-w-[200px] truncate">{current.nameUz || current.name}</span>
+              </>
+            )}
             <ChevronUp size={13} className={`text-white/60 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
           </button>
 
@@ -206,10 +216,10 @@ const CellStudioPage = () => {
   const s = useObjectState({
     selectedCellId: initial.id,
     activeOrganelle: initial.defaultOrganelle,
-    activeLandmarkNum: 1,
+    activeLandmarkNum: 0,
     autopilot: false,
-    studioTheme: "dark",
-    isOverview: false,
+    studioTheme: "light",
+    isOverview: true,
     menuOpen: false,
     viewMode: "mesh",
     crossSection: false,
@@ -239,9 +249,9 @@ const CellStudioPage = () => {
   useEffect(() => {
     s.setFields({
       activeOrganelle: cell.defaultOrganelle,
-      activeLandmarkNum: 1,
+      activeLandmarkNum: 0,
       autopilot: false,
-      isOverview: false,
+      isOverview: true,
       menuOpen: false,
       comparisonOpen: false,
     });
@@ -403,8 +413,8 @@ const CellStudioPage = () => {
               onClick={() => s.menuOpen && s.setField("menuOpen", false)}
               className={`relative h-[56vh] min-h-[420px] overflow-hidden rounded-2xl border transition-colors ${
                 s.studioTheme === "light"
-                  ? "border-slate-300 bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 shadow-inner"
-                  : "border-white/10 bg-gradient-to-b from-[#192233] via-[#111724] to-[#0a0e17] shadow-inner"
+                  ? "border-slate-300 bg-[radial-gradient(ellipse_at_50%_48%,#ffffff_0%,#f1f5f9_45%,#cbd5e1_80%,#94a3b8_100%)] shadow-inner"
+                  : "border-white/10 bg-[radial-gradient(ellipse_at_50%_48%,#1e293b_0%,#0f172a_60%,#020617_100%)] shadow-inner"
               }`}
             >
               <CellScene
@@ -467,6 +477,7 @@ const CellStudioPage = () => {
                 <SketchfabAnnotationBar
                   landmarks={MUSCLE_ANNOTATIONS}
                   activeNum={s.activeLandmarkNum}
+                  isOverview={s.isOverview}
                   showLabels={s.showLabels}
                   onToggleLabels={() => s.setField("showLabels", !s.showLabels)}
                   autopilot={s.autopilot}
