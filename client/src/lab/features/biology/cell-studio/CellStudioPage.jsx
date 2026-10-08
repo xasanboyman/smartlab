@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft, ArrowRight, Box, Brain, Camera, CircleDot, EyeOff, Gauge, Heart,
-  Info, MessageCircle, Plus, RotateCcw, Sparkles, Star, Target, X,
+  ArrowLeft, ArrowRight, Box, Brain, Camera, ChevronLeft, ChevronRight, ChevronUp,
+  CircleDot, Eye, EyeOff, Gauge, Heart, HelpCircle, Info, Maximize2, MessageCircle,
+  Moon, Play, Plus, RotateCcw, Sparkles, Square, Star, Sun, Tag, Target, X,
 } from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
 import CellScene from "./CellScene";
+import { MUSCLE_ANNOTATIONS } from "./data/muscleAnnotations";
 import { cells, getCellById } from "./data/cells";
 
 const MODES = [
@@ -13,7 +15,7 @@ const MODES = [
   { id: "focus", label: "Fokus", Icon: CircleDot },
 ];
 
-const initial = getCellById("animal");
+const initial = getCellById("muscle");
 
 // Small preview thumbnail for a cell (image if available, else a coloured orb).
 const MiniCell = ({ cell, size = 40 }) => {
@@ -51,13 +53,168 @@ const buildTutorPrompts = (cell, organelle) => [
   `${cell.name} tuzilishini bitta klinik kuzatuv bilan bog'la (tibbiy maslahat bermay).`,
 ];
 
+const SketchfabAnnotationBar = ({
+  landmarks,
+  activeNum,
+  onSelect,
+  showLabels,
+  onToggleLabels,
+  autopilot,
+  onToggleAutopilot,
+  onOverview,
+  menuOpen,
+  setMenuOpen,
+}) => {
+  const current = landmarks.find((l) => l.num === activeNum) || landmarks[0];
+
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    const prevNum = activeNum <= 1 ? landmarks.length : activeNum - 1;
+    const lm = landmarks.find((l) => l.num === prevNum);
+    if (lm) onSelect(lm.num, lm.id);
+  };
+
+  const handleNext = (e) => {
+    e.stopPropagation();
+    const nextNum = activeNum >= landmarks.length ? 1 : activeNum + 1;
+    const lm = landmarks.find((l) => l.num === nextNum);
+    if (lm) onSelect(lm.num, lm.id);
+  };
+
+  return (
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center select-none pointer-events-auto">
+      <div className="relative flex items-center gap-1 rounded-full bg-black/85 px-1.5 py-1 text-white shadow-2xl backdrop-blur-md border border-white/20 ring-1 ring-black/50">
+        <button
+          type="button"
+          onClick={handlePrev}
+          title="Oldingi belgi"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition hover:bg-white/20 hover:text-white active:scale-95 cursor-pointer"
+        >
+          <ChevronLeft size={16} />
+        </button>
+
+        <div className="relative">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(!menuOpen);
+            }}
+            className="flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/15 cursor-pointer"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[11px] font-black text-black">
+              {current.num}
+            </span>
+            <span className="max-w-[130px] sm:max-w-[200px] truncate">{current.nameUz || current.name}</span>
+            <ChevronUp size={13} className={`text-white/60 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {menuOpen && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-72 rounded-2xl border border-white/20 bg-neutral-900/95 p-2 text-xs text-white shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleLabels();
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-white/90 transition hover:bg-white/15 cursor-pointer"
+                >
+                  {showLabels ? <EyeOff size={14} className="text-amber-400" /> : <Eye size={14} className="text-amber-400" />}
+                  <span>{showLabels ? "Belgilarni yashirish" : "Belgilarni ko'rsatish"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggleAutopilot();
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-white/90 transition hover:bg-white/15 cursor-pointer"
+                >
+                  {autopilot ? <Square size={14} className="fill-red-400 text-red-400" /> : <Play size={14} className="fill-emerald-400 text-emerald-400" />}
+                  <span>{autopilot ? "Avtopilotni to'xtatish" : "Avtopilot sayohatini boshlash"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOverview?.();
+                    setMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-white/90 transition hover:bg-white/15 cursor-pointer"
+                >
+                  <RotateCcw size={14} className="text-sky-400" />
+                  <span>Umumiy ko'rinish (Overview)</span>
+                </button>
+              </div>
+
+              <div className="my-1.5 border-t border-white/10" />
+
+              <div className="max-h-56 overflow-y-auto space-y-0.5 pr-0.5">
+                {landmarks.map((lm) => {
+                  const isSelected = lm.num === current.num;
+                  return (
+                    <button
+                      key={lm.num}
+                      type="button"
+                      onClick={() => {
+                        onSelect(lm.num, lm.id);
+                        setMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left transition cursor-pointer ${
+                        isSelected
+                          ? "bg-amber-500/25 text-amber-300 font-bold ring-1 ring-amber-400/50"
+                          : "text-white/80 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                        isSelected ? "bg-amber-400 text-black" : "bg-white/20 text-white"
+                      }`}>
+                        {lm.num}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate leading-tight">{lm.nameUz || lm.name}</span>
+                        <span className="block truncate text-[10px] text-white/50">{lm.descUz || lm.subtitle}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleNext}
+          title="Keyingi belgi"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition hover:bg-white/20 hover:text-white active:scale-95 cursor-pointer"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const CellStudioPage = () => {
+  const canvasContainerRef = useRef(null);
   const s = useObjectState({
     selectedCellId: initial.id,
     activeOrganelle: initial.defaultOrganelle,
+    activeLandmarkNum: 1,
+    autopilot: false,
+    studioTheme: "dark",
+    isOverview: false,
+    menuOpen: false,
     viewMode: "mesh",
     crossSection: false,
-    autoRotate: true,
+    autoRotate: false,
+    showLabels: true,
     resetKey: 0,
     favorites: new Set([initial.id]),
     viewedCells: new Set([initial.id]),
@@ -80,9 +237,33 @@ const CellStudioPage = () => {
 
   // Reset organelle + close comparison when the cell changes.
   useEffect(() => {
-    s.setFields({ activeOrganelle: cell.defaultOrganelle, comparisonOpen: false });
+    s.setFields({
+      activeOrganelle: cell.defaultOrganelle,
+      activeLandmarkNum: 1,
+      autopilot: false,
+      isOverview: false,
+      menuOpen: false,
+      comparisonOpen: false,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cell.id]);
+
+  // Autopilot loop for skeletal muscle guided tour
+  useEffect(() => {
+    if (!s.autopilot || cell.id !== "muscle") return;
+    const timer = window.setInterval(() => {
+      s.setFields((prev) => {
+        const nextNum = (prev.activeLandmarkNum % 9) + 1;
+        const lm = MUSCLE_ANNOTATIONS.find((a) => a.num === nextNum);
+        return {
+          activeLandmarkNum: nextNum,
+          activeOrganelle: lm?.id || prev.activeOrganelle,
+          isOverview: false,
+        };
+      });
+    }, 4500);
+    return () => window.clearInterval(timer);
+  }, [s.autopilot, cell.id]);
 
   // Track coverage for the mastery meter.
   useEffect(() => {
@@ -162,13 +343,20 @@ const CellStudioPage = () => {
               {cell.organelles.map((o) => (
                 <button
                   key={o.id}
-                  onClick={() => s.setField("activeOrganelle", o.id)}
+                  onClick={() => {
+                    const lm = cell.id === "muscle" ? MUSCLE_ANNOTATIONS.find((a) => a.id === o.id) : null;
+                    s.setFields({
+                      activeOrganelle: o.id,
+                      activeLandmarkNum: lm ? lm.num : s.activeLandmarkNum,
+                      isOverview: false,
+                    });
+                  }}
                   className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition ${
                     s.activeOrganelle === o.id ? "bg-secondary font-medium" : "hover:bg-secondary/60"
                   }`}
                 >
                   <span className="h-3 w-3 rounded-full" style={{ background: o.color }} />
-                  {o.name}
+                  <span className="truncate">{o.name}</span>
                 </button>
               ))}
             </div>
@@ -210,23 +398,131 @@ const CellStudioPage = () => {
               </div>
             </div>
 
-            <div className="h-[46vh] min-h-[320px] overflow-hidden rounded-xl border border-white/10 bg-[#0c0f17]">
+            <div
+              ref={canvasContainerRef}
+              onClick={() => s.menuOpen && s.setField("menuOpen", false)}
+              className={`relative h-[56vh] min-h-[420px] overflow-hidden rounded-2xl border transition-colors ${
+                s.studioTheme === "light"
+                  ? "border-slate-300 bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 shadow-inner"
+                  : "border-white/10 bg-gradient-to-b from-[#192233] via-[#111724] to-[#0a0e17] shadow-inner"
+              }`}
+            >
               <CellScene
                 cell={cell}
                 activeOrganelle={s.activeOrganelle}
+                activeLandmarkNum={s.activeLandmarkNum}
                 viewMode={s.viewMode}
                 crossSection={s.crossSection}
                 autoRotate={s.autoRotate}
+                showLabels={s.showLabels}
+                isOverview={s.isOverview}
+                studioTheme={s.studioTheme}
+                onSelectOrganelle={(id) => {
+                  const lm = cell.id === "muscle" ? MUSCLE_ANNOTATIONS.find((a) => a.id === id) : null;
+                  s.setFields({
+                    activeOrganelle: id,
+                    activeLandmarkNum: lm ? lm.num : s.activeLandmarkNum,
+                    isOverview: false,
+                  });
+                }}
+                onSelectLandmark={(num, id) => {
+                  s.setFields({
+                    activeLandmarkNum: num,
+                    activeOrganelle: id,
+                    isOverview: false,
+                  });
+                }}
                 resetKey={s.resetKey}
               />
+
+              {/* Floating corner quick actions */}
+              <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={() => s.setField("studioTheme", s.studioTheme === "light" ? "dark" : "light")}
+                  title={s.studioTheme === "light" ? "Qorong'i studiya rejimiga o'tish" : "Yorug' studiya rejimiga o'tish"}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-black/60 text-white/90 shadow-lg backdrop-blur-md transition hover:bg-black hover:text-white cursor-pointer"
+                >
+                  {s.studioTheme === "light" ? <Moon size={15} /> : <Sun size={15} />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!document.fullscreenElement) {
+                      canvasContainerRef.current?.requestFullscreen?.();
+                    } else {
+                      document.exitFullscreen?.();
+                    }
+                  }}
+                  title="To'liq ekranga ochish"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/20 bg-black/60 text-white/90 shadow-lg backdrop-blur-md transition hover:bg-black hover:text-white cursor-pointer"
+                >
+                  <Maximize2 size={15} />
+                </button>
+              </div>
+
+              {/* Sketchfab Bottom Annotation Bar */}
+              {cell.id === "muscle" && (
+                <SketchfabAnnotationBar
+                  landmarks={MUSCLE_ANNOTATIONS}
+                  activeNum={s.activeLandmarkNum}
+                  showLabels={s.showLabels}
+                  onToggleLabels={() => s.setField("showLabels", !s.showLabels)}
+                  autopilot={s.autopilot}
+                  onToggleAutopilot={() => s.setField("autopilot", !s.autopilot)}
+                  onOverview={() => s.setFields({ isOverview: true, activeLandmarkNum: 0 })}
+                  menuOpen={s.menuOpen}
+                  setMenuOpen={(val) => s.setField("menuOpen", val)}
+                  onSelect={(num, id) => {
+                    s.setFields({
+                      activeLandmarkNum: num,
+                      activeOrganelle: id,
+                      isOverview: false,
+                    });
+                  }}
+                />
+              )}
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
-              <ToolBtn active={s.autoRotate} onClick={() => s.setField("autoRotate", !s.autoRotate)} icon={<RotateCcw size={15} />}>Aylantirish</ToolBtn>
-              <ToolBtn onClick={() => setMode("focus")} icon={<CircleDot size={15} />}>Ajratish</ToolBtn>
-              <ToolBtn onClick={() => setMode("focus")} icon={<EyeOff size={15} />}>Boshqasini yashirish</ToolBtn>
-              <ToolBtn onClick={() => { s.setField("resetKey", s.resetKey + 1); showToast("Ko'rinish tiklandi."); }} icon={<RotateCcw size={15} />}>Ko'rinishni tiklash</ToolBtn>
-              <ToolBtn onClick={() => showToast("Skrinshot funksiyasi keyinroq qo'shiladi.")} icon={<Camera size={15} />}>Skrinshot</ToolBtn>
+              <ToolBtn active={s.showLabels} onClick={() => s.setField("showLabels", !s.showLabels)} icon={<Tag size={15} />}>
+                Yorliqlar
+              </ToolBtn>
+              <ToolBtn active={s.autoRotate} onClick={() => s.setField("autoRotate", !s.autoRotate)} icon={<RotateCcw size={15} />}>
+                Aylantirish
+              </ToolBtn>
+              {cell.id === "muscle" && (
+                <ToolBtn
+                  active={s.autopilot}
+                  onClick={() => s.setField("autopilot", !s.autopilot)}
+                  icon={s.autopilot ? <Square size={15} className="fill-current text-red-500" /> : <Play size={15} className="fill-current text-emerald-500" />}
+                >
+                  {s.autopilot ? "Avtopilotni to'xtatish" : "Avtopilot sayohati"}
+                </ToolBtn>
+              )}
+              <ToolBtn onClick={() => setMode("focus")} icon={<CircleDot size={15} />}>
+                Ajratish
+              </ToolBtn>
+              <ToolBtn onClick={() => setMode("focus")} icon={<EyeOff size={15} />}>
+                Boshqasini yashirish
+              </ToolBtn>
+              <ToolBtn
+                onClick={() => {
+                  s.setFields({
+                    resetKey: s.resetKey + 1,
+                    isOverview: true,
+                    activeLandmarkNum: 1,
+                  });
+                  showToast("Ko'rinish tiklandi.");
+                }}
+                icon={<RotateCcw size={15} />}
+              >
+                Ko'rinishni tiklash
+              </ToolBtn>
+              <ToolBtn onClick={() => showToast("Skrinshot funksiyasi keyinroq qo'shiladi.")} icon={<Camera size={15} />}>
+                Skrinshot
+              </ToolBtn>
             </div>
           </Panel>
 

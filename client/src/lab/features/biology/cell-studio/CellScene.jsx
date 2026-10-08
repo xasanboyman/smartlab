@@ -1,17 +1,38 @@
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Center, ContactShadows, Float, Html, OrbitControls, RoundedBox, useGLTF, useProgress } from "@react-three/drei";
-import { Suspense, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Color,
+  Box3,
   CatmullRomCurve3,
   DoubleSide,
   FrontSide,
   Float32BufferAttribute,
   MeshStandardMaterial,
   PCFShadowMap,
+  PMREMGenerator,
+  ACESFilmicToneMapping,
   TubeGeometry,
   Vector3,
 } from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { MUSCLE_ANNOTATIONS, MUSCLE_OVERVIEW_CAMERA } from "./data/muscleAnnotations";
+import ErrorBoundary from "@/shared/components/ErrorBoundary";
+
+function StudioEnvironment() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pmrem = new PMREMGenerator(gl);
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = env;
+    pmrem.dispose();
+    return () => {
+      scene.environment = null;
+      env.dispose();
+    };
+  }, [gl, scene]);
+  return null;
+}
 
 // Highlight/dim a procedural organelle based on the active selection + view mode.
 function CellMaterial({ id, activeOrganelle, viewMode, color, opacity = 1, roughness = 0.36, metalness = 0.08 }) {
@@ -226,67 +247,187 @@ function isSheathForActive(nameLower, activeOrganelle) {
   return false;
 }
 
+function MuscleLandmarkPins({ activeLandmarkNum, onSelectLandmark, showLabels = true }) {
+  const [hovered, setHovered] = useState(null);
+
+  return (
+    <group>
+      {MUSCLE_ANNOTATIONS.map((lm) => {
+        const isActive = activeLandmarkNum === lm.num;
+        const isHovered = hovered === lm.num;
+        return (
+          <group key={lm.num} position={lm.position}>
+            <Html center distanceFactor={14} zIndexRange={[100, 0]}>
+              <div style={{ display: showLabels ? "block" : "none" }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectLandmark?.(lm.num, lm.id);
+                  }}
+                  onMouseEnter={() => setHovered(lm.num)}
+                  onMouseLeave={() => setHovered(null)}
+                  className={`group pointer-events-auto relative flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer shadow-2xl select-none ${
+                    isActive
+                      ? "h-7 w-7 bg-amber-500 text-black font-extrabold ring-4 ring-amber-400/80 scale-125"
+                      : "h-6 w-6 bg-black/85 text-white/95 font-bold ring-1 ring-white/50 hover:scale-125 hover:bg-amber-500 hover:text-black"
+                  }`}
+                  style={{ transform: "translate3d(0,0,0)" }}
+                >
+                  <span className="text-[11px] leading-none font-black">{lm.num}</span>
+                  {(isActive || isHovered) && (
+                    <div className="absolute bottom-full mb-1.5 whitespace-nowrap rounded-md bg-black/90 px-2.5 py-1 text-[11px] font-semibold text-white shadow-2xl pointer-events-none border border-white/20 backdrop-blur-md">
+                      <span className="text-amber-400 font-bold mr-1">{lm.num}.</span>
+                      {lm.nameUz || lm.name}
+                    </div>
+                  )}
+                </button>
+              </div>
+            </Html>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function MuscleCameraController({ activeLandmarkNum, controlsRef, isOverview = false }) {
+  const { camera } = useThree();
+  const animRef = useRef({
+    active: false,
+    startEye: new Vector3(),
+    startTarget: new Vector3(),
+    endEye: new Vector3(),
+    endTarget: new Vector3(),
+    progress: 1,
+  });
+
+  useEffect(() => {
+    camera.up.set(0, 1, 0);
+    const lm = MUSCLE_ANNOTATIONS.find((a) => a.num === activeLandmarkNum);
+    const targetEye = isOverview || !lm
+      ? new Vector3(...MUSCLE_OVERVIEW_CAMERA.eye)
+      : new Vector3(...lm.eye);
+    const targetLook = isOverview || !lm
+      ? new Vector3(...MUSCLE_OVERVIEW_CAMERA.target)
+      : new Vector3(...lm.target);
+
+    animRef.current = {
+      active: true,
+      startEye: camera.position.clone(),
+      startTarget: controlsRef.current ? controlsRef.current.target.clone() : new Vector3(...MUSCLE_OVERVIEW_CAMERA.target),
+      endEye: targetEye,
+      endTarget: targetLook,
+      progress: 0,
+    };
+  }, [activeLandmarkNum, isOverview, camera, controlsRef]);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const onStart = () => {
+      animRef.current.active = false;
+    };
+    controls.addEventListener("start", onStart);
+    return () => controls.removeEventListener("start", onStart);
+  }, [controlsRef]);
+
+  useFrame((_, delta) => {
+    if (!animRef.current.active) return;
+    const anim = animRef.current;
+    anim.progress += delta * 2.2;
+    if (anim.progress >= 1) {
+      anim.progress = 1;
+      anim.active = false;
+      camera.position.copy(anim.endEye);
+      if (controlsRef.current) {
+        controlsRef.current.target.copy(anim.endTarget);
+        controlsRef.current.update();
+      }
+    } else {
+      const p = anim.progress;
+      const t = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      camera.position.lerpVectors(anim.startEye, anim.endEye, t);
+      if (controlsRef.current) {
+        controlsRef.current.target.lerpVectors(anim.startTarget, anim.endTarget, t);
+        controlsRef.current.update();
+      }
+    }
+  });
+
+  return null;
+}
+
 function createMuscleOrganelleMaterial(mesh, activeOrganelle, crossSection, cell, viewMode) {
   const name = mesh.name || "";
   const nameLower = name.toLowerCase();
   const orgId = getMuscleOrganelleId(name);
   const origMat = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
 
-  // Clone original material to preserve the rich WebP PBR maps (map, normalMap, etc.)
   const mat = origMat ? origMat.clone() : new MeshStandardMaterial();
-
   mat.side = DoubleSide;
-  // White base color allows the texture's native colors to display with 100% fidelity
   mat.color = new Color(0xffffff);
 
   if (!mat.map && origMat?.map) mat.map = origMat.map;
   if (!mat.normalMap && origMat?.normalMap) mat.normalMap = origMat.normalMap;
   if (!mat.roughnessMap && origMat?.roughnessMap) mat.roughnessMap = origMat.roughnessMap;
 
-  const orgConfig = cell?.organelles?.find((o) => o.id === orgId);
-  const highlightColor = new Color(orgConfig?.color || cell?.accent || "#38bdf8");
+  // Wet organic biological tissue sheen - glossy PBR specular
+  mat.roughness = origMat?.roughness !== undefined ? Math.min(origMat.roughness, 0.32) : 0.28;
+  mat.metalness = origMat?.metalness !== undefined ? Math.min(origMat.metalness, 0.08) : 0.02;
+  mat.envMapIntensity = 1.35;
 
-  const isCurrentActive = orgId === activeOrganelle;
+  if (origMat?.aoMap) {
+    mat.aoMap = origMat.aoMap;
+    mat.aoMapIntensity = 1.0;
+  }
+  // Pure native biological colors - no flat emissive washout!
+  mat.emissive = new Color(0x000000);
+  mat.emissiveIntensity = 0;
 
   if (viewMode === "focus") {
+    const isCurrentActive = orgId === activeOrganelle;
     if (isCurrentActive) {
       mat.transparent = false;
       mat.opacity = 1.0;
       mat.depthWrite = true;
     } else {
       mat.transparent = true;
-      mat.opacity = 0.12;
+      mat.opacity = 0.16;
       mat.depthWrite = false;
     }
+  } else if (crossSection) {
+    const isSheath = nameLower.includes("epimysium") || nameLower.includes("perimysium") || nameLower.includes("muscle_muscle");
+    mat.transparent = isSheath;
+    mat.opacity = isSheath ? 0.22 : 1.0;
+    mat.depthWrite = !isSheath;
   } else {
-    const shouldBeSheer = crossSection
-      ? (nameLower.includes("epimysium") || nameLower.includes("perimysium") || nameLower.includes("muscle_muscle") || nameLower.includes("fascicle") || nameLower.includes("muscle_fiber"))
-      : isSheathForActive(nameLower, activeOrganelle);
-
-    if (shouldBeSheer) {
-      mat.transparent = true;
-      mat.opacity = crossSection ? 0.18 : 0.35;
-      mat.depthWrite = false;
-    } else {
-      mat.transparent = false;
-      mat.opacity = 1.0;
-      mat.depthWrite = true;
-    }
+    mat.transparent = origMat?.transparent || false;
+    mat.opacity = origMat?.opacity ?? 1.0;
+    mat.depthWrite = true;
   }
 
   mesh.userData.organelleId = orgId;
-  mesh.userData.highlightColor = highlightColor;
-  mesh.userData.baseEmissive = mat.emissive ? mat.emissive.clone() : new Color(0x000000);
-  mesh.userData.baseEmissiveIntensity = mat.emissiveIntensity || 0;
-
   return mat;
 }
 
-function AssetCellModel({ cell, asset, activeOrganelle, viewMode, crossSection }) {
+function AssetCellModel({
+  cell,
+  asset,
+  activeOrganelle,
+  activeLandmarkNum,
+  viewMode,
+  crossSection,
+  onSelectOrganelle,
+  onSelectLandmark,
+  showLabels = true,
+}) {
   const base = import.meta.env.BASE_URL || "/";
   const dracoPath = `${base}draco/`.replace(/\/+/g, "/");
   const modelUrl = asset.url.startsWith("http") ? asset.url : `${base}${asset.url.replace(/^\//, "")}`;
   const { scene } = useGLTF(modelUrl, dracoPath);
+  const isMuscle = !!asset.isSketchfabSkeletalMuscle;
+
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true);
     clone.traverse((node) => {
@@ -300,7 +441,7 @@ function AssetCellModel({ cell, asset, activeOrganelle, viewMode, crossSection }
         }
         mesh.material = createEukaryoticOrganelleMaterial(mesh, asset, crossSection);
         mesh.material.vertexColors = false;
-      } else if (asset.url?.includes("skeletal-muscle")) {
+      } else if (isMuscle) {
         if (mesh.geometry?.attributes?.color) {
           mesh.geometry.deleteAttribute("color");
         }
@@ -315,32 +456,34 @@ function AssetCellModel({ cell, asset, activeOrganelle, viewMode, crossSection }
       }
     });
     return clone;
-  }, [cell, scene, viewMode, crossSection, asset, activeOrganelle]);
+  }, [cell, scene, viewMode, crossSection, asset, activeOrganelle, isMuscle]);
 
-  useFrame(({ clock }) => {
-    if (!asset.url?.includes("skeletal-muscle")) return;
-    const pulse = Math.sin(clock.getElapsedTime() * 3.5) * 0.5 + 0.5;
-    clonedScene.traverse((node) => {
-      if (node.isMesh && node.material && node.userData.organelleId) {
-        if (node.userData.organelleId === activeOrganelle) {
-          node.material.emissive = node.userData.highlightColor || new Color("#38bdf8");
-          node.material.emissiveIntensity = 0.45 + pulse * 0.45;
-        } else {
-          node.material.emissive = node.userData.baseEmissive || new Color(0x000000);
-          node.material.emissiveIntensity = node.userData.baseEmissiveIntensity || 0;
-        }
-      }
-    });
-  });
+  useEffect(() => {
+    if (isMuscle) {
+      window.__MUSCLE_SCENE__ = clonedScene;
+    }
+  }, [clonedScene, isMuscle]);
+
+  if (isMuscle) {
+    return (
+      <group>
+        <primitive object={clonedScene} />
+        <MuscleLandmarkPins
+          activeLandmarkNum={activeLandmarkNum}
+          onSelectLandmark={onSelectLandmark}
+          showLabels={showLabels}
+        />
+      </group>
+    );
+  }
 
   return (
     <group
       position={asset.position ?? [0, 0, 0]}
       rotation={asset.rotation ?? [0, 0, 0]}
-      scale={[asset.scale, asset.scale, asset.scale]}
     >
       <Center>
-        <primitive object={clonedScene} />
+        <primitive object={clonedScene} scale={[asset.scale, asset.scale, asset.scale]} />
       </Center>
     </group>
   );
@@ -569,21 +712,41 @@ function MuscleModel({ activeOrganelle, viewMode, crossSection }) {
   );
 }
 
-function CellModel({ cell, activeOrganelle, viewMode, crossSection, autoRotate }) {
+function CellModel({
+  cell,
+  activeOrganelle,
+  activeLandmarkNum,
+  viewMode,
+  crossSection,
+  autoRotate,
+  onSelectOrganelle,
+  onSelectLandmark,
+  showLabels,
+}) {
   const group = useRef(null);
+  const isMuscle = !!cell.modelAsset?.isSketchfabSkeletalMuscle;
 
   useFrame((_, delta) => {
-    if (group.current && autoRotate) {
+    if (group.current && autoRotate && !isMuscle) {
       group.current.rotation.y += delta * 0.1;
     }
   });
 
-  const common = { activeOrganelle, viewMode, crossSection };
+  const common = {
+    cell,
+    activeOrganelle,
+    activeLandmarkNum,
+    viewMode,
+    crossSection,
+    onSelectOrganelle,
+    onSelectLandmark,
+    showLabels,
+  };
 
   return (
     <group ref={group} position={[0, 0, 0]}>
       {cell.modelAsset ? (
-        <AssetCellModel cell={cell} asset={cell.modelAsset} {...common} />
+        <AssetCellModel asset={cell.modelAsset} {...common} />
       ) : (
         <>
           {cell.modelKind === "plant" && <PlantModel {...common} />}
@@ -617,30 +780,172 @@ function ModelLoadingOverlay({ cell }) {
   );
 }
 
-export default function CellScene({ cell, activeOrganelle, viewMode, crossSection, autoRotate, resetKey }) {
-  const nativeMaterial = cell.modelAsset?.materialMode === "native";
+function CameraResetWatcher({ resetKey, isMuscle, controlsRef }) {
+  const { camera } = useThree();
+  useEffect(() => {
+    if (resetKey > 0) {
+      if (isMuscle) {
+        camera.position.set(...MUSCLE_OVERVIEW_CAMERA.eye);
+        camera.up.set(0, 1, 0);
+        if (controlsRef.current) {
+          controlsRef.current.target.set(...MUSCLE_OVERVIEW_CAMERA.target);
+          controlsRef.current.update();
+        }
+      } else {
+        camera.position.set(0, 0.2, 5.8);
+        camera.up.set(0, 1, 0);
+        if (controlsRef.current) {
+          controlsRef.current.target.set(0, 0, 0);
+          controlsRef.current.update();
+        }
+      }
+    }
+  }, [resetKey, isMuscle, camera, controlsRef]);
+  return null;
+}
+
+export default function CellScene({
+  cell,
+  activeOrganelle,
+  activeLandmarkNum = 1,
+  viewMode,
+  crossSection,
+  autoRotate,
+  resetKey,
+  onSelectOrganelle,
+  onSelectLandmark,
+  showLabels = true,
+  isOverview = false,
+  studioTheme = "dark",
+}) {
+  const isMuscle = !!cell.modelAsset?.isSketchfabSkeletalMuscle;
+  const controlsRef = useRef(null);
+
+  const initialCamera = useMemo(() => {
+    if (isMuscle) {
+      return {
+        position: MUSCLE_OVERVIEW_CAMERA.eye,
+        fov: MUSCLE_OVERVIEW_CAMERA.fov,
+        near: 0.01,
+        far: 500,
+        up: [0, 1, 0],
+      };
+    }
+    return {
+      position: [0, 0.2, 5.8],
+      fov: 38,
+      near: 0.05,
+      far: 100,
+      up: [0, 1, 0],
+    };
+  }, [isMuscle]);
+
+  const bgColor = studioTheme === "light" ? "#f8fafc" : "#0d131f";
 
   return (
-    <Canvas
-      key={resetKey}
-      dpr={[1, 2]}
-      shadows={{ type: PCFShadowMap }}
-      gl={{ antialias: true, alpha: true, premultipliedAlpha: false }}
-      camera={{ position: [0, 0.2, 5.8], fov: 38 }}
-      style={{ width: "100%", height: "100%" }}
-    >
-      <color attach="background" args={["#0c0f17"]} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[4.2, 5.2, 5.8]} intensity={1.25} castShadow />
-      <directionalLight position={[-4.4, 2.2, 3.6]} intensity={0.65} color="#cbd5e1" />
-      <pointLight position={[2.8, -1.2, 3.2]} intensity={0.45} color="#94a3b8" />
+    <ErrorBoundary>
+      <Canvas
+        key={cell.id}
+        dpr={[1, 2]}
+        shadows={{ type: PCFShadowMap }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          toneMapping: ACESFilmicToneMapping,
+          toneMappingExposure: 1.15,
+          premultipliedAlpha: false,
+        }}
+        camera={initialCamera}
+        style={{ width: "100%", height: "100%" }}
+      >
+        <color attach="background" args={[bgColor]} />
+        <StudioEnvironment />
+        <CameraResetWatcher resetKey={resetKey} isMuscle={isMuscle} controlsRef={controlsRef} />
+
+      {/* Studio Lighting */}
+      {isMuscle ? (
+        <>
+          <directionalLight position={[10, 24, 15]} intensity={1.6} castShadow color="#ffffff" />
+          <directionalLight position={[-15, 10, 8]} intensity={0.9} color="#e0f2fe" />
+          <pointLight position={[15, -12, 10]} intensity={1.2} color="#fef08a" />
+          <ambientLight intensity={0.7} />
+        </>
+      ) : (
+        <>
+          <ambientLight intensity={0.8} />
+          <hemisphereLight skyColor="#ffffff" groundColor="#334155" intensity={0.65} />
+          <directionalLight position={[4.5, 6.0, 5.5]} intensity={1.5} castShadow />
+          <directionalLight position={[-4.5, 2.5, 3.5]} intensity={0.85} color="#e2e8f0" />
+          <pointLight position={[2.5, -1.5, 3.0]} intensity={0.5} color="#94a3b8" />
+        </>
+      )}
+
       <Suspense fallback={null}>
-        <Float speed={1.25} rotationIntensity={0.08} floatIntensity={0.18}>
-          <CellModel cell={cell} activeOrganelle={activeOrganelle} viewMode={viewMode} crossSection={crossSection} autoRotate={autoRotate} />
-        </Float>
-        <ContactShadows position={[0, -1.8, 0]} opacity={nativeMaterial ? 0.18 : 0.26} scale={nativeMaterial ? 7.8 : 7.2} blur={nativeMaterial ? 3.2 : 2.4} far={4.2} />
+        {isMuscle ? (
+          <>
+            <CellModel
+              cell={cell}
+              activeOrganelle={activeOrganelle}
+              activeLandmarkNum={activeLandmarkNum}
+              viewMode={viewMode}
+              crossSection={crossSection}
+              autoRotate={autoRotate}
+              onSelectOrganelle={onSelectOrganelle}
+              onSelectLandmark={onSelectLandmark}
+              showLabels={showLabels}
+            />
+            <MuscleCameraController
+              activeLandmarkNum={activeLandmarkNum}
+              controlsRef={controlsRef}
+              isOverview={isOverview}
+            />
+            <ContactShadows
+              position={[3.605, -2.95, -12.659]}
+              opacity={0.35}
+              scale={45}
+              blur={2.4}
+              far={12}
+              color="#020617"
+            />
+          </>
+        ) : (
+          <>
+            <Float speed={1.25} rotationIntensity={0.08} floatIntensity={0.18}>
+              <CellModel
+                cell={cell}
+                activeOrganelle={activeOrganelle}
+                viewMode={viewMode}
+                crossSection={crossSection}
+                autoRotate={autoRotate}
+                onSelectOrganelle={onSelectOrganelle}
+                showLabels={showLabels}
+              />
+            </Float>
+            <ContactShadows
+              position={[0, -1.8, 0]}
+              opacity={0.25}
+              scale={7.5}
+              blur={2.4}
+              far={4.2}
+            />
+          </>
+        )}
       </Suspense>
-      <OrbitControls makeDefault enableDamping dampingFactor={0.08} enablePan minDistance={3.2} maxDistance={8.4} />
+
+      <OrbitControls
+        ref={controlsRef}
+        makeDefault
+        enableDamping
+        dampingFactor={0.06}
+        enablePan
+        screenSpacePanning
+        minDistance={0.005}
+        maxDistance={100.0}
+        zoomSpeed={1.2}
+        rotateSpeed={0.8}
+        panSpeed={0.8}
+      />
     </Canvas>
+  </ErrorBoundary>
   );
 }
