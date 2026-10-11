@@ -31,10 +31,11 @@ export const ammoniaProtonation = {
   },
 };
 
-// NH₄⁺ + OH⁻ → NH₃ + H₂O: strong base drives ammonia back out of its salt.
+// NH₄⁺ + OH⁻ → NH₃ + H₂O: strong base drives ammonia back out of its salt (pungent odor, alkaline vapors).
 export const ammoniumRelease = {
   id: "ammonium-release",
-  info: null,
+  info: "nh4-alkali",
+  notice: 0.05,
   step(m, dt, ctx, k) {
     const n = Math.min(k.aq(m, "OH-"), k.aq(m, "NH4+"));
     if (n <= k.EPS) return 0;
@@ -42,6 +43,9 @@ export const ammoniumRelease = {
     k.takeAq(m, "NH4+", n);
     k.addAq(m, "NH3", n);
     k.addAq(m, "H2O", n);
+    if (m.tempC > 35 || k.conc(m, "NH3") > 1.5) {
+      k.evolveGas(m, "NH3g", 0.08 * n, dt, { site: "bottom" });
+    }
     return n;
   },
 };

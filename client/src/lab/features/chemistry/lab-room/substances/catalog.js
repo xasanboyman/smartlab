@@ -124,11 +124,23 @@ export const SUBSTANCES = [
     bottle: "amber",
     description: "Rangsiz eritma. Oksidlovchilar ta'sirida qo'ng'ir yod ajraladi.",
   }),
+  liquid("bacl2", "Bariy xlorid", "BaCl₂", {
+    detail: "0,5 M eritma",
+    hazards: ["toxic", "irritant"],
+    bottle: "clear",
+    description: "Rangsiz zaharli eritma. Sulfatlar bilan erimaydigan zich oq cho'kma (BaSO₄) beradi.",
+  }),
 
   powder("nahco3", "Natriy gidrokarbonat", "NaHCO₃", {
     detail: "ichimlik sodasi",
     color: "#f2f2ef",
     description: "Oq kukun. Kislotalar bilan ko'pirib, uglerod(IV) oksid chiqaradi.",
+  }),
+  powder("nh4cl", "Ammoniy xlorid", "NH₄Cl", {
+    detail: "nashatir, oq kukun",
+    hazards: ["irritant"],
+    color: "#f7f7f7",
+    description: "Oq kristall kukun. Ishqorlar bilan qizdirilganda o'tkir hidli ammiak ajratadi.",
   }),
   powder("mno2", "Marganes(IV) oksid", "MnO₂", {
     hazards: ["irritant"],

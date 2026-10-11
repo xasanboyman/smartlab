@@ -304,11 +304,28 @@ export const hydroxideAcid = {
   },
 };
 
+// Ba²⁺ + SO₄²⁻ → BaSO₄↓: classic sulfate test, dense white precipitate insoluble in acids.
+export const bariumSulfate = {
+  id: "barium-sulfate",
+  info: "bacl2-sulfate",
+  notice: 0.005,
+  step(m, dt, ctx, k) {
+    const n = k.fast(Math.min(k.aq(m, "Ba2+"), k.aq(m, "SO4 2-")), dt, 0.2);
+    if (n <= k.EPS) return 0;
+    k.takeAq(m, "Ba2+", n);
+    k.takeAq(m, "SO4 2-", n);
+    k.addSolid(m, "BaSO4", "ppt", n);
+    k.heat(m, 26, n);
+    return n;
+  },
+};
+
 export const PRECIPITATION_RULES = [
   silverIodide,
   silverChloride,
   silverHalideExchange,
   silverOxide,
+  bariumSulfate,
   copperHydroxide,
   ironHydroxide,
   zincHydroxide,

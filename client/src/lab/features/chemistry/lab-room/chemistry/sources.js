@@ -29,8 +29,10 @@ export const SOURCES = {
   agno3: { kind: "liquid", aq: { "Ag+": 0.1, "NO3-": 0.1, H2O: 55.2 } },
   fecl3: { kind: "liquid", aq: { "Fe3+": 0.5, "Cl-": 1.5, H2O: 53.0 } },
   ki: { kind: "liquid", aq: { "K+": 0.5, "I-": 0.5, H2O: 54.2 } },
+  bacl2: { kind: "liquid", aq: { "Ba2+": 0.5, "Cl-": 1.0, H2O: 54.0 } },
 
   nahco3: { kind: "powder", species: "NaHCO3" },
+  nh4cl: { kind: "powder", species: "NH4Cl" },
   mno2: { kind: "powder", species: "MnO2" },
   kmno4: { kind: "powder", species: "KMnO4" },
   sulfur: { kind: "powder", species: "S" },
