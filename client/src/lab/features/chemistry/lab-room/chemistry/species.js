@@ -103,6 +103,11 @@ export const SPECIES = {
   SMolten: { formula: "S", name: "erigan oltingugurt", phase: "s", mw: 32.06, color: "#c9a227" },
   SDark: { formula: "S", name: "qizigan oltingugurt", phase: "s", mw: 32.06, color: "#7a3a12" },
   "Fe2(SO4)3": { formula: "Fe₂(SO₄)₃", name: "temir(III) sulfat", phase: "s", mw: 399.88, color: "#eee4c0", bedMl: 0.15, scatter: 45, settleS: 12 },
+  CH3COOH: { formula: "CH₃COOH", name: "sirka kislotasi", phase: "aq", mw: 60.05 },
+  "CH3COO-": { formula: "CH₃COO⁻", name: "atsetat ioni", phase: "aq", mw: 59.04 },
+  Glucose: { formula: "C₆H₁₂O₆", name: "glyukoza", phase: "aq", mw: 180.16 },
+  GlucoseCrystals: { formula: "C₆H₁₂O₆", name: "glyukoza", phase: "s", mw: 180.16, color: "#f8f7f2" },
+  UniversalIndicator: { formula: "Ind", name: "universal indikator", phase: "aq", mw: 300, universal: true },
 };
 
 export const species = (id) => {

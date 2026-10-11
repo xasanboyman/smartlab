@@ -95,7 +95,8 @@ export const actionPose = ({ action, held, target, lamp, camera, holdS, lab }) =
   }
 
   if (action.id === "heat-in-flame" && lamp) {
-    const flame = worldPoint(lamp, [LAMP_WICK[0], LAMP_WICK[1] + FLAME_OFFSET, LAMP_WICK[2]], new Vector3());
+    const wickY = lamp.typeId === "bunsen-burner" ? 0.155 : LAMP_WICK[1];
+    const flame = worldPoint(lamp, [LAMP_WICK[0], wickY + FLAME_OFFSET, LAMP_WICK[2]], new Vector3());
     if (held.typeId === "crucible-tongs") return toolLevel("crucible-tongs", cam, flame);
     const forward = towards(cam, flame, new Vector3());
     const q = new Quaternion().setFromAxisAngle(forward, 0.55);
@@ -112,11 +113,12 @@ export const actionPose = ({ action, held, target, lamp, camera, holdS, lab }) =
 };
 
 // Pose for a lit lamp brought to a container's mouth for a moment (ignition).
-export const ignitePose = ({ target, camera }) => {
+export const ignitePose = ({ target, camera, held }) => {
   const mouth = mouthPoint(target, new Vector3());
   const dir = towards(camera.position, mouth, new Vector3());
   const spot = mouth.addScaledVector(UP, 0.015).addScaledVector(dir, -0.03);
-  return placeLocal(new Quaternion(), [LAMP_WICK[0], LAMP_WICK[1] + 0.02, LAMP_WICK[2]], spot);
+  const wickY = held?.typeId === "bunsen-burner" ? 0.155 : LAMP_WICK[1];
+  return placeLocal(new Quaternion(), [LAMP_WICK[0], wickY + 0.02, LAMP_WICK[2]], spot);
 };
 
 export const lipWorld = (position, quaternion, lip, out = new Vector3()) =>

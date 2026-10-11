@@ -42,6 +42,12 @@ const deviceLine = (lab, object) => {
   if (!device) return null;
   const { typeId } = object;
   if (typeId === "spirit-lamp") return device.lit ? "yonib turibdi" : "o'chiq";
+  if (typeId === "bunsen-burner") return device.lit ? (device.airOpen ?? true ? "yonib turibdi (moviy alanga)" : "yonib turibdi (sariq alanga)") : "o'chiq";
+  if (typeId === "wire-gauze") return "keramikali asbest to'r";
+  if (typeId === "burette") {
+    const mix = lab.mixture(object.id);
+    return `${formatNumber(mix?.volumeMl ?? 0, 1)} ml`;
+  }
   if (typeId === "hot-plate") return `${Math.round(device.plateC)} °C${device.stir ? " · aralashtirgich yoqilgan" : ""}`;
   if (typeId === "thermometer") return `${formatNumber(device.readingC)} °C`;
   if (typeId === "digital-scale") return `${formatNumber(device.readingG, 2)} g`;

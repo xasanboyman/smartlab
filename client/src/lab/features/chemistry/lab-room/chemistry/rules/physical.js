@@ -6,6 +6,8 @@ const SOLUBLE = {
   NaHCO3: { seconds: 25, cap: 1.14, aq: { "Na+": 1, "HCO3-": 1 }, info: "nahco3-water", kj: -17.2 },
   KMnO4: { seconds: 20, cap: 0.4, aq: { "K+": 1, "MnO4-": 1 }, info: "kmno4-water", plume: true },
   NH4Cl: { seconds: 14, cap: 5.5, aq: { "NH4+": 1, "Cl-": 1 }, info: "nh4cl-water", kj: -14.8 },
+  NaCl: { seconds: 12, cap: 6.1, aq: { "Na+": 1, "Cl-": 1 }, info: null },
+  GlucoseCrystals: { seconds: 15, cap: 5.0, aq: { Glucose: 1 }, info: null },
 };
 
 const dissolveRule = (species, recipe) => ({
@@ -39,6 +41,8 @@ export const dissolveSugar = dissolveRule("SucroseCrystals", SOLUBLE.SucroseCrys
 export const dissolveBicarbonate = dissolveRule("NaHCO3", SOLUBLE.NaHCO3);
 export const dissolvePermanganate = dissolveRule("KMnO4", SOLUBLE.KMnO4);
 export const dissolveAmmoniumChloride = dissolveRule("NH4Cl", SOLUBLE.NH4Cl);
+export const dissolveNaCl = dissolveRule("NaCl", SOLUBLE.NaCl);
+export const dissolveGlucose = dissolveRule("GlucoseCrystals", SOLUBLE.GlucoseCrystals);
 
 const ML_PER_MMOL = { C2H5OH: 0.0584, H2O: 0.018, C3H8O3: 0.073 };
 
@@ -129,6 +133,8 @@ export const PHYSICAL_RULES = [
   dissolveBicarbonate,
   dissolvePermanganate,
   dissolveAmmoniumChloride,
+  dissolveNaCl,
+  dissolveGlucose,
   ethanolWaterMixing,
   schlieren,
   dilution,

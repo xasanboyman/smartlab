@@ -30,6 +30,8 @@ export const SOURCES = {
   fecl3: { kind: "liquid", aq: { "Fe3+": 0.5, "Cl-": 1.5, H2O: 53.0 } },
   ki: { kind: "liquid", aq: { "K+": 0.5, "I-": 0.5, H2O: 54.2 } },
   bacl2: { kind: "liquid", aq: { "Ba2+": 0.5, "Cl-": 1.0, H2O: 54.0 } },
+  "acetic-acid": { kind: "liquid", aq: { "H+": 0.05, "CH3COO-": 0.05, CH3COOH: 1.7, H2O: 50.0 } },
+  "universal-indicator": { kind: "liquid", aq: { UniversalIndicator: 0.05, C2H5OH: 12.0, H2O: 30.0 } },
 
   nahco3: { kind: "powder", species: "NaHCO3" },
   nh4cl: { kind: "powder", species: "NH4Cl" },
@@ -38,6 +40,8 @@ export const SOURCES = {
   sulfur: { kind: "powder", species: "S" },
   "iron-filings": { kind: "powder", species: "Fe" },
   sugar: { kind: "powder", species: "SucroseCrystals" },
+  nacl: { kind: "powder", species: "NaCl" },
+  glucose: { kind: "powder", species: "GlucoseCrystals" },
 
   // One piece picked with tongs: rice-grain sodium, 3 cm ribbon, one granule, 3 cm wire, one chip.
   sodium: { kind: "piece", species: "Na", pieceG: 0.1, form: "chunk" },

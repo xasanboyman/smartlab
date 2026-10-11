@@ -25,6 +25,7 @@ const SPILL_NOTICE_ML = 3;
 
 const DEVICE_DEFAULTS = {
   "spirit-lamp": () => ({ lit: false, capOn: true, fuelMl: 60, boost: 0, dousing: 0 }),
+  "bunsen-burner": () => ({ lit: false, airOpen: true, dousing: 0, boost: 0 }),
   "hot-plate": () => ({ level: 0, setC: ROOM_C, plateC: ROOM_C, stir: false }),
   "gas-jar": () => ({ coverOn: true }),
   "digital-scale": () => ({ readingG: 0, tareG: 0 }),
@@ -171,20 +172,31 @@ const updateDevices = (world, lab, dt) => {
       const rate = target > device.plateC ? 6 : 2;
       device.plateC += Math.sign(target - device.plateC) * Math.min(Math.abs(target - device.plateC), rate * dt);
       device.setC = target;
-    } else if (object.typeId === "spirit-lamp") {
+    } else if (object.typeId === "spirit-lamp" || object.typeId === "bunsen-burner") {
+      const gasOpen = lab.utilityState?.gasOpen ?? true;
+      if (object.typeId === "bunsen-burner" && !gasOpen && device.lit) {
+        device.lit = false;
+        pushFeed(lab, { kind: "note", text: "Gaz magistrali yopilgani sababli gorelka o'chdi" });
+      }
       if (device.dousing > 0 && !lab.activity.gas?.atLamp) device.dousing = Math.max(0, device.dousing - dt * 2);
       if (!lab.activity.gas?.atLamp) device.boost = Math.max(0, device.boost - dt * 3);
     } else if (object.typeId === "thermometer") {
-      const target = device.targetId ? lab.mixture(device.targetId)?.tempC ?? ROOM_C : ROOM_C;
+      const insideId = device.targetId || (object.supportId && isVessel(world.get(object.supportId)?.typeId) ? object.supportId : null);
+      const target = insideId ? lab.mixture(insideId)?.tempC ?? ROOM_C : ROOM_C;
       device.readingC += (target - device.readingC) * (1 - Math.exp(-dt / 1.2));
     } else if (object.typeId === "digital-scale") {
-      let grams = 0;
-      for (const other of world.store.get().objects) {
-        if (other.supportId !== object.id) continue;
-        grams += EMPTY_MASS_G[other.typeId] ?? 150;
-        const mixture = lab.mixture(other.id);
-        if (mixture) grams += massG(mixture);
-      }
+      const calcMass = (supId) => {
+        let sum = 0;
+        for (const other of world.store.get().objects) {
+          if (other.supportId !== supId) continue;
+          sum += EMPTY_MASS_G[other.typeId] ?? 100;
+          const mix = lab.mixture(other.id);
+          if (mix) sum += massG(mix);
+          sum += calcMass(other.id);
+        }
+        return sum;
+      };
+      const grams = calcMass(object.id);
       device.readingG = Math.max(0, grams - device.tareG);
       device.grossG = grams;
     }
@@ -206,10 +218,32 @@ const contextFor = (world, lab, meta) => (entry) => {
       ctx.plateC = supportDevice.plateC;
       ctx.stirring = supportDevice.stir;
     }
-    if (support?.typeId === "retort-stand" && object.position[1] - support.position[1] > 0.15) {
+    let stand = null;
+    let viaWireGauze = false;
+    if (support?.typeId === "retort-stand") {
+      stand = support;
+    } else if (support?.typeId === "wire-gauze") {
+      viaWireGauze = true;
+      if (support.supportId) {
+        const parentSupport = world.get(support.supportId);
+        if (parentSupport?.typeId === "retort-stand") stand = parentSupport;
+      }
+    }
+    if (stand && object.position[1] - stand.position[1] > 0.15) {
       for (const other of world.store.get().objects) {
-        const lamp = other.typeId === "spirit-lamp" && other.supportId === support.id ? lab.device(other.id) : null;
-        if (lamp?.lit) ctx.heatW = (ctx.heatW ?? 0) + LAMP_UNDER_RING_W * (1 + lamp.boost);
+        const isUnder = other.supportId === stand.id || Math.hypot(other.position[0] - stand.position[0], other.position[2] - stand.position[2]) < 0.16;
+        if (!isUnder) continue;
+        const dev = lab.device(other.id);
+        if (!dev?.lit) continue;
+        if (other.typeId === "spirit-lamp") {
+          const power = LAMP_UNDER_RING_W * (1 + dev.boost) * (viaWireGauze ? 0.95 : 0.85);
+          ctx.heatW = (ctx.heatW ?? 0) + power;
+        } else if (other.typeId === "bunsen-burner") {
+          const air = dev.airOpen ?? true;
+          const basePower = air ? 280 : 140;
+          const power = basePower * (1 + dev.boost) * (viaWireGauze ? 0.95 : 0.85);
+          ctx.heatW = (ctx.heatW ?? 0) + power;
+        }
       }
     }
   }
@@ -218,7 +252,9 @@ const contextFor = (world, lab, meta) => (entry) => {
   if (activity.heat?.simId === entry.simId) {
     const lamp = lab.device(activity.heat.lampId);
     if (lamp?.lit) {
-      ctx.heatW = (ctx.heatW ?? 0) + FLAME_W * (1 + lamp.boost);
+      const isBunsen = world.get(activity.heat.lampId)?.typeId === "bunsen-burner";
+      const baseFlame = isBunsen ? ((lamp.airOpen ?? true) ? 300 : 160) : FLAME_W;
+      ctx.heatW = (ctx.heatW ?? 0) + baseFlame * (1 + lamp.boost);
       ctx.flame = "lamp";
     }
   }
@@ -309,8 +345,9 @@ const stepHazards = (world, lab, dt) => {
       fires.push({ position, power: flame.intensity ?? 1, flammableMl: 2 });
       heatSources.push({ position, hot: true });
     }
-    if (object.typeId === "spirit-lamp" && lab.device(object.id)?.lit && position) {
-      heatSources.push({ position: [position[0], position[1] + 0.1, position[2]], hot: true });
+    if ((object.typeId === "spirit-lamp" || object.typeId === "bunsen-burner") && lab.device(object.id)?.lit && position) {
+      const topY = object.typeId === "bunsen-burner" ? 0.16 : 0.1;
+      heatSources.push({ position: [position[0], position[1] + topY, position[2]], hot: true });
     }
   }
   const events = lab.hazards.step(dt, { playerPosition: lab.activity.cameraPosition, containerFires: fires, heatSources });

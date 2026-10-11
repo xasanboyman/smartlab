@@ -30,7 +30,7 @@ const HOT_PLATE_STEPS = ["O'chiq", "50 °C", "100 °C", "200 °C", "300 °C"];
 
 const substanceOf = (typeId) =>
   typeId?.startsWith(SUBSTANCE_PREFIX) ? SUBSTANCE_BY_ID[typeId.slice(SUBSTANCE_PREFIX.length)] ?? null : null;
-export const isVessel = (typeId) => Boolean(CONTAINERS[typeId]) && typeId !== "crucible-tongs";
+export const isVessel = (typeId) => Boolean(CONTAINERS[typeId]) && (CONTAINERS[typeId].capacityMl ?? 0) > 0;
 
 const liquidMl = (lab, object) => {
   const substance = substanceOf(object.typeId);
@@ -62,6 +62,8 @@ export const partAt = (typeId, local) => {
   if (typeId === "gas-jar") return y > 0.19 ? "cover" : "body";
   if (typeId === "digital-scale") return z > 0.02 ? "panel" : "pan";
   if (typeId === "spirit-lamp") return "lamp";
+  if (typeId === "bunsen-burner") return y < 0.04 ? "collar" : "burner";
+  if (typeId === "burette") return y < 0.08 ? "stopcock" : "barrel";
   return null;
 };
 
@@ -71,12 +73,32 @@ const blocked = (id, reason, targetId) => ({ id, label: reason, mode: "click", t
 
 // Reaching for the lamp with something in hand should still light it; without this the flame actions
 // are a dead end ("light the lamp first" with no way to light it).
-const lampToggle = (lab, lamp) => click("lamp-toggle", lab.device(lamp.id)?.lit ? "O'chirish" : "Yoqish", lamp.id);
+const lampToggle = (lab, lamp) => {
+  const lit = lab.device(lamp.id)?.lit;
+  if (!lit && lamp.typeId === "bunsen-burner" && lab.utilityState?.gasOpen === false) {
+    return blocked("lamp-toggle", "Gaz magistrali yopiq! (Kranni oching)", lamp.id);
+  }
+  return click("lamp-toggle", lit ? "O'chirish" : "Yoqish", lamp.id);
+};
 
 const deviceAction = (lab, target, part) => {
   const device = lab.device(target.id);
   if (!device) return null;
   if (target.typeId === "spirit-lamp") return click("lamp-toggle", device.lit ? "O'chirish" : "Yoqish", target.id);
+  if (target.typeId === "bunsen-burner") {
+    if (part === "collar") {
+      const airOpen = !(device.airOpen ?? true);
+      return click("bunsen-air", airOpen ? "Havo darchasini ochish (Moviy alanga)" : "Havo darchasini yopish (Sariq alanga)", target.id);
+    }
+    const gasOpen = lab.utilityState?.gasOpen ?? true;
+    if (!device.lit && !gasOpen) {
+      return blocked("lamp-toggle", "Gaz magistrali yopiq! (Kranni oching)", target.id);
+    }
+    return click("lamp-toggle", device.lit ? "O'chirish" : "Yoqish", target.id);
+  }
+  if (target.typeId === "burette" && part === "stopcock") {
+    return hold("burette-titrate", "Byuretkadan tomizish", target.id);
+  }
   if (target.typeId === "hot-plate" && part === "heat-knob") {
     return click("hotplate-heat", `Harorat: ${HOT_PLATE_STEPS[(device.level + 1) % HOT_PLATE_STEPS.length]}`, target.id);
   }
@@ -86,7 +108,7 @@ const deviceAction = (lab, target, part) => {
   if (target.typeId === "gas-jar" && part === "cover") {
     return click("cover-toggle", device.coverOn ? "Qopqoqni ochish" : "Qopqoqni yopish", target.id);
   }
-  if (target.typeId === "digital-scale" && part === "panel") return click("scale-tare", "Nolga keltirish", target.id);
+  if (target.typeId === "digital-scale" && part === "panel") return click("scale-tare", "Nolga keltirish (Tara)", target.id);
   return null;
 };
 
@@ -103,21 +125,27 @@ export const resolveAction = ({ lab, world, held, focus }) => {
 
   const heldSubstance = substanceOf(held.typeId);
   const targetSubstance = substanceOf(target.typeId);
-  const lamp = target.typeId === "spirit-lamp" ? lab.device(target.id) : null;
+  const lamp = (target.typeId === "spirit-lamp" || target.typeId === "bunsen-burner") ? lab.device(target.id) : null;
   const targetVessel = isVessel(target.typeId);
 
   if (held.typeId === "dropper") {
     const dropper = lab.device(held.id);
     const loaded = (dropper?.mixture?.volumeMl ?? 0) > DROP_ML * 0.5;
-    if (!loaded && liquidMl(lab, target) > 0.3) return click("dropper-draw", "Tortib olish", target.id);
-    if (loaded && targetVessel) return hold("dropper-drop", "Tomizish", target.id);
+    if (!loaded && liquidMl(lab, target) > 0.1) return click("dropper-draw", "Tortib olish (Pipetka)", target.id);
+    if (loaded && targetVessel) return hold("dropper-drop", "Tomizish (Bosib turing yoki bosing)", target.id);
     return null;
   }
   if (held.typeId === "spatula") {
     const load = lab.device(held.id)?.load;
-    if (!load && targetSubstance?.state === "powder") return click("spatula-scoop", `Kukun olish (${SPATULA_G} g)`, target.id);
-    if (load && targetVessel) return click("spatula-tip", "Solish", target.id);
-    if (load && targetSubstance?.state === "powder") return click("spatula-return", "Qaytarish", target.id);
+    const isScoopable = targetSubstance?.state === "powder" || targetSubstance?.state === "solid";
+    const targetMix = isVessel(target.typeId) ? lab.mixture(target.id) : null;
+    const hasVesselSolids = targetMix && targetMix.solids.length > 0;
+    if (!load && (isScoopable || hasVesselSolids)) {
+      const name = isScoopable ? `${SPATULA_G} g` : `${targetMix.solids[0].species}`;
+      return click("spatula-scoop", `Kukun olish (${name})`, target.id);
+    }
+    if (load && targetVessel) return click("spatula-tip", `Solish (${load.sourceId ? (SUBSTANCE_BY_ID[load.sourceId]?.name ?? load.sourceId) : "modda"})`, target.id);
+    if (load && isScoopable) return click("spatula-return", "Qaytarish", target.id);
     return null;
   }
   if (held.typeId === "crucible-tongs") {
@@ -136,12 +164,25 @@ export const resolveAction = ({ lab, world, held, focus }) => {
     if (lamp?.lit) return hold("gas-at-flame", "Alangaga yo'naltirish", target.id);
     return null;
   }
-  if (held.typeId === "stirring-rod") return targetVessel && liquidMl(lab, target) > 0.5 ? hold("stir", "Aralashtirish", target.id) : null;
-  if (held.typeId === "thermometer") return targetVessel ? hold("measure", "Haroratni o'lchash", target.id) : null;
-  if (held.typeId === "ph-paper") return targetVessel && liquidMl(lab, target) > 0.05 ? click("ph-test", "pH ni aniqlash", target.id) : null;
-  if (held.typeId === "spirit-lamp") {
+  if (held.typeId === "stirring-rod") return targetVessel && liquidMl(lab, target) > 0.1 ? hold("stir", "Aralashtirish (erishni tezlatish)", target.id) : null;
+  if (held.typeId === "thermometer") {
+    const tm = lab.mixture(target.id);
+    const tempText = tm?.tempC != null ? `${tm.tempC.toFixed(1)} °C` : "22.0 °C";
+    return targetVessel ? hold("measure", `Haroratni o'lchash (${tempText})`, target.id) : null;
+  }
+  if (held.typeId === "ph-paper") {
+    const pm = lab.mixture(target.id);
+    const estPh = pm ? (phOf(pm) ?? 7) : 7;
+    return targetVessel && liquidMl(lab, target) > 0.05 ? click("ph-test", `pH ni tekshirish (~${estPh.toFixed(1)})`, target.id) : null;
+  }
+  if (held.typeId === "spirit-lamp" || held.typeId === "bunsen-burner") {
     if (!lab.device(held.id)?.lit) return null;
     return targetVessel ? click("ignite", "Alanga yaqinlashtirish", target.id) : null;
+  }
+  if (held.typeId === "watch-glass" && targetVessel) {
+    const wm = lab.mixture(held.id);
+    const hasContents = wm && (wm.volumeMl > 0.01 || wm.solids.length > 0);
+    if (hasContents) return click("tip-watch-glass", "Soat oynasidan idishga solish", target.id);
   }
 
   const heldLiquid = liquidMl(lab, held);
@@ -208,6 +249,12 @@ export const runClick = (action, { lab, world, held }) => {
       lab.setDevice(target.id, { lit: !device.lit, capOn: device.lit, dousing: 0, boost: 0 });
       pushSound(lab, { type: device.lit ? "click" : "whoosh", position: target.position });
       return;
+    case "bunsen-air": {
+      const airOpen = !(device.airOpen ?? true);
+      lab.setDevice(target.id, { airOpen });
+      pushSound(lab, { type: "click", soft: true });
+      return;
+    }
     case "hotplate-heat":
       lab.setDevice(target.id, { level: (device.level + 1) % HOT_PLATE_STEPS.length });
       pushSound(lab, { type: "click" });
@@ -235,27 +282,79 @@ export const runClick = (action, { lab, world, held }) => {
         mixIn(mixture, takePortion(lab.mixture(target.id), ml));
       }
       lab.setDevice(held.id, { ...dropper, mixture, fillMl: mixture.volumeMl, ...streamLook(lab, target) });
+      pushSound(lab, { type: "pour", soft: true });
       return;
     }
     case "dropper-drop":
       dropOnce(lab, held.id, target.id);
       return;
-    case "spatula-scoop":
-      lab.setDevice(held.id, {
-        load: { sourceId: targetSubstance.id, grams: SPATULA_G, color: targetSubstance.container.color, grain: targetSubstance.container.grain ?? "fine" },
-      });
-      lab.setDevice(target.id, { remaining: Math.max(0, device.remaining - SPATULA_G / JAR_GRAMS.powder), capOn: false });
+    case "spatula-scoop": {
+      if (targetSubstance) {
+        lab.setDevice(held.id, {
+          load: { sourceId: targetSubstance.id, grams: SPATULA_G, color: targetSubstance.container.color, grain: targetSubstance.container.grain ?? "fine" },
+        });
+        lab.setDevice(target.id, { remaining: Math.max(0, device.remaining - SPATULA_G / JAR_GRAMS.powder), capOn: false });
+        pushSound(lab, { type: "click", soft: true });
+      } else {
+        const mix = lab.mixture(target.id);
+        if (mix && mix.solids.length > 0) {
+          const solid = mix.solids[0];
+          const sp = SPECIES[solid.species];
+          const mw = sp?.mw ?? 58.4;
+          const totalG = (solid.mmol * mw) / 1000;
+          const takeG = Math.min(SPATULA_G, totalG);
+          const takeMmol = (takeG * 1000) / mw;
+          solid.mmol = Math.max(0, solid.mmol - takeMmol);
+          if (solid.mmol <= EPS) mix.solids.shift();
+          lab.setDevice(held.id, {
+            load: { sourceId: solid.species.toLowerCase(), grams: takeG, color: sp?.color ?? "#f8f9fa", grain: "fine" },
+          });
+          pushSound(lab, { type: "click", soft: true });
+        }
+      }
       return;
+    }
     case "spatula-tip": {
       const load = lab.device(held.id).load;
-      addPowder(lab.mixture(target.id), load.sourceId, load.grams, { label: SUBSTANCE_BY_ID[load.sourceId].formula });
+      const sub = SUBSTANCE_BY_ID[load.sourceId];
+      const label = sub ? sub.formula : (SPECIES[load.sourceId]?.formula ?? load.sourceId);
+      addPowder(lab.mixture(target.id), load.sourceId, load.grams, { label });
       lab.setDevice(held.id, { load: null });
+      pushSound(lab, { type: "click", soft: true });
       return;
     }
     case "spatula-return": {
       const load = lab.device(held.id).load;
-      lab.setDevice(target.id, { remaining: Math.min(1, device.remaining + load.grams / JAR_GRAMS.powder) });
+      if (device && !isNaN(device.remaining)) {
+        lab.setDevice(target.id, { remaining: Math.min(1, device.remaining + load.grams / JAR_GRAMS.powder) });
+      }
       lab.setDevice(held.id, { load: null });
+      return;
+    }
+    case "tip-watch-glass": {
+      const fromMix = lab.mixture(held.id);
+      const toMix = lab.mixture(target.id);
+      if (fromMix && toMix) {
+        for (const solid of fromMix.solids) {
+          const existing = toMix.solids.find((s) => s.species === solid.species && s.form === solid.form);
+          if (existing) {
+            existing.mmol += solid.mmol;
+            existing.count += solid.count;
+            existing.startMmol = (existing.startMmol ?? 0) + (solid.startMmol ?? solid.mmol);
+          } else {
+            toMix.solids.push({ ...solid });
+          }
+        }
+        fromMix.solids = [];
+        if (fromMix.volumeMl > 0.01) {
+          const portion = takePortion(fromMix, fromMix.volumeMl);
+          mixIn(toMix, portion);
+        }
+        for (const entry of fromMix.history) toMix.history.push({ ...entry });
+        fromMix.history = [];
+        pushSound(lab, { type: "clink", soft: true });
+        world.flash("Soat oynasidagi modda idishga solindi");
+      }
       return;
     }
     case "tongs-pick": {
@@ -385,13 +484,42 @@ export const runHold = (action, { lab, world, held }, dt, state) => {
       return;
     }
     case "dropper-drop":
-      state.nextDropS = state.nextDropS ?? DROP_EVERY_S;
-      if (state.holdS >= state.nextDropS) {
+      if (!state.initialDropDone) {
+        state.initialDropDone = true;
+        state.nextDropS = DROP_EVERY_S;
+        dropOnce(lab, held.id, target.id);
+      } else if (state.holdS >= state.nextDropS) {
         state.nextDropS += DROP_EVERY_S;
         dropOnce(lab, held.id, target.id);
       }
       activity.drop = { dropperId: held.id, targetId: target.id };
       return;
+    case "burette-titrate": {
+      const below = target.supportId ? world.get(target.supportId) : null;
+      const receiver = isVessel(below?.typeId) ? below : world.store.get().objects.find((o) => isVessel(o.typeId) && Math.hypot(o.position[0] - target.position[0], o.position[2] - target.position[2]) < 0.16 && target.position[1] > o.position[1]);
+      const buretteMix = lab.mixture(target.id);
+      if (buretteMix && buretteMix.volumeMl > 0.02) {
+        state.nextDropS = state.nextDropS ?? 0.16;
+        if (state.holdS >= state.nextDropS) {
+          state.nextDropS += 0.16;
+          const portion = takePortion(buretteMix, DROP_ML);
+          if (receiver) {
+            lab.queueMix(receiver.id, mixIn(lab.mixture(receiver.id), portion));
+          } else {
+            spillPortion(lab, portion, [target.position[0], 0.9, target.position[2]]);
+          }
+          pushSound(lab, { type: "pour", soft: true });
+        }
+        activity.drop = {
+          dropperId: target.id,
+          targetId: receiver?.id ?? null,
+          from: [target.position[0], target.position[1] + 0.02, target.position[2]],
+          to: receiver ? [receiver.position[0], receiver.position[1] + 0.1, receiver.position[2]] : [target.position[0], 0.9, target.position[2]],
+          burette: true,
+        };
+      }
+      return;
+    }
     case "gas-flow": {
       const substance = substanceOf(held.typeId);
       const mixture = lab.mixture(target.id);
@@ -420,6 +548,10 @@ export const runHold = (action, { lab, world, held }, dt, state) => {
     }
     case "stir":
       activity.stir = target.id;
+      if (!state.lastStirSound || state.holdS > state.lastStirSound + 0.45) {
+        state.lastStirSound = state.holdS;
+        pushSound(lab, { type: "clink", soft: true });
+      }
       return;
     case "measure":
       lab.device(held.id).targetId = target.id;
@@ -457,7 +589,7 @@ export const endHold = (action, { lab, held }) => {
     activity.pour = null;
     if (held && substanceOf(held.typeId)) lab.setDevice(held.id, { capOn: true });
   }
-  if (action.id === "dropper-drop") activity.drop = null;
+  if (action.id === "dropper-drop" || action.id === "burette-titrate") activity.drop = null;
   if (action.id === "gas-flow" || action.id === "gas-at-flame") activity.gas = null;
   if (action.id === "stir") activity.stir = null;
   if (action.id === "measure") {

@@ -6,7 +6,7 @@ import useObjectState from "@/shared/hooks/useObjectState";
 import { useSnap } from "@/shared/utils/snapStore";
 import { cn } from "@/shared/utils/cn";
 import { EQUIPMENT } from "../equipment/catalog";
-import { HAZARDS, STATES, SUBSTANCES } from "../substances/catalog";
+import { CABINET_CATEGORIES, categoryOfSubstance, HAZARDS, STATES, SUBSTANCES } from "../substances/catalog";
 import { SUBSTANCE_PREFIX, bodyBounds, objectType } from "../world/objectTypes";
 import { PROMPTS } from "../world/prompts";
 import { CABINET } from "../data/labRoomContent";
@@ -25,6 +25,12 @@ const SECTION_DOT = {
   gas: "bg-emerald-500",
   equipment: "bg-violet-500",
   search: "bg-slate-500",
+  acids: "bg-red-500",
+  bases: "bg-blue-500",
+  organics: "bg-amber-500",
+  salts: "bg-emerald-500",
+  indicators: "bg-purple-500",
+  elements: "bg-cyan-500",
 };
 
 // Thumbnails are framed to fill their square, so real size decides how big each item stands on the shelf.
@@ -36,7 +42,18 @@ const shelfSize = (typeId) => {
 
 const substanceItem = (s) => {
   const typeId = `${SUBSTANCE_PREFIX}${s.id}`;
-  return { typeId, name: s.name, formula: s.formula, detail: s.detail, hazards: s.hazards, description: s.description, size: shelfSize(typeId), clear: false };
+  const cat = CABINET_CATEGORIES.find((c) => c.id === categoryOfSubstance(s.id));
+  return {
+    typeId,
+    name: s.name,
+    formula: s.formula,
+    detail: s.detail,
+    hazards: s.hazards,
+    description: s.description,
+    size: shelfSize(typeId),
+    clear: false,
+    categoryBadge: cat?.badge ?? null,
+  };
 };
 
 // Empty clear glassware nearly vanishes in a flat thumbnail, so it gets lifted on the dark shelves.
@@ -49,6 +66,7 @@ const equipmentItem = (e) => ({
   description: "",
   size: shelfSize(e.id),
   clear: objectType(e.id).body.breaks === "glass",
+  categoryBadge: "Laboratoriya jihozlari, o'lchov va asboblari",
 });
 
 const REAGENT_SECTIONS = STATES.map((s) => ({
@@ -58,7 +76,17 @@ const REAGENT_SECTIONS = STATES.map((s) => ({
 }));
 const EQUIPMENT_SECTION = { id: "equipment", name: "Jihozlar", items: EQUIPMENT.map(equipmentItem) };
 const ALL_ITEMS = [...REAGENT_SECTIONS.flatMap((s) => s.items), ...EQUIPMENT_SECTION.items];
-const TABS = [...STATES, { id: "equipment", name: EQUIPMENT_SECTION.name }];
+const STATE_TABS = [...STATES, { id: "equipment", name: EQUIPMENT_SECTION.name }];
+
+const SEGREGATED_SECTIONS = CABINET_CATEGORIES.map((cat) => ({
+  id: cat.id,
+  name: cat.name,
+  badge: cat.badge,
+  items:
+    cat.id === "equipment"
+      ? EQUIPMENT.map(equipmentItem)
+      : SUBSTANCES.filter((s) => categoryOfSubstance(s.id) === cat.id).map(substanceItem),
+}));
 
 const matches = (item, query) => {
   const q = query.trim().toLowerCase();
@@ -120,14 +148,20 @@ const Door = ({ side }) => (
 
 const Shelf = ({ section, urls, sectionRef, onItemPointerDown, onItemHover, onItemKey }) => (
   <section ref={sectionRef} className="pb-2">
-    <div className="mb-1.5 flex items-center gap-2 px-1 pt-3">
+    <div className="mb-1.5 flex flex-wrap items-center gap-2 px-1 pt-3">
       <span className="flex items-center gap-2 rounded-[3px] border border-[#b3bbc3] bg-gradient-to-b from-white to-[#dde2e6] px-2.5 py-1 shadow-[0_1px_2px_rgba(15,23,32,0.2)]">
         <span className="size-1.5 rounded-full bg-[#9aa3ac]" />
-        <span className={cn("size-2 rounded-full", SECTION_DOT[section.id])} />
+        <span className={cn("size-2 rounded-full", SECTION_DOT[section.id] ?? "bg-sky-500")} />
         <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#26323d]">{section.name}</span>
         <span className="text-[11px] font-semibold tabular-nums text-[#6b7783]">{section.items.length}</span>
         <span className="size-1.5 rounded-full bg-[#9aa3ac]" />
       </span>
+      {section.badge && (
+        <span className="inline-flex items-center gap-1 rounded-[3px] border border-amber-600/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-900 shadow-sm">
+          <span>🛡️</span>
+          <span>{section.badge}</span>
+        </span>
+      )}
     </div>
     <div className="grid grid-cols-[repeat(auto-fill,minmax(108px,1fr))]" style={{ ...SHELF_STYLE, gridAutoRows: `${ROW}px` }}>
       {section.items.map((item) => (
@@ -180,9 +214,10 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
   const sectionEls = useRef({});
   const pendingSection = useRef(null);
   const scrollLock = useRef(0);
-  const { view, section, query, hovered, drag, setField, setFields } = useObjectState({
+  const { mode, view, section, query, hovered, drag, setField, setFields } = useObjectState({
+    mode: "segregated",
     view: "reagents",
-    section: "liquid",
+    section: "acids",
     query: "",
     hovered: null,
     drag: null,
@@ -191,8 +226,9 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
   const searching = Boolean(query.trim());
   const sections = useMemo(() => {
     if (searching) return [{ id: "search", name: CABINET.results, items: ALL_ITEMS.filter((item) => matches(item, query)) }];
+    if (mode === "segregated") return SEGREGATED_SECTIONS;
     return view === "equipment" ? [EQUIPMENT_SECTION] : REAGENT_SECTIONS;
-  }, [searching, query, view]);
+  }, [searching, query, mode, view]);
 
   useEffect(() => {
     thumbs.request(ALL_ITEMS.map((item) => item.typeId));
@@ -312,13 +348,15 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
     if (!world.addToSlot(item.typeId).ok) world.flash(PROMPTS.reasons.full);
   };
 
+  const activeTabs = mode === "segregated" ? CABINET_CATEGORIES : STATE_TABS;
+
   const openTab = (id, timeStamp) => {
-    if (id === "equipment") {
+    if (mode === "states" && id === "equipment") {
       pendingSection.current = "equipment";
       setFields({ view: "equipment", section: "equipment", query: "" });
       return;
     }
-    if (view !== "reagents" || searching) {
+    if ((mode === "states" && view !== "reagents") || searching) {
       pendingSection.current = id;
       setFields({ view: "reagents", section: id, query: "" });
       return;
@@ -333,14 +371,15 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
 
   // The tab under the label follows the shelf you have scrolled to.
   const followScroll = (e) => {
-    if (view !== "reagents" || searching || e.timeStamp < scrollLock.current) return;
+    if ((mode === "states" && view !== "reagents") || searching || e.timeStamp < scrollLock.current) return;
     const scroller = e.currentTarget;
-    let current = STATES[0].id;
-    for (const s of STATES) {
+    const tabs = mode === "segregated" ? CABINET_CATEGORIES : STATES;
+    let current = tabs[0].id;
+    for (const s of tabs) {
       const el = sectionEls.current[s.id];
       if (el && el.offsetTop - scroller.scrollTop <= 48) current = s.id;
     }
-    if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = STATES[STATES.length - 1].id;
+    if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = tabs[tabs.length - 1].id;
     if (current !== section) setField("section", current);
   };
 
@@ -382,32 +421,66 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
           </div>
         </div>
 
-        <div className="flex gap-1 bg-[#bfc6cc] px-2 pt-1.5">
-          {TABS.map((t) => {
-            const active = !searching && section === t.id;
-            return (
-              <Button
-                key={t.id}
-                variant="ghost"
-                onClick={(e) => openTab(t.id, e.timeStamp)}
-                className={cn(
-                  "h-8 gap-1.5 rounded-b-none rounded-t-md px-2.5 text-xs font-semibold",
-                  t.id === "equipment" && "ml-auto",
-                  active
-                    ? "bg-[#e8ebee] text-[#1f2933] hover:bg-[#e8ebee] hover:text-[#1f2933]"
-                    : "text-[#3e4a55] hover:bg-white/45 hover:text-[#1f2933]",
-                )}
-              >
-                <span className={cn("size-2 rounded-full", SECTION_DOT[t.id])} />
-                {t.name}
-              </Button>
-            );
-          })}
+        <div className="flex flex-wrap items-center justify-between gap-1 border-b border-[#aab2ba] bg-[#bfc6cc] px-2 py-1.5">
+          <div className="flex flex-wrap items-center gap-1">
+            {activeTabs.map((t) => {
+              const active = !searching && section === t.id;
+              return (
+                <Button
+                  key={t.id}
+                  variant="ghost"
+                  onClick={(e) => openTab(t.id, e.timeStamp)}
+                  className={cn(
+                    "h-7 gap-1.5 rounded-b-none rounded-t-md px-2 text-xs font-semibold",
+                    active
+                      ? "bg-[#e8ebee] text-[#1f2933] hover:bg-[#e8ebee] hover:text-[#1f2933]"
+                      : "text-[#3e4a55] hover:bg-white/45 hover:text-[#1f2933]",
+                  )}
+                >
+                  <span className={cn("size-2 rounded-full", SECTION_DOT[t.id] ?? "bg-sky-500")} />
+                  {t.name}
+                </Button>
+              );
+            })}
+          </div>
+
+          <div className="ml-auto flex items-center gap-1 rounded bg-[#aab2ba]/60 p-0.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                setField("mode", "segregated");
+                setField("section", "acids");
+              }}
+              className={cn(
+                "rounded px-2 py-0.5 font-semibold transition cursor-pointer",
+                mode === "segregated"
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-700 hover:text-zinc-950",
+              )}
+            >
+              Xavfsiz shkaflar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setField("mode", "states");
+                setField("section", "liquid");
+              }}
+              className={cn(
+                "rounded px-2 py-0.5 font-semibold transition cursor-pointer",
+                mode === "states"
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-700 hover:text-zinc-950",
+              )}
+            >
+              Agregat holati
+            </button>
+          </div>
         </div>
 
         <div className="relative min-h-0 flex-1">
           <div
-            key={searching ? "search" : view}
+            key={searching ? "search" : `${mode}-${view}`}
             ref={scrollerRef}
             data-cabinet-scroll="true"
             onScroll={followScroll}
@@ -446,6 +519,11 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
                   {hoveredItem.name}
                   {hoveredItem.formula && <span className="ml-2 font-mono text-[13px] font-medium text-[#52606d]">{hoveredItem.formula}</span>}
                 </p>
+                {hoveredItem.categoryBadge && (
+                  <p className="text-[11px] font-semibold text-emerald-800">
+                    🛡️ {hoveredItem.categoryBadge}
+                  </p>
+                )}
                 {hoveredItem.detail && <p className="text-xs text-[#52606d]">{hoveredItem.detail}</p>}
                 {hoveredItem.description && <p className="mt-1 line-clamp-2 text-xs leading-relaxed">{hoveredItem.description}</p>}
               </div>

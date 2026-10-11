@@ -38,6 +38,34 @@ const flashParams = (lab) => {
   return { color: flash.color, strength: flash.strength * (1 - age / FLASH_S) };
 };
 
+const DropletTrail = ({ lab }) => {
+  const meshRef = useRef(null);
+
+  useFrame(({ clock }) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const drop = lab.activity.drop;
+    if (!drop?.from || !drop?.to) {
+      mesh.visible = false;
+      return;
+    }
+    mesh.visible = true;
+    const t = (clock.elapsedTime * 6) % 1;
+    mesh.position.set(
+      drop.from[0] + (drop.to[0] - drop.from[0]) * t,
+      drop.from[1] + (drop.to[1] - drop.from[1]) * t,
+      drop.from[2] + (drop.to[2] - drop.from[2]) * t,
+    );
+  });
+
+  return (
+    <mesh ref={meshRef} visible={false}>
+      <sphereGeometry args={[0.0038, 12, 12]} />
+      <meshStandardMaterial color="#bae6fd" transparent opacity={0.88} roughness={0.05} />
+    </mesh>
+  );
+};
+
 // World-space visuals of what the player is doing: the pour stream, the gas hose and flashes from pops and bangs.
 const ToolEffects = ({ lab }) => {
   const flashGroup = useRef(null);
@@ -51,6 +79,7 @@ const ToolEffects = ({ lab }) => {
   return (
     <>
       <PourStream get={() => pourParams(lab)} />
+      <DropletTrail lab={lab} />
       <Co2Jet lab={lab} />
       <GasTube get={() => gasParams(lab)} />
       <group ref={flashGroup}>

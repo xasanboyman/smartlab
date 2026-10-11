@@ -390,6 +390,7 @@ const LabRoomPage = () => {
           vrMode={vrMode}
           onReady={handleReady}
           onMonitor={openMonitor}
+          onCabinet={actions.openCabinet}
         />
       )}
 

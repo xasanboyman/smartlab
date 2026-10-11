@@ -21,7 +21,7 @@ const HAZE = {
 
 const DIFFUSION = 0.06;
 const LEAK_PER_S = 0.015;
-const VENT_PER_S = 0.12;
+const VENT_PER_S = 0.35;
 const HOOD_PER_S = 0.7;
 // Spilled liquid: how wide a millilitre spreads, how fast it dries, how long a millilitre of ethanol burns.
 const SPREAD_M2_PER_ML = 0.0022;

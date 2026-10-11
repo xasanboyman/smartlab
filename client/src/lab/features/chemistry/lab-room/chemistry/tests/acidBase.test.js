@@ -120,3 +120,36 @@ test("4.6 · carbon dioxide reacts with caustic soda invisibly and only acidifie
   assert.ok(ph > 3.5 && ph < 5.5, `carbonic acid: pH ${ph?.toFixed(2)}`);
   assert.ok(water.look().liquid.turbidity < 0.05, "stays clear");
 });
+
+test("acetic acid neutralizes with sodium hydroxide and warms up", () => {
+  const b = bench("conical-flask");
+  b.pour("acetic-acid", 5);
+  assert.ok(b.ph() < 3.5, `acetic acid is acidic: ${b.ph()}`);
+  const startTemp = b.m.tempC;
+  b.pour("naoh", 5);
+  b.run(1);
+  assert.ok(b.aq("CH3COO-") > 0.1, "acetate ion formed");
+  assert.ok(b.m.tempC > startTemp, "neutralization warms the flask");
+});
+
+test("acetic acid fizzes with sodium bicarbonate evolving carbon dioxide", () => {
+  const b = bench("beaker");
+  b.pour("acetic-acid", 10).powder("nahco3", 0.5);
+  b.run(1, { stirring: true });
+  b.run(2);
+  assert.ok(b.aq("CH3COO-") > 0.05, "acetate formed from fizz");
+});
+
+test("universal indicator reads red in acid, green in water, and violet in alkali", () => {
+  const acid = bench("test-tube");
+  acid.pour("hcl", 3).pour("universal-indicator", 0.1).run(1);
+  assert.ok(acid.ph() < 3, `acidic: ${acid.ph()}`);
+
+  const neutral = bench("test-tube");
+  neutral.pour("water", 5).pour("universal-indicator", 0.1).run(1);
+  assert.ok(Math.abs(neutral.ph() - 7) < 0.5, `neutral: ${neutral.ph()}`);
+
+  const alkali = bench("test-tube");
+  alkali.pour("naoh", 3).pour("universal-indicator", 0.1).run(1);
+  assert.ok(alkali.ph() > 11, `alkaline: ${alkali.ph()}`);
+});

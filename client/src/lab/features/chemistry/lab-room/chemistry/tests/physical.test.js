@@ -135,3 +135,21 @@ test("4.14 · dilute ammonia and dilute hydrochloric acid just neutralise each o
   assert.ok(b.look().liquid.turbidity < 0.02, "nothing to see");
   assert.ok(b.ph() > 4 && b.ph() < 10, `close to neutral: pH ${b.ph()?.toFixed(1)}`);
 });
+
+test("sodium chloride dissolves in water cleanly", () => {
+  const b = bench("beaker");
+  b.pour("water", 20).powder("nacl", 1);
+  assert.ok(b.m.solids.length > 0, "crystals present before dissolving");
+  b.run(15, { stirring: true });
+  assert.ok(b.aq("Na+") > 5 && b.aq("Cl-") > 5, "dissolved ions in solution");
+  assert.equal(b.m.solids.length, 0, "completely dissolved");
+});
+
+test("glucose dissolves in water cleanly", () => {
+  const b = bench("conical-flask");
+  b.pour("water", 25).powder("glucose", 1);
+  assert.ok(b.m.solids.length > 0, "glucose crystals present");
+  b.run(20, { stirring: true });
+  assert.ok(b.aq("Glucose") > 2, "dissolved glucose");
+  assert.equal(b.m.solids.length, 0, "completely dissolved");
+});

@@ -49,7 +49,7 @@ const pourTitle = (lab, activity) => {
 };
 
 // Frame-driven aiming, tool actions, placement checks and the discrete actions (take, put down, drop, slots).
-const WorldInteraction = ({ world, lab, inputRef, activeRef, anchors, onMonitor }) => {
+const WorldInteraction = ({ world, lab, inputRef, activeRef, anchors, onMonitor, onCabinet }) => {
   const { world: physics, rapier } = useRapier();
   const camera = useThree((s) => s.camera);
   const markerRef = useRef(null);
@@ -170,7 +170,9 @@ const WorldInteraction = ({ world, lab, inputRef, activeRef, anchors, onMonitor 
       for (const event of events) {
         if (event.type === "primary") {
           if (panel) {
-            if (runPanel(panel, env) === "monitor") onMonitor?.();
+            const modal = runPanel(panel, env);
+            if (modal === "monitor") onMonitor?.();
+            else if (modal === "cabinet") onCabinet?.();
           } else if (action?.mode === "click") runClick(action, env);
           else if (action?.mode === "hold") {
             holding.armed = action.valid;
@@ -205,7 +207,7 @@ const WorldInteraction = ({ world, lab, inputRef, activeRef, anchors, onMonitor 
     // Held actions run while the button stays down on the same target.
     const pressed = active && input.primaryDown;
     if (!pressed) holding.armed = false;
-    if (holding.action && (!pressed || !sameAction(holding.action, action) || world.activeObject()?.id !== holding.heldId)) {
+    if (holding.action && (!pressed || !sameAction(holding.action, action) || (world.activeObject()?.id ?? null) !== holding.heldId)) {
       endHold(holding.action, { lab, world, held: world.get(holding.heldId) });
       holding.action = null;
     }

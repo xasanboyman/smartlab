@@ -124,6 +124,20 @@ export const SUBSTANCES = [
     bottle: "amber",
     description: "Rangsiz eritma. Oksidlovchilar ta'sirida qo'ng'ir yod ajraladi.",
   }),
+  liquid("acetic-acid", "Sirka kislotasi", "CH₃COOH", {
+    detail: "10% eritma",
+    hazards: ["irritant"],
+    description: "Rangsiz, o'tkir sirka hidli kuchsiz kislota. Ishqorlar bilan neytrallanadi, sodani ko'pirtiradi.",
+  }),
+  liquid("universal-indicator", "Universal indikator", "pH 1-14", {
+    detail: "spirtli indikator",
+    hazards: ["flammable"],
+    bottle: "amber",
+    sizeMl: 100,
+    fillMl: 80,
+    look: { color: "#22c55e", opacity: 0.6 },
+    description: "pH indikatori: kislotali muhitda qizil/sariq, neytralda yashil, ishqorda ko'k/binafsha rang beradi.",
+  }),
   liquid("bacl2", "Bariy xlorid", "BaCl₂", {
     detail: "0,5 M eritma",
     hazards: ["toxic", "irritant"],
@@ -131,6 +145,20 @@ export const SUBSTANCES = [
     description: "Rangsiz zaharli eritma. Sulfatlar bilan erimaydigan zich oq cho'kma (BaSO₄) beradi.",
   }),
 
+  powder("nacl", "Natriy xlorid", "NaCl", {
+    detail: "osh tuzi, toza kristall",
+    jar: "glass",
+    color: "#f8f9fa",
+    grain: "crystal",
+    description: "Oq kristall kukun. Suvda eriydi, kumush nitrat bilan oq cho'kma beradi.",
+  }),
+  powder("glucose", "Glyukoza", "C₆H₁₂O₆", {
+    detail: "uzum shakari, kukun",
+    jar: "glass",
+    color: "#f8f7f2",
+    grain: "fine",
+    description: "Oq shirin kristall kukun. Suvda oson eriydi.",
+  }),
   powder("nahco3", "Natriy gidrokarbonat", "NaHCO₃", {
     detail: "ichimlik sodasi",
     color: "#f2f2ef",
@@ -247,3 +275,23 @@ export const SUBSTANCES = [
 ];
 
 export const SUBSTANCE_BY_ID = Object.fromEntries(SUBSTANCES.map((s) => [s.id, s]));
+
+// Dedicated chemical storage cabinets conforming to laboratory safety segregation standards.
+export const CABINET_CATEGORIES = [
+  { id: "acids", name: "Kislotalar shkafi", badge: "Kislotaga chidamli korroziyaga qarshi shkaf", color: "bg-red-500", dot: "bg-red-500" },
+  { id: "bases", name: "Ishqorlar shkafi", badge: "Kislotalardan alohida saqlanuvchi shkaf", color: "bg-blue-500", dot: "bg-blue-500" },
+  { id: "organics", name: "Organik moddalar & Erituvchilar", badge: "O'tga chidamli po'lat xavfsizlik shkafi", color: "bg-amber-500", dot: "bg-amber-500" },
+  { id: "salts", name: "Tuzlar & Noorganik moddalar", badge: "Umumiy reaktivlar saqlash javoni", color: "bg-emerald-500", dot: "bg-emerald-500" },
+  { id: "indicators", name: "Indikatorlar", badge: "Analitik indikatorlar javoni", color: "bg-purple-500", dot: "bg-purple-500" },
+  { id: "elements", name: "Metallar & Gaz ballonlari", badge: "Reaktiv metallar va siqilgan gazlar ombori", color: "bg-cyan-500", dot: "bg-cyan-500" },
+  { id: "equipment", name: "Laboratoriya jihozlari", badge: "Shisha idishlar, o'lchov va isitish asboblari", color: "bg-stone-500", dot: "bg-violet-500" },
+];
+
+export const categoryOfSubstance = (id) => {
+  if (["hcl", "h2so4", "hno3", "acetic-acid"].includes(id)) return "acids";
+  if (["naoh", "nh3", "limewater"].includes(id)) return "bases";
+  if (["ethanol", "glycerin", "glucose", "sugar", "water"].includes(id)) return "organics";
+  if (["phenolphthalein", "universal-indicator"].includes(id)) return "indicators";
+  if (["sodium", "magnesium", "zinc", "copper", "iron-filings", "oxygen", "hydrogen", "co2", "chlorine"].includes(id)) return "elements";
+  return "salts";
+};

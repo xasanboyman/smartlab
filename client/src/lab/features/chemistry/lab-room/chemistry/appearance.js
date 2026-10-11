@@ -1,6 +1,6 @@
 import { SPECIES } from "./species";
-import { EPS, conc, gasFraction, nitricFraction, sulfuricFraction } from "./mixture";
-import { phOf } from "./acidity";
+import { EPS, aq, conc, gasFraction, nitricFraction, sulfuricFraction } from "./mixture";
+import { phOf, phPaperColor } from "./acidity";
 
 const WATER_TINT = { color: "#0d2230", alpha: 0.08 };
 
@@ -27,6 +27,7 @@ const BED_LOOK = {
   PermanganateResidue: "powder",
   KMnO4: "crystal",
   SucroseCrystals: "crystal",
+  GlucoseCrystals: "crystal",
   NaCl: "crystal",
   ZnSO4: "crystal",
   Cu: "metal",
@@ -63,6 +64,9 @@ const tintLayers = (m, ph) => {
     if (sp.indicator && ph != null && ph > sp.indicator.pH) {
       const strength = Math.min(1, (ph - sp.indicator.pH) / 1.2);
       layers.push({ color: sp.indicator.color, alpha: (1 - Math.exp(-sp.indicator.k * conc(m, id))) * strength });
+    }
+    if (sp.universal && ph != null && aq(m, id) > EPS) {
+      layers.push({ color: phPaperColor(ph), alpha: 0.75 });
     }
   }
   // Concentrated nitric acid carries dissolved NO2 (yellowish); concentrated sulfuric acid is oily and dark.

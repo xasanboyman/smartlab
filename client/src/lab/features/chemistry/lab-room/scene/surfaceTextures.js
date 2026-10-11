@@ -1,4 +1,4 @@
-import { CanvasTexture, SRGBColorSpace } from "three";
+import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from "three";
 
 const MARKER_FONT = "'Marker Felt', 'Chalkboard SE', 'Comic Sans MS', 'Segoe Print', cursive";
 const UI_FONT = "Inter, 'Segoe UI', Arial, sans-serif";
@@ -11,11 +11,15 @@ const makeCanvas = (width, height) => {
 };
 
 // glTF UVs expect flipY = false.
-const toTexture = (canvas, anisotropy = 8) => {
+const toTexture = (canvas, anisotropy = 8, wrapping = null) => {
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.flipY = false;
   texture.anisotropy = anisotropy;
+  if (wrapping) {
+    texture.wrapS = wrapping;
+    texture.wrapT = wrapping;
+  }
   return texture;
 };
 
@@ -321,3 +325,298 @@ export const createDynamicTexture = (width, height, draw) => {
   };
   return { texture, redraw };
 };
+
+// ---------- Chemical-resistant phenolic / epoxy resin benchtop (SEFA-3) ----------
+
+export const createPhenolicResinTexture = (width = 1024, height = 1024) => {
+  const { canvas, ctx } = makeCanvas(width, height);
+  const imgData = ctx.createImageData(width, height);
+  const data = imgData.data;
+
+  // Base charcoal resin color: deep graphite #181a1e
+  // Add micro-stipple and subtle resin flecks
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * 14;
+    const fleck = Math.random() < 0.005 ? (Math.random() < 0.5 ? 18 : -10) : 0;
+    const baseR = 24 + noise + fleck;
+    const baseG = 26 + noise + fleck;
+    const baseB = 29 + noise * 0.9 + fleck;
+
+    data[i] = Math.max(12, Math.min(48, Math.round(baseR)));
+    data[i + 1] = Math.max(14, Math.min(50, Math.round(baseG)));
+    data[i + 2] = Math.max(16, Math.min(54, Math.round(baseB)));
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  // Subtle directional satin polish sheen
+  const g = ctx.createLinearGradient(0, 0, width, height);
+  g.addColorStop(0, "rgba(255, 255, 255, 0.025)");
+  g.addColorStop(0.5, "rgba(0, 0, 0, 0.02)");
+  g.addColorStop(1, "rgba(255, 255, 255, 0.025)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, width, height);
+
+  const texture = toTexture(canvas, 8, RepeatWrapping);
+  texture.repeat.set(4, 4);
+  return texture;
+};
+
+// ---------- Commercial laboratory non-skid homogeneous vinyl floor ----------
+
+export const createSafetyFloorTexture = (width = 1024, height = 1024) => {
+  const { canvas, ctx } = makeCanvas(width, height);
+
+  // Light slate-gray lab vinyl floor base
+  ctx.fillStyle = "#9ba3af";
+  ctx.fillRect(0, 0, width, height);
+
+  // 4x4 modular tile layout (256x256 tiles)
+  const tileSize = width / 4;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const shade = ((r + c * 3) % 4 - 1.5) * 2;
+      ctx.fillStyle = `rgba(${shade > 0 ? "255,255,255" : "0,0,0"}, ${Math.abs(shade) * 0.015})`;
+      ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+    }
+  }
+
+  // Draw fine anti-slip mineral flecks: quartz white, dark slate, and subtle amber
+  const fleckCount = 12000;
+  for (let i = 0; i < fleckCount; i++) {
+    const x = Math.random() * width;
+    const y = Math.random() * height;
+    const r = Math.random();
+    if (r < 0.45) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    } else if (r < 0.85) {
+      ctx.fillStyle = "rgba(55, 65, 81, 0.5)";
+    } else {
+      ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
+    }
+    const s = 1 + Math.random() * 2;
+    ctx.fillRect(x, y, s, s);
+  }
+
+  // Heat-welded vinyl seam lines
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#6b7280";
+  for (let i = 0; i <= 4; i++) {
+    const pos = i * tileSize;
+    ctx.beginPath();
+    ctx.moveTo(pos, 0);
+    ctx.lineTo(pos, height);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, pos);
+    ctx.lineTo(width, pos);
+    ctx.stroke();
+  }
+
+  // Fine weld highlight line
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  for (let i = 0; i < 4; i++) {
+    const pos = i * tileSize + 1.5;
+    ctx.beginPath();
+    ctx.moveTo(pos, 0);
+    ctx.lineTo(pos, height);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(0, pos);
+    ctx.lineTo(width, pos);
+    ctx.stroke();
+  }
+
+  const texture = toTexture(canvas, 8, RepeatWrapping);
+  texture.repeat.set(6, 6);
+  return texture;
+};
+
+// ---------- Crisp safety signs and warning decals atlas ----------
+
+export const createSafetySignAtlasTexture = (baseImage = null, width = 1024, height = 1024) => {
+  const { canvas, ctx } = makeCanvas(width, height);
+
+  if (baseImage) {
+    try {
+      ctx.drawImage(baseImage, 0, 0, width, height);
+    } catch {
+      ctx.fillStyle = "#e5e7eb";
+      ctx.fillRect(0, 0, width, height);
+    }
+  } else {
+    ctx.fillStyle = "#e5e7eb";
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  const drawSign = (x, y, w, h, headerBg, headerText, bodyLines) => {
+    ctx.save();
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, x, y, w, h, 6);
+    ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    const hh = Math.round(h * 0.28);
+    ctx.fillStyle = headerBg;
+    ctx.beginPath();
+    ctx.roundRect(x + 2, y + 2, w - 4, hh, [4, 4, 0, 0]);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `bold ${Math.round(hh * 0.52)}px ${UI_FONT}`;
+    ctx.fillText(headerText, x + w / 2, y + hh / 2 + 1);
+
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    const lineSpacing = Math.round((h - hh) / (bodyLines.length + 1));
+    bodyLines.forEach((line, idx) => {
+      ctx.font = `${idx === 0 ? "bold" : "500"} ${Math.round(lineSpacing * 0.44)}px ${UI_FONT}`;
+      ctx.fillText(line, x + w / 2, y + hh + (idx + 1) * lineSpacing - 4);
+    });
+
+    ctx.restore();
+  };
+
+  // 1. ABC Fire Extinguisher (top left)
+  drawSign(
+    10, 10, 236, 236,
+    "#b91c1c",
+    "O'T O'CHIRGICH",
+    [
+      "FIRE EXTINGUISHER",
+      "TOIFA: A · B · C",
+      "1. Halqani torting (PULL)",
+      "2. Olov tubiga qarating (AIM)",
+      "3. Tutqichni bosing (SQUEEZE)",
+    ],
+  );
+
+  // 2. Emergency Eyewash & Safety Shower (top center)
+  drawSign(
+    260, 10, 496, 236,
+    "#047857",
+    "FAVQULODDA DUSH & KO'Z YUVISH",
+    [
+      "EMERGENCY EYEWASH & SAFETY SHOWER STATION",
+      "Kislota yoki kimyoviy modda sachraganda",
+      "Darhol favvorada ko'zni kamida 15 daqiqa yuving!",
+      "KEEP AREA CLEAR AT ALL TIMES",
+    ],
+  );
+
+  // 3. First Aid Box (top right)
+  drawSign(
+    770, 10, 244, 236,
+    "#047857",
+    "TEZKOR YORDAM",
+    [
+      "FIRST AID STATION",
+      "Kuyish va jarohatlar uchun",
+      "Zararlangan terini sovuting",
+      "+998 103 / FAVQULODDA",
+    ],
+  );
+
+  // 4. Fire Blanket (middle left)
+  drawSign(
+    10, 260, 236, 236,
+    "#b91c1c",
+    "YONG'IN ADYOLI",
+    [
+      "FIRE BLANKET",
+      "Tasmadan ushlab torting",
+      "Olov ustiga to'liq yoping",
+      "Kislorodni kesib o'chirish",
+    ],
+  );
+
+  // 5. Eye Protection / PPE (middle right)
+  drawSign(
+    520, 260, 236, 236,
+    "#1d4ed8",
+    "DIQQAT / NOTICE",
+    [
+      "XIMOYA KO'ZOYNAKLARI",
+      "EYE PROTECTION REQUIRED",
+      "Reaktivlar bilan ishlaganda",
+      "ko'zoynak taqish majburiy!",
+    ],
+  );
+
+  // 6. Fume Hood Sash Working Height Limit
+  ctx.save();
+  const stripeW = 20;
+  for (let sx = 260; sx < 756; sx += stripeW * 2) {
+    ctx.fillStyle = "#facc15";
+    ctx.fillRect(sx, 520, stripeW, 100);
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(sx + stripeW, 520, stripeW, 100);
+  }
+  ctx.fillStyle = "#111827";
+  ctx.fillRect(310, 532, 396, 76);
+  ctx.strokeStyle = "#facc15";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(310, 532, 396, 76);
+  ctx.fillStyle = "#facc15";
+  ctx.textAlign = "center";
+  ctx.font = `bold 16px ${UI_FONT}`;
+  ctx.fillText("▲ MAKSIMAL ISH BALANDLIGI: 30 sm ▲", 508, 560);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `13px ${UI_FONT}`;
+  ctx.fillText("MAXIMUM SASH WORKING HEIGHT — KEEP CLOSED", 508, 588);
+  ctx.restore();
+
+  // 7. NFPA 704 Diamond
+  ctx.save();
+  const cx = 640;
+  const cy = 880;
+  const rad = 95;
+  const drawDiamond = (dx, dy, color, text) => {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(cx + dx, cy + dy - rad * 0.48);
+    ctx.lineTo(cx + dx + rad * 0.48, cy + dy);
+    ctx.lineTo(cx + dx, cy + dy + rad * 0.48);
+    ctx.lineTo(cx + dx - rad * 0.48, cy + dy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = color === "#ffffff" ? "#111827" : "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `bold 32px ${UI_FONT}`;
+    ctx.fillText(text, cx + dx, cy + dy);
+  };
+  drawDiamond(0, -rad * 0.48, "#dc2626", "2");
+  drawDiamond(-rad * 0.48, 0, "#2563eb", "3");
+  drawDiamond(rad * 0.48, 0, "#eab308", "1");
+  drawDiamond(0, rad * 0.48, "#ffffff", "W");
+  ctx.restore();
+
+  // 8. Master Gas Shutoff & GFCI Labels
+  drawSign(
+    10, 770, 244, 236,
+    "#b91c1c",
+    "GAZ MAGISTRALI",
+    [
+      "EMERGENCY GAS SHUT-OFF",
+      "Kran 90° burilganda",
+      "barcha gaz liniyalari uziladi",
+      "Favqulodda yopish krani",
+    ],
+  );
+
+  return toTexture(canvas, 8);
+};
+

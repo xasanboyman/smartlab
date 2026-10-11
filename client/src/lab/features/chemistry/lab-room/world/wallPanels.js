@@ -1,12 +1,26 @@
 import { pushSound } from "../sound/queue";
+import { isVessel } from "../tools/actions";
+import { clearMixture, mixIn, reagentPortion } from "../chemistry/mixture";
 
-// Fittings baked into the room that the player still uses: the computer screen, the two fan switches
-// and the extinguisher bracket. Each is hit-tested as a rectangle on the wall plane it sits in.
+// Fittings baked into the room that the player uses: the computer screen, fan switches,
+// extinguisher, emergency eyewash, safety shower, first aid kit, fire blanket, and sink faucet.
 export const PANELS = {
   monitor_screen: { axis: "z", pad: 0, title: "Laboratoriya kompyuteri", subtitle: "Oxirgi reaksiya haqida ma'lumot", label: "O'qish" },
   fumehood_switch: { axis: "x", pad: 0.09, title: "Mo'rili shkaf so'rg'ichi", device: "hoodFan" },
-  ventilation_switch: { axis: "x", pad: 0.09, title: "Xona shamollatgichi", device: "ventilation" },
+  ventilation_switch: { axis: "x", pad: 0.09, title: "Xona shamollatgichi (Ventilyatsiya)", device: "ventilation" },
   extinguisher: { axis: "z", pad: 0.06, title: "O't o'chirgich", fixture: "extinguisher" },
+  sink: { axis: "z", pad: 0.15, title: "Laboratoriya rakovinasi", utility: "sink" },
+  eyewash: { axis: "z", pad: 0.15, title: "Ko'z yuvish favvorasi", utility: "eyewash" },
+  safety_shower: { axis: "z", pad: 0.25, title: "Favqulodda xavfsizlik dushi", utility: "safety_shower" },
+  fire_blanket: { axis: "z", pad: 0.12, title: "Yong'in adyoli", utility: "fire_blanket" },
+  first_aid_box: { axis: "z", pad: 0.12, title: "Tezkor tibbiy yordam qutisi", utility: "first_aid" },
+  gas_shutoff: { axis: "z", pad: 0.1, title: "Gaz magistral krani", utility: "gas_shutoff" },
+  chem_cabinet: { axis: "z", pad: 0.35, title: "Kimyoviy moddalar shkafi", utility: "chem_cabinet" },
+};
+
+const DEFAULT_ANCHORS = {
+  safety_shower: { position: [2.8, 1.95, 3.3], size: [0.45, 0.7] },
+  gas_shutoff: { position: [-3.8, 1.15, 3.8], size: [0.22, 0.22] },
 };
 
 const AXIS = { x: 0, y: 1, z: 2 };
@@ -30,7 +44,8 @@ export const panelAlong = (anchor, panel, origin, direction, limit) => {
 export const panelAt = ({ anchors, lab, world, held, origin, direction, limit }) => {
   let best = null;
   for (const [id, panel] of Object.entries(PANELS)) {
-    const t = panelAlong(anchors?.[id], panel, origin, direction, limit);
+    const anchor = anchors?.[id] ?? DEFAULT_ANCHORS[id];
+    const t = panelAlong(anchor, panel, origin, direction, limit);
     if (t == null || (best && t >= best.distance)) continue;
     best = { id, panel, distance: t };
   }
@@ -47,11 +62,42 @@ export const panelAt = ({ anchors, lab, world, held, origin, direction, limit })
     if (held) return { ...best, label: "Avval qo'lingizdagini qo'ying", subtitle: null, disabled: true };
     return { ...best, label: "Olish", subtitle: "Yong'inni o'chirish uchun" };
   }
+  if (panel.utility === "sink") {
+    if (held && isVessel(held.typeId)) {
+      const vol = lab.mixture(held.id)?.volumeMl ?? 0;
+      return vol > 0.1
+        ? { ...best, label: "Idishni yuvish va to'kish", subtitle: "Rakovinada tozalash" }
+        : { ...best, label: "Distillangan suv quyish (100 ml)", subtitle: "Jo'mrakdan toza suv olish" };
+    }
+    const on = Boolean(lab.utilityState?.faucet);
+    return { ...best, label: on ? "Jo'mrakni yopish" : "Jo'mrakni ochish", subtitle: on ? "Oqova suv oqmoqda" : "Laboratoriya jo'mragi" };
+  }
+  if (panel.utility === "eyewash") {
+    const on = Boolean(lab.utilityState?.eyewash);
+    return { ...best, label: on ? "Favvorani to'xtatish" : "Ko'zni yuvish (Favqulodda)", subtitle: "Ko'z va yuzdagi kimyoviy ta'sirlarni yuvish" };
+  }
+  if (panel.utility === "safety_shower") {
+    const on = Boolean(lab.utilityState?.shower);
+    return { ...best, label: on ? "Dushni to'xtatish" : "Favqulodda dushni tortish", subtitle: "Zudlik bilan kislota va olovni dushlash" };
+  }
+  if (panel.utility === "fire_blanket") {
+    return { ...best, label: "Yong'in adyolini qo'llash", subtitle: "Stoldagi olovni bostirish" };
+  }
+  if (panel.utility === "first_aid") {
+    return { ...best, label: "Birinchi yordam olish", subtitle: "Kuyish va jarohatlarni davolash" };
+  }
+  if (panel.utility === "gas_shutoff") {
+    const open = lab.utilityState?.gasOpen ?? true;
+    return { ...best, label: open ? "Gaz magistralini yopish" : "Gaz magistralini ochish", subtitle: open ? "Magistral ochiq" : "Magistral yopiq (Xavfsiz)" };
+  }
+  if (panel.utility === "chem_cabinet") {
+    return { ...best, label: "Reaktivlar shkafini ochish", subtitle: "Kislota, ishqor va moddalar ombori" };
+  }
   if (held) return null;
   return { ...best, label: panel.label, subtitle: panel.subtitle };
 };
 
-// Returns "monitor" when the player opened the lab computer, so the page can show the reader.
+// Returns "monitor" or "cabinet" when the player opened a modal screen.
 export const runPanel = (hit, { lab, world, held }) => {
   if (!hit || hit.disabled) return null;
   const { panel } = hit;
@@ -70,6 +116,72 @@ export const runPanel = (hit, { lab, world, held }) => {
     const result = world.addToSlot(panel.fixture);
     if (!result.ok) world.flash("Barcha 5 joy band: avval biror narsani qo'ying");
     return null;
+  }
+  if (panel.utility === "sink") {
+    lab.utilityState = lab.utilityState || {};
+    if (held && isVessel(held.typeId)) {
+      const vol = lab.mixture(held.id)?.volumeMl ?? 0;
+      if (vol > 0.1) {
+        clearMixture(lab.mixture(held.id));
+        pushSound(lab, { type: "pour" });
+        world.flash("Idish yuvildi va toza holatga keltirildi");
+      } else {
+        mixIn(lab.mixture(held.id), reagentPortion("water", 100));
+        pushSound(lab, { type: "pour" });
+        world.flash("Idishga 100 ml toza distillangan suv quyildi");
+      }
+      return null;
+    }
+    lab.utilityState.faucet = !lab.utilityState.faucet;
+    pushSound(lab, { type: "click" });
+    world.flash(lab.utilityState.faucet ? "Jo'mrak ochildi: oqova suv oqmoqda" : "Jo'mrak yopildi");
+    return null;
+  }
+  if (panel.utility === "eyewash") {
+    lab.utilityState = lab.utilityState || {};
+    lab.utilityState.eyewash = !lab.utilityState.eyewash;
+    lab.hazards.state.exposure.irritant = 0;
+    pushSound(lab, { type: "click" });
+    world.flash("Ko'z yuvish favvorasi ishga tushirildi: ko'zdagi kimyoviy ta'sirlar yuvib tashlandi!");
+    return null;
+  }
+  if (panel.utility === "safety_shower") {
+    lab.utilityState = lab.utilityState || {};
+    lab.utilityState.shower = !lab.utilityState.shower;
+    lab.hazards.state.exposure.heat = 0;
+    pushSound(lab, { type: "whoosh" });
+    world.flash("Favqulodda xavfsizlik dushi ishga tushirildi: butun vujud dushlandi va sovutildi!");
+    return null;
+  }
+  if (panel.utility === "fire_blanket") {
+    for (const p of lab.hazards.puddles) {
+      if (p.burning) {
+        p.burning = false;
+        p.heat = 0;
+      }
+    }
+    pushSound(lab, { type: "click", soft: true });
+    world.flash("Yong'in adyoli yopildi: stoldagi barcha olovlar bostirildi!");
+    return null;
+  }
+  if (panel.utility === "first_aid") {
+    lab.hazards.state.exposure.heat = 0;
+    lab.hazards.state.exposure.irritant = 0;
+    lab.hazards.state.exposure.flash = 0;
+    lab.hazards.state.exposure.ringing = 0;
+    pushSound(lab, { type: "click", soft: true });
+    world.flash("Birinchi tibbiy yordam ko'rsatildi: jarohatlar davolandi!");
+    return null;
+  }
+  if (panel.utility === "gas_shutoff") {
+    lab.utilityState = lab.utilityState || {};
+    lab.utilityState.gasOpen = !(lab.utilityState.gasOpen ?? true);
+    pushSound(lab, { type: "click" });
+    world.flash(lab.utilityState.gasOpen ? "Gaz magistral krani ochildi" : "Gaz magistral krani yopildi (Tizim xavfsiz holatda)");
+    return null;
+  }
+  if (panel.utility === "chem_cabinet") {
+    return "cabinet";
   }
   return hit.id === "monitor_screen" ? "monitor" : null;
 };

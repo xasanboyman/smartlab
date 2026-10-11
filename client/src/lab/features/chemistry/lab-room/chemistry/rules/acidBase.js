@@ -143,6 +143,36 @@ export const phenolphthaleinAmmonia = indicatorRule("phenolphthalein-ammonia", "
 export const phenolphthaleinAlkali = indicatorRule("phenolphthalein-alkali", "naoh-phenolphthalein", (m, k) =>
   !peek(m, "sodium-water") && k.aq(m, "NH3") <= k.aq(m, "OH-"));
 
+export const aceticAcidNeutralization = {
+  id: "acetic-acid-neutralization",
+  info: null,
+  step(m, dt, ctx, k) {
+    const n = Math.min(k.aq(m, "CH3COOH"), k.aq(m, "OH-"));
+    if (n <= k.EPS) return 0;
+    k.takeAq(m, "CH3COOH", n);
+    k.takeAq(m, "OH-", n);
+    k.addAq(m, "CH3COO-", n);
+    k.addAq(m, "H2O", n);
+    k.heat(m, 55.0, n);
+    return n;
+  },
+};
+
+export const aceticBicarbonateFizz = {
+  id: "acetic-bicarbonate-fizz",
+  info: null,
+  step(m, dt, ctx, k) {
+    const n = Math.min(k.aq(m, "CH3COOH"), k.aq(m, "HCO3-"));
+    if (n <= k.EPS) return 0;
+    k.takeAq(m, "CH3COOH", n);
+    k.takeAq(m, "HCO3-", n);
+    k.addAq(m, "CH3COO-", n);
+    k.addAq(m, "H2O", n);
+    k.evolveGas(m, "CO2", n, dt, { site: "bulk" });
+    return n;
+  },
+};
+
 export const ACID_BASE_RULES = [
   neutralization,
   ammoniaProtonation,
@@ -154,4 +184,6 @@ export const ACID_BASE_RULES = [
   phenolphthaleinSodium,
   phenolphthaleinAmmonia,
   phenolphthaleinAlkali,
+  aceticAcidNeutralization,
+  aceticBicarbonateFizz,
 ];

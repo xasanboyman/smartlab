@@ -54,11 +54,11 @@ const followHand = (group, camera, held, lab, world, anim, delta) => {
 
   let desired = null;
   if (action && target) {
-    const lamp = target.typeId === "spirit-lamp" ? target : null;
+    const lamp = target.typeId === "spirit-lamp" || target.typeId === "bunsen-burner" ? target : null;
     desired = actionPose({ action, held, target, lamp, camera, holdS: anim.holdS, lab });
-  } else if (activity.ignite && held.typeId === "spirit-lamp") {
+  } else if (activity.ignite && (held.typeId === "spirit-lamp" || held.typeId === "bunsen-burner")) {
     const igniteTarget = world.get(activity.ignite.simId);
-    if (igniteTarget) desired = ignitePose({ target: igniteTarget, camera });
+    if (igniteTarget) desired = ignitePose({ target: igniteTarget, camera, held });
   }
   if (desired) anim.pose = desired;
   anim.weight += ((desired ? 1 : 0) - anim.weight) * (1 - Math.exp(-delta / BLEND_S));
@@ -77,6 +77,12 @@ const followHand = (group, camera, held, lab, world, anim, delta) => {
   if (activity.pour && desired?.lip && target) {
     activity.pour.from = anim.weight > 0.85 ? lipWorld(group.position, group.quaternion, desired.lip).toArray() : null;
     activity.pour.to = surfaceOf(lab, world.get(activity.pour.intoId) ?? target);
+  }
+  if (activity.drop && target) {
+    if (activity.drop.dropperId === held.id) {
+      activity.drop.from = lipWorld(group.position, group.quaternion, [0, -0.04, 0]).toArray();
+      activity.drop.to = surfaceOf(lab, target);
+    }
   }
   if (activity.gas && target) {
     activity.gas.from = gasOutletWorld(group.matrixWorld).toArray();

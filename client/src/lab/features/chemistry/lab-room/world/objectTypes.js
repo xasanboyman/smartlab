@@ -13,7 +13,9 @@ const EQUIPMENT_BODIES = {
   crucible: { shape: "cylinder", radius: 0.021, height: 0.047, breaks: "porcelain" },
   "crystallizing-dish": { shape: "cylinder", radius: 0.076, height: 0.0765, breaks: "glass" },
   "gas-jar": { shape: "cylinder", radius: 0.0375, height: 0.204, breaks: "glass" },
+  "watch-glass": { shape: "cylinder", radius: 0.045, height: 0.015, breaks: "glass", support: true },
   dropper: { shape: "box", size: [0.118, 0.017, 0.017], center: [0, 0.0085, 0], breaks: "glass" },
+  burette: { shape: "cylinder", radius: 0.012, height: 0.55, breaks: "glass", support: true },
   spatula: { shape: "box", size: [0.18, 0.006, 0.012], center: [0, 0.003, 0] },
   "crucible-tongs": { shape: "box", size: [0.234, 0.008, 0.04], center: [0, 0.004, 0] },
   "stirring-rod": { shape: "box", size: [0.2, 0.0066, 0.0066], center: [0, 0.0033, 0], breaks: "glass" },
@@ -22,7 +24,9 @@ const EQUIPMENT_BODIES = {
   "digital-scale": { shape: "box", size: [0.13, 0.053, 0.19], center: [0, 0.0265, 0], support: true, heavy: true },
   "ph-paper": { shape: "box", size: [0.06, 0.042, 0.035], center: [0, 0.021, 0] },
   "spirit-lamp": { shape: "cylinder", radius: 0.038, height: 0.1145, breaks: "glass" },
+  "bunsen-burner": { shape: "cylinder", radius: 0.045, height: 0.16, heavy: true },
   "hot-plate": { shape: "box", size: [0.16, 0.11, 0.28], center: [0, 0.055, 0], support: true, heavy: true },
+  "wire-gauze": { shape: "box", size: [0.12, 0.004, 0.12], center: [0, 0.002, 0], support: true },
   "retort-stand": {
     shape: "compound",
     parts: [

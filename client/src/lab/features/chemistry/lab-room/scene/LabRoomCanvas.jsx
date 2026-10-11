@@ -80,6 +80,7 @@ const LabRoomCanvas = ({
   vrMode = false,
   onReady,
   onMonitor,
+  onCabinet,
 }) => {
   const tier = TIERS[tierName];
   const { meta, placeholder } = manifest;
@@ -128,6 +129,7 @@ const LabRoomCanvas = ({
                     activeRef={activeRef}
                     anchors={meta.anchors}
                     onMonitor={onMonitor}
+                    onCabinet={onCabinet}
                   />
                   <LabRunner world={world} lab={lab} meta={meta} hazardSeed={debug.hazard} />
                   <LabSound world={world} lab={lab} live={live} settingsRef={settingsRef} />

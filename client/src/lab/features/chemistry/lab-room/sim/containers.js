@@ -9,6 +9,8 @@ export const CONTAINERS = {
   crucible: { capacityMl: 23.7, vesselHeatJK: 15, coolWK: 0.3, narrow: false, mouthY: 0.0369, mouthR: 0.0176 },
   "crystallizing-dish": { capacityMl: 1224, vesselHeatJK: 110, coolWK: 2.5, narrow: false, mouthY: 0.0755, mouthR: 0.0748 },
   "gas-jar": { capacityMl: 464, vesselHeatJK: 90, coolWK: 1.0, narrow: false, mouthY: 0.2, mouthR: 0.0279, coverable: true },
+  "watch-glass": { capacityMl: 30, vesselHeatJK: 15, coolWK: 1.5, narrow: false, mouthY: 0.015, mouthR: 0.045 },
+  burette: { capacityMl: 55, vesselHeatJK: 20, coolWK: 0.4, narrow: true, mouthY: 0.52, mouthR: 0.007 },
   // A piece held in the tongs is simulated in open air (no liquid, no headspace).
   "crucible-tongs": { capacityMl: 0, vesselHeatJK: 2, coolWK: 0.15, narrow: false, mouthY: 0, mouthR: 0 },
 };
@@ -23,6 +25,10 @@ export const EMPTY_MASS_G = {
   crucible: 22,
   "crystallizing-dish": 320,
   "gas-jar": 260,
+  "watch-glass": 35,
+  burette: 85,
+  "bunsen-burner": 280,
+  "wire-gauze": 65,
   funnel: 45,
   dropper: 6,
   spatula: 18,

@@ -14,7 +14,9 @@ export const EQUIPMENT = [
   { id: "crucible", name: "Tigel", group: "container", capacityMl: 30 },
   { id: "crystallizing-dish", name: "Kristallizator", group: "container", capacityMl: 1000 },
   { id: "gas-jar", name: "Gaz yig'ish silindri", group: "container", capacityMl: 500 },
-  { id: "dropper", name: "Tomizgich", group: "tool" },
+  { id: "watch-glass", name: "Soat oynasi", group: "container", capacityMl: 30 },
+  { id: "dropper", name: "Tomizgich (Pipetka)", group: "tool" },
+  { id: "burette", name: "Byuretka (50 ml)", group: "tool", capacityMl: 50 },
   { id: "spatula", name: "Shpatel", group: "tool" },
   { id: "crucible-tongs", name: "Tigel qisqichi", group: "tool" },
   { id: "stirring-rod", name: "Shisha tayoqcha", group: "tool" },
@@ -23,8 +25,10 @@ export const EQUIPMENT = [
   { id: "digital-scale", name: "Elektron tarozi", group: "tool" },
   { id: "ph-paper", name: "Universal indikator qog'ozi", group: "tool" },
   { id: "spirit-lamp", name: "Spirt lampasi", group: "heating" },
+  { id: "bunsen-burner", name: "Bunzen gorelkasi", group: "heating" },
   { id: "hot-plate", name: "Magnitli isitgich", group: "heating" },
   { id: "retort-stand", name: "Shtativ", group: "heating" },
+  { id: "wire-gauze", name: "Keramikali asbest to'r", group: "heating" },
   { id: "test-tube-rack", name: "Probirka shtativi", group: "heating" },
 ];
 

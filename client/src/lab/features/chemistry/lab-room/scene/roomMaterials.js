@@ -4,6 +4,9 @@ import {
   createDynamicTexture,
   createExitSignTexture,
   createPeriodicTableTexture,
+  createPhenolicResinTexture,
+  createSafetyFloorTexture,
+  createSafetySignAtlasTexture,
   createWhiteboardTexture,
   drawClock,
   drawMonitor,
@@ -39,7 +42,16 @@ const patchLightmapped = (material) => {
   material.customProgramCacheKey = () => "lab-room-lightmapped";
 };
 
-const SURFACE_NAMES = ["whiteboard_surface", "poster_periodic_table", "monitor_screen", "clock_face", "sign_exit"];
+const SURFACE_NAMES = [
+  "whiteboard_surface",
+  "poster_periodic_table",
+  "monitor_screen",
+  "clock_face",
+  "sign_exit",
+  "static_epoxy_black",
+  "static_floor_vinyl",
+  "static_signs_atlas",
+];
 
 // Specular reflections of the captured room on baked surfaces; glass keeps full reflections.
 const SURFACE_ENV_INTENSITY = 0.45;
@@ -74,9 +86,24 @@ export const prepareRoom = (root) => {
     // Every baked primitive carries lightmap UVs as TEXCOORD_1 (three: uv1).
     if (!object.geometry.attributes.uv1) return;
     for (const material of materials) {
+      if (material.name === "ceramic_white") {
+        material.roughness = 0.14;
+        material.metalness = 0.02;
+        material.envMapIntensity = 0.85;
+      } else if (material.name === "steel_brushed") {
+        material.roughness = 0.28;
+        material.metalness = 0.88;
+        material.envMapIntensity = 0.8;
+      } else if (material.name === "chrome") {
+        material.roughness = 0.06;
+        material.metalness = 0.98;
+        material.envMapIntensity = 1.1;
+      }
       if (lightmapped.has(material)) continue;
       patchLightmapped(material);
-      material.envMapIntensity = SURFACE_ENV_INTENSITY;
+      if (!["ceramic_white", "steel_brushed", "chrome"].includes(material.name)) {
+        material.envMapIntensity = SURFACE_ENV_INTENSITY;
+      }
       lightmapped.add(material);
     }
   });
@@ -148,6 +175,16 @@ export const dressSurfaces = (room, lightmap, scale, textureCap = 2048) => {
     litSurface({ map: exit, emissive: "#ffffff", emissiveMap: exit, emissiveIntensity: 0.9, roughness: 0.4 }, lightmap, scale),
     exit,
   );
+
+  const phenolic = createPhenolicResinTexture();
+  swap("static_epoxy_black", litSurface({ map: phenolic, roughness: 0.38, metalness: 0.04 }, lightmap, scale), phenolic);
+
+  const floor = createSafetyFloorTexture();
+  swap("static_floor_vinyl", litSurface({ map: floor, roughness: 0.48, metalness: 0.0 }, lightmap, scale), floor);
+
+  const originalSignsMap = room.surfaces.static_signs_atlas?.original?.map;
+  const signs = createSafetySignAtlasTexture(originalSignsMap?.image);
+  swap("static_signs_atlas", litSurface({ map: signs, roughness: 0.4, metalness: 0.0 }, lightmap, scale), signs);
 
   const clock = createDynamicTexture(512, 512, drawClock);
   swap("clock_face", litSurface({ map: clock.texture, roughness: 0.35 }, lightmap, scale), clock.texture, false);
