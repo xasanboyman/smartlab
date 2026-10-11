@@ -16,14 +16,14 @@ export const createGroundGlass = (color = "#cfd8d5", opacity = 0.24) =>
   applySpecularAlpha(
     new MeshPhysicalMaterial({
       color,
-      roughness: 0.5,
+      roughness: 0.44,
       metalness: 0,
-      ior: 1.5,
+      ior: 1.517,
       opacity,
-      envMapIntensity: 1,
+      envMapIntensity: 1.1,
       side: DoubleSide,
     }),
-    0.2,
+    0.22,
   );
 
 const TINT_VERTEX = /* glsl */ `

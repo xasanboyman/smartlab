@@ -17,10 +17,10 @@ import { createRipples } from "./fxRipples";
 const OUTPUT = /* glsl */ `
 float bNdotV = saturate( dot( geometryNormal, geometryViewDir ) );
 float bSin = sqrt( max( 0.0, 1.0 - bNdotV * bNdotV ) );
-float bTir = smoothstep( 0.5, 0.86, bSin );
+float bTir = smoothstep( 0.48, 0.85, bSin );
 float bBand = smoothstep( 0.15, 0.48, bSin ) * ( 1.0 - bTir );
 #ifdef USE_ENVMAP
-vec3 bEnv = getIBLRadiance( geometryViewDir, geometryNormal, 0.05 );
+vec3 bEnv = getIBLRadiance( geometryViewDir, geometryNormal, 0.015 );
 #else
 vec3 bEnv = vec3( 0.35 );
 #endif
@@ -29,15 +29,22 @@ float bScale = vColor.r;
 #else
 float bScale = 1.0;
 #endif
+// Spectral chromatic dispersion shimmer along the total internal reflection boundary
+vec3 bIridescence = vec3(
+  smoothstep( 0.46, 0.82, bSin ),
+  smoothstep( 0.50, 0.85, bSin ),
+  smoothstep( 0.54, 0.88, bSin )
+);
 float bAlpha = clamp( uBubble.x + bTir * uBubble.y + bBand * uBubble.w, 0.0, 1.0 ) * bScale;
-vec3 bColor = ( bEnv * ( bTir * uBubble.z + 0.05 ) + totalSpecular * 1.6 ) * uTint + totalDiffuse * bAlpha;
-gl_FragColor = vec4( bColor * bScale, bAlpha );
+vec3 bReflect = ( bEnv * ( bTir * uBubble.z + 0.06 ) + totalSpecular * 2.2 ) * bScale;
+vec3 bColor = bReflect * uTint * ( vec3( 0.85 ) + 0.35 * bIridescence ) + totalDiffuse * bAlpha;
+gl_FragColor = vec4( bColor, bAlpha );
 `;
 
 const createBubbleMaterial = () => {
   const material = new MeshStandardMaterial({
     color: "#0a1216",
-    roughness: 0.04,
+    roughness: 0.02,
     metalness: 0,
     transparent: true,
     premultipliedAlpha: true,
@@ -230,15 +237,15 @@ export const createBubbles = ({ quality }) => {
         }
       } else {
         // Terminal rise speed grows with size; bubbles accelerate out of their nucleation site.
-        const target = clamp(0.03 + 190 * radius, 0.05, 0.3);
+        const target = clamp(0.035 + 210 * radius, 0.055, 0.32);
         state[o + B.vy] += (target - state[o + B.vy]) * (1 - Math.exp(-dt / 0.09));
         state[o + B.y] += state[o + B.vy] * dt;
-        state[o + B.phase] += dt * (9 + 24 * radius * 100) * wobbleScale;
-        const wob = Math.min(1, radius / 0.0009) * state[o + B.drift] * wobbleScale;
+        state[o + B.phase] += dt * (10 + 26 * radius * 100) * wobbleScale;
+        const wob = Math.min(1, radius / 0.0008) * state[o + B.drift] * wobbleScale;
         state[o + B.wob] = wob;
-        const sway = wob * 0.0025;
-        state[o + B.x] += Math.cos(state[o + B.phase]) * sway * dt * 12;
-        state[o + B.z] += Math.sin(state[o + B.phase] * 0.87 + state[o + B.seed]) * sway * dt * 12;
+        const sway = wob * 0.0028;
+        state[o + B.x] += Math.cos(state[o + B.phase]) * sway * dt * 14;
+        state[o + B.z] += Math.sin(state[o + B.phase] * 0.87 + state[o + B.seed] * 6.28) * sway * dt * 14;
         const wall = Math.max(0, profile.radiusAt(state[o + B.y]) - radius - 0.0004);
         const dist = Math.hypot(state[o + B.x], state[o + B.z]);
         if (dist > wall && dist > 1e-6) {

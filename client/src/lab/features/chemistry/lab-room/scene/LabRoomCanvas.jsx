@@ -133,7 +133,7 @@ const LabRoomCanvas = ({
                   <LabSound world={world} lab={lab} live={live} settingsRef={settingsRef} />
                   <ToolEffects lab={lab} />
                   <LabMonitor lab={lab} anchor={meta.anchors?.monitor_screen} />
-                  <LabRoomClothBanner position={[2.45, 0, -1.6]} rotation={[0, -0.6, 0]} lab={lab} />
+                  <LabRoomClothBanner position={[-3.0, 0, -1.0]} rotation={[0, 1.15, 0]} lab={lab} />
                   <Puddles lab={lab} />
                   <GasHaze lab={lab} />
                   <RoomFixtures lab={lab} world={world} enabled={!placeholder} />

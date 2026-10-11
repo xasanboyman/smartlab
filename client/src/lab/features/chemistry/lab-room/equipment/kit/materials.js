@@ -23,34 +23,38 @@ const createGlass = () =>
   applySpecularAlpha(
     new MeshPhysicalMaterial({
       color: "#0e1715",
-      roughness: 0.035,
+      roughness: 0.02,
       metalness: 0,
-      ior: 1.5,
+      ior: 1.517,
       specularIntensity: 1,
-      opacity: 0.07,
-      envMapIntensity: 1.25,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.02,
+      opacity: 0.065,
+      envMapIntensity: 1.35,
     }),
-    0.55,
+    0.6,
   );
 
 // Enamel graduations and labels fired onto the glass; opaque so they sort before the glass.
 const createPrint = (map) =>
   new MeshStandardMaterial({ map, color: "#ffffff", roughness: 0.55, alphaTest: 0.35, side: DoubleSide });
 
-// Clear liquids should use a dark tint and low opacity; scattering diffuse light makes water look milky.
+// Clear liquids use physically plausible water IOR 1.333, clearcoat, and high specular reflection.
 export const createLiquidMaterial = ({ color = "#0d2230", opacity = 0.08 } = {}) =>
   applySpecularAlpha(
     new MeshPhysicalMaterial({
       color,
-      roughness: 0.02,
+      roughness: 0.01,
       metalness: 0,
-      ior: 1.33,
+      ior: 1.333,
       specularIntensity: 1,
+      clearcoat: 0.75,
+      clearcoatRoughness: 0.01,
       opacity,
-      envMapIntensity: 1,
+      envMapIntensity: 1.35,
       side: DoubleSide,
     }),
-    0.35,
+    0.45,
   );
 
 const standard = (params) => new MeshStandardMaterial(params);

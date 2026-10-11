@@ -36,6 +36,11 @@ const scratchQuat = new Quaternion();
 const scratchEuler = new Euler(0, 0, 0, "YXZ");
 const worldQuat = new Quaternion();
 const worldUp = new Vector3();
+const scratchVec = new Vector3();
+const currWorldPos = new Vector3();
+const worldVel = new Vector3();
+const worldAccel = new Vector3();
+const gEff = new Vector3();
 const charColor = new Color();
 
 const ease = (dt, tau) => 1 - Math.exp(-dt / Math.max(tau, 1e-4));
@@ -223,18 +228,46 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
     flameKind: "lamp",
     flash: 0,
     growth: 0,
+    slosh: 0,
+    prevWorldPos: new Vector3(),
+    prevWorldVel: new Vector3(),
   };
 
   const updateUp = (dt) => {
     group.getWorldQuaternion(worldQuat);
-    worldUp.set(0, 1, 0).applyQuaternion(worldQuat.invert());
+    group.getWorldPosition(currWorldPos);
+
     if (s.first) {
+      s.prevWorldPos.copy(currWorldPos);
+      s.prevWorldVel.set(0, 0, 0);
+      scratchQuat.copy(worldQuat).invert();
+      worldUp.set(0, 1, 0).applyQuaternion(scratchQuat);
       s.up.copy(worldUp);
       return;
     }
-    // A damped spring lets the surface lag and settle a little when the vessel is moved.
-    s.upVelocity.addScaledVector(worldUp.sub(s.up), 90 * dt).multiplyScalar(Math.exp(-7 * dt));
+
+    // Translational velocity and acceleration in world space
+    const safeDt = Math.max(dt, 0.001);
+    worldVel.subVectors(currWorldPos, s.prevWorldPos).divideScalar(safeDt);
+    worldAccel.subVectors(worldVel, s.prevWorldVel).divideScalar(safeDt);
+    worldAccel.clampLength(0, 12); // clamp to prevent explosive snaps
+
+    s.prevWorldPos.copy(currWorldPos);
+    s.prevWorldVel.copy(worldVel);
+
+    // Effective gravity: [0, 9.81, 0] + inertial resistance to world acceleration
+    gEff.set(0, 9.81, 0).addScaledVector(worldAccel, 0.45);
+    scratchQuat.copy(worldQuat).invert();
+    worldUp.copy(gEff).normalize().applyQuaternion(scratchQuat);
+
+    // Damped harmonic oscillation for fluid surface tilt
+    scratchVec.subVectors(worldUp, s.up);
+    s.upVelocity.addScaledVector(scratchVec, 85 * dt).multiplyScalar(Math.exp(-6.5 * dt));
     s.up.addScaledVector(s.upVelocity, dt).normalize();
+
+    // Fluid slosh amplitude based on tilt velocity and linear acceleration
+    const sloshTarget = s.upVelocity.length() * 1.6 + worldAccel.length() * 0.07;
+    s.slosh += (sloshTarget - s.slosh) * ease(dt, 0.18);
   };
 
   const releaseSlot = (slot) => {
@@ -392,13 +425,14 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
 
     s.viscous += ((visual.liquid.viscous ? 1 : 0) - s.viscous) * k;
     const surfaceRadius = table.radiusAtY(s.level);
-    const rise = Math.min(meniscus * (1 + 0.7 * s.viscous), surfaceRadius * 0.3);
-    uniforms.uMeniscus.value = Math.max(0.0002, rise);
-    uniforms.uMeniscusWidth.value = Math.max(0.0008, rise * (1.66 + 0.6 * s.viscous));
+    const rise = Math.min(meniscus * (1 + 0.7 * s.viscous + 0.3 * s.slosh), surfaceRadius * 0.32);
+    uniforms.uMeniscus.value = Math.max(0.0003, rise);
+    uniforms.uMeniscusWidth.value = Math.max(0.0009, rise * (1.75 + 0.6 * s.viscous));
     uniforms.uPlumeSource.value.set(0, s.bedTop, 0);
     uniforms.uWisps.value = s.gasOpacity > 0.02 ? 1 : 0;
     uniforms.uBoil.value = s.boil;
     uniforms.uRipple.value = s.ripple;
+    uniforms.uSlosh.value = s.slosh;
     uniforms.uPlume.value = s.plume;
     uniforms.uSchlieren.value = high ? s.schlieren : 0;
     return { liquid, surfaceRadius };

@@ -140,17 +140,30 @@ export const buildVessel = ({ outline, wall, bottom = wall, segments = 64, spout
   };
 };
 
-// Inset slightly from the glass so the two never z-fight; the meniscus climbs the wall.
-export const buildLiquid = (innerProfile, level, { inset = 0.0004, meniscus = 0.0015, segments = 48 } = {}) => {
+// Inset slightly from the glass so the two never z-fight; the meniscus smoothly climbs the wall.
+export const buildLiquid = (innerProfile, level, { inset = 0.0004, meniscus = 0.0015, segments = 64 } = {}) => {
   const points = [];
   for (const [r, y] of innerProfile) {
     if (y >= level) break;
     points.push([Math.max(0, r - inset), y + inset]);
   }
-  const edge = Math.max(0, radiusAt(innerProfile, level) - inset);
-  points.push([edge, level + meniscus]);
-  points.push([Math.max(0, edge - meniscus * 2), level + meniscus * 0.3]);
-  points.push([Math.max(0, edge - meniscus * 5), level]);
+  const edgeAtLevel = Math.max(0, radiusAt(innerProfile, level) - inset);
+  const mRise = Math.min(meniscus, edgeAtLevel * 0.35);
+  const mWidth = Math.min(mRise * 2.8, edgeAtLevel * 0.75);
+
+  // Smooth C1 catenary capillary curve: curve(1) = 0 and d(curve)/dt at 1 = 0
+  const steps = 12;
+  for (let i = 0; i <= steps; i += 1) {
+    const t = i / steps; // 0 = at wall, 1 = interior flat level
+    // (1 - t)^2 * exp(-2.5 * t) has zero slope at t = 1, ensuring tangent continuity with the flat liquid surface
+    const curve = (1 - t) * (1 - t) * Math.exp(-t * 2.5);
+    const y = level + mRise * curve;
+    // Compute inner wall radius at height y so the meniscus never punches through tapered/conical vessel walls
+    const wallAtY = Math.max(0, radiusAt(innerProfile, y) - inset);
+    const distFromWall = t * mWidth;
+    const r = Math.max(0, wallAtY - distFromWall);
+    points.push([r, y]);
+  }
   points.push([0, level]);
   return new LatheGeometry(toVectors(points), segments, SEAM_START, Math.PI * 2);
 };

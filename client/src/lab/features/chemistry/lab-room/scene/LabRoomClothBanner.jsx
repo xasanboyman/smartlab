@@ -16,8 +16,8 @@ import { useFrame } from "@react-three/fiber";
  * - Touch-interactive: clicking cycles tabs and propagates an elastic haptic ripple.
  */
 export const LabRoomClothBanner = ({
-  position = [2.45, 0, -1.6],
-  rotation = [0, -0.6, 0],
+  position = [-3.0, 0, -1.0],
+  rotation = [0, 1.15, 0],
   width = 1.3,
   height = 0.85,
   segmentsX = 16,

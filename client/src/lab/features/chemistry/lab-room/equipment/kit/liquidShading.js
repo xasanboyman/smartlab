@@ -24,6 +24,7 @@ export const createFluidUniforms = (table) => ({
   uMeniscusWidth: { value: 0.0025 },
   uRipple: { value: 0 },
   uBoil: { value: 0 },
+  uSlosh: { value: 0 },
   uTime: { value: 0 },
   uPlume: { value: 0 },
   uPlumeSource: { value: new Vector3(0, table.floor, 0) },
@@ -55,6 +56,7 @@ uniform float uPlume;
 uniform vec3 uPlumeSource;
 uniform float uSchlieren;
 uniform float uWisps;
+uniform float uSlosh;
 varying vec3 vFluidLocal;
 varying vec3 vFluidCamera;
 varying float vFluidPart;
@@ -310,9 +312,12 @@ if ( cloudA > 0.002 ) {
 float lightHeight = clamp( ( fe.y - uFloor ) / max( 0.01, uPlane - uFloor ), 0.0, 1.2 );
 vec3 fluidRgb = uTurbid * fluidIrr * RECIPROCAL_PI * cloudA * cloudShade * sqrt( fluidT ) * ( 0.72 + 0.28 * lightHeight );
 float fluidA = cloudA;
-// Light entering through the top and walls reaches the eye tinted by the liquid, so deep colours never go flat black.
+// Light entering through the top and walls reaches the eye tinted by the liquid, with natural clarity depth gradient
 float absorbed = 1.0 - dot( liquidT, vec3( 0.2126, 0.7152, 0.0722 ) );
-fluidRgb += fluidIrr * RECIPROCAL_PI * pow( liquidT, vec3( 0.35 ) ) * absorbed * 0.09 * ( 1.0 - cloudA );
+vec3 waterDepthTint = vec3( 0.02, 0.07, 0.11 ) * clamp( fp.liquid * 16.0, 0.0, 1.0 );
+vec3 solutionScatterColor = pow( liquidT, vec3( 0.4 ) ) * ( 1.0 - liquidT * 0.35 ) + waterDepthTint * ( 1.0 - absorbed );
+float depthGlow = ( absorbed * 0.85 + 0.032 ) * ( 0.14 + 0.12 * lightHeight );
+fluidRgb += fluidIrr * RECIPROCAL_PI * solutionScatterColor * depthGlow * ( 1.0 - cloudA );
 
 vec3 gasRgb = uGasColor * fluidIrr * RECIPROCAL_PI * ( 1.0 - exp( - dot( uSigmaG, vec3( 0.333 ) ) * fp.gas ) ) * 0.4;
 #ifdef FLUID_HIGH
@@ -333,45 +338,61 @@ if ( fp.surface >= 0.0 ) {
   float qr = length( q.xz );
   vec2 radial = q.xz / max( qr, 1e-5 );
   float wallDist = max( 0.0, fluidRadius( q.y ) - qr );
-  float slope = uMeniscus / uMeniscusWidth * exp( - wallDist / uMeniscusWidth );
-  vec3 nLocal = normalize( uUp - vec3( radial.x, 0.0, radial.y ) * min( slope, 3.0 ) );
+  // Physical catenary meniscus curvature profile
+  float dRatio = wallDist / max( uMeniscusWidth, 1e-4 );
+  float catenary = exp( - dRatio ) * ( 1.0 + 0.65 * exp( - dRatio * 2.5 ) );
+  float slope = ( uMeniscus / max( uMeniscusWidth, 1e-4 ) ) * catenary;
+  vec3 rPlane = vec3( radial.x, 0.0, radial.y );
+  rPlane = normalize( rPlane - uUp * dot( rPlane, uUp ) );
+  vec3 nLocal = normalize( uUp - rPlane * min( slope, 4.0 ) );
   #ifdef FLUID_HIGH
-  if ( uRipple > 0.001 || uBoil > 0.001 ) {
+  if ( uRipple > 0.001 || uBoil > 0.001 || uSlosh > 0.001 ) {
     vec3 rp = vec3( q.x * 900.0, uTime * ( 1.5 + uBoil * 5.0 ), q.z * 900.0 );
-    float amp = uRipple * 0.25 + uBoil * 0.9;
-    nLocal = normalize( nLocal + vec3( fluidNoise( rp ) - 0.5, 0.0, fluidNoise( rp + 19.1 ) - 0.5 ) * amp );
+    float amp = uRipple * 0.25 + uBoil * 0.9 + uSlosh * 0.38;
+    // Multi-frequency wave interference: concentric capillary waves + slosh tilt waves
+    float w1 = sin( qr * 550.0 - uTime * 4.5 );
+    float w2 = cos( ( q.x + q.z ) * 380.0 - uTime * 5.5 );
+    vec2 waveGrad = vec2(
+      cos( qr * 550.0 - uTime * 4.5 ) * radial.x * 0.5 - sin( ( q.x + q.z ) * 380.0 - uTime * 5.5 ) * 0.35,
+      cos( qr * 550.0 - uTime * 4.5 ) * radial.y * 0.5 - sin( ( q.x + q.z ) * 380.0 - uTime * 5.5 ) * 0.35
+    );
+    vec3 wavePerturb = vec3( waveGrad.x, 0.0, waveGrad.y ) * amp * 0.22 + vec3( fluidNoise( rp ) - 0.5, 0.0, fluidNoise( rp + 19.1 ) - 0.5 ) * amp;
+    wavePerturb -= uUp * dot( wavePerturb, uUp );
+    nLocal = normalize( nLocal + wavePerturb );
   }
   #endif
   vec3 nView = normalize( vFluidNormalMatrix * nLocal );
   if ( fp.fromAbove < 0.5 ) nView = - nView;
   float dotNV = clamp( dot( nView, geometryViewDir ), 0.0, 1.0 );
-  float fresnel = 0.02 + 0.98 * pow( 1.0 - dotNV, 5.0 );
-  if ( fp.fromAbove < 0.5 && dotNV < 0.66 ) fresnel = 1.0;
+  // Physically accurate air-water Fresnel reflectance (R0 = 0.0204 for water n=1.3333)
+  float fresnel = 0.0204 + 0.9796 * pow( 1.0 - dotNV, 5.0 );
+  if ( fp.fromAbove < 0.5 && dotNV < 0.6614 ) fresnel = 1.0;
   vec3 spec = vec3( 0.0 );
   #ifdef USE_ENVMAP
-    spec = getIBLRadiance( geometryViewDir, nView, 0.035 + uBoil * 0.08 );
+    spec = getIBLRadiance( geometryViewDir, nView, 0.012 + uBoil * 0.07 );
   #endif
   #if NUM_DIR_LIGHTS > 0
     vec3 halfDir = normalize( directionalLights[ 0 ].direction + geometryViewDir );
-    spec += directionalLights[ 0 ].color * pow( max( 0.0, dot( nView, halfDir ) ), 600.0 ) * 6.0;
+    spec += directionalLights[ 0 ].color * pow( max( 0.0, dot( nView, halfDir ) ), 500.0 ) * 7.5;
   #endif
   vec3 before = exp( - ( uSigmaG * fp.surface ) );
   if ( fp.fromAbove < 0.5 ) before = exp( - ( uSigmaT + uSigmaS ) * fp.surface );
-  float edge = exp( - wallDist / ( uMeniscusWidth * 0.6 ) );
-  float mirror = fresnel * ( 1.0 + edge * 0.6 );
-  fluidRgb = spec * mirror * before + fluidRgb * ( 1.0 - min( 1.0, mirror ) );
-  fluidA = min( 1.0, mirror * 0.85 ) + fluidA * ( 1.0 - min( 1.0, mirror * 0.85 ) );
+  float edge = exp( - wallDist / ( uMeniscusWidth * 0.55 ) );
+  float meniscusGlint = pow( edge, 1.4 ) * ( 1.0 + 1.2 * pow( 1.0 - dotNV, 3.0 ) );
+  float mirror = clamp( fresnel * ( 1.0 + meniscusGlint * 0.85 ), 0.0, 1.0 );
+  fluidRgb = spec * mirror * before + fluidRgb * ( 1.0 - mirror );
+  fluidA = min( 1.0, mirror * 0.88 ) + fluidA * ( 1.0 - min( 1.0, mirror * 0.88 ) );
 }
 
 if ( fp.film > 0.0 ) {
-  vec3 filmNormal = normalize( vFluidNormalMatrix * normalize( vec3( fe.x, - length( fe.xz ) * 0.9, fe.z ) ) );
-  vec3 filmSpec = vec3( 0.3 );
+  vec3 filmNormal = normalize( vFluidNormalMatrix * normalize( vec3( fe.x, - length( fe.xz ) * 0.85, fe.z ) ) );
+  vec3 filmSpec = vec3( 0.35 );
   #ifdef USE_ENVMAP
-    filmSpec = getIBLRadiance( geometryViewDir, filmNormal, 0.05 );
+    filmSpec = getIBLRadiance( geometryViewDir, filmNormal, 0.035 );
   #endif
-  float filmA = fp.film * fp.film * 0.35;
+  float filmA = fp.film * fp.film * 0.38;
   fluidRgb += filmSpec * filmA;
-  fluidA = min( 1.0, fluidA + filmA * 0.4 );
+  fluidA = min( 1.0, fluidA + filmA * 0.42 );
 }
 
 gl_FragColor = vec4( fluidRgb, fluidA );
