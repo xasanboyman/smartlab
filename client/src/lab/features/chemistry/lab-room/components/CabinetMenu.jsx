@@ -409,6 +409,7 @@ const CabinetMenu = ({ world, thumbs, onClose }) => {
           <div
             key={searching ? "search" : view}
             ref={scrollerRef}
+            data-cabinet-scroll="true"
             onScroll={followScroll}
             className="absolute inset-0 overflow-y-auto px-3 pb-3"
             style={BACK_PANEL_STYLE}

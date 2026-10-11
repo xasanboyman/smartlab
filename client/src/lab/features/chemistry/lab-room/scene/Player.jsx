@@ -25,7 +25,19 @@ const MAX_DT = 0.1;
 const Player = ({ meta, inputRef, activeRef, settingsRef, poseRef, resetRef, teleportRef, eyeHeight }) => {
   const bodyRef = useRef(null);
   const colliderRef = useRef(null);
-  const motion = useRef({ ready: false, resetToken: 0, teleportToken: 0, yaw: 0, pitch: 0, vx: 0, vz: 0, phase: 0, bob: 0 });
+  const motion = useRef({
+    ready: false,
+    resetToken: 0,
+    teleportToken: 0,
+    yaw: 0,
+    pitch: 0,
+    targetYaw: 0,
+    targetPitch: 0,
+    vx: 0,
+    vz: 0,
+    phase: 0,
+    bob: 0,
+  });
   const { world } = useRapier();
   const spawn = useMemo(() => spawnPose(meta), [meta]);
 
@@ -51,6 +63,8 @@ const Player = ({ meta, inputRef, activeRef, settingsRef, poseRef, resetRef, tel
       body.setTranslation({ x: pose.x, y: CAPSULE_CENTER_Y, z: pose.z }, true);
       m.yaw = pose.yaw;
       m.pitch = pose.pitch;
+      m.targetYaw = pose.yaw;
+      m.targetPitch = pose.pitch;
       m.vx = 0;
       m.vz = 0;
     };
@@ -70,8 +84,13 @@ const Player = ({ meta, inputRef, activeRef, settingsRef, poseRef, resetRef, tel
     const active = activeRef.current;
     if (active) {
       const look = LOOK_SPEED * settings.sensitivity;
-      m.yaw -= input.lookX * look;
-      m.pitch = clamp(m.pitch - input.lookY * look, -PITCH_LIMIT, PITCH_LIMIT);
+      m.targetYaw -= input.lookX * look;
+      m.targetPitch = clamp(m.targetPitch - input.lookY * look, -PITCH_LIMIT, PITCH_LIMIT);
+
+      // Smooth interpolation for butter-smooth touchpad gesture response
+      const lookK = 1 - Math.exp(-38 * dt);
+      m.yaw += (m.targetYaw - m.yaw) * lookK;
+      m.pitch += (m.targetPitch - m.pitch) * lookK;
     }
     input.lookX = 0;
     input.lookY = 0;

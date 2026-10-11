@@ -190,7 +190,7 @@ const WorldInteraction = ({ world, lab, inputRef, activeRef, anchors, onMonitor 
           world.dropHeld(
             held.id,
             { position: from.toArray(), rotation: body.lying ? [0, facePlayer, Math.PI / 2] : [0, facePlayer, 0] },
-            [tmpDir.x * 1.1, tmpDir.y * 1.1 + 0.4, tmpDir.z * 1.1],
+            [tmpDir.x * 1.5, tmpDir.y * 1.2 + 0.5, tmpDir.z * 1.5],
           );
         } else if (event.type === "slot") {
           world.selectSlot(event.slot);

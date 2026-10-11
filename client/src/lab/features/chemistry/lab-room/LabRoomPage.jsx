@@ -1,6 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Box, Glasses, Maximize2, Minimize2, PackageOpen, RotateCcw, Volume2, VolumeX, Menu } from "lucide-react";
+import {
+  ArrowLeft,
+  Glasses,
+  Maximize2,
+  Minimize2,
+  PackageOpen,
+  RotateCcw,
+  Volume2,
+  VolumeX,
+  Menu,
+  Eye,
+  Footprints,
+  BookOpen,
+  Laptop,
+  MousePointer,
+} from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
 import { createSnapStore } from "@/shared/utils/snapStore";
 import { cn } from "@/shared/utils/cn";
@@ -26,6 +41,7 @@ import { createLab } from "./sim/createLab";
 import ReactionFeed from "./hud/ReactionFeed";
 import HazardOverlay from "./components/HazardOverlay";
 import MonitorReader from "./hud/MonitorReader";
+import TelemetryHUD from "./hud/TelemetryHUD";
 
 // Embedded frames without the pointer-lock permission can't capture the mouse.
 const pointerLockBlocked = () => document.featurePolicy?.allowsFeature?.("pointer-lock") === false;
@@ -181,9 +197,24 @@ const LabRoomPage = () => {
   }, []);
 
 
+  const [atBench, setAtBench] = useState(false);
+
   const enterDragMode = useCallback(() => {
     modeRef.current = "drag";
     setters.current.setFields({ lockMode: "drag", phase: "playing", view: "main", lockHint: false, notice: "" });
+  }, []);
+
+  const toggleBenchFocus = useCallback(() => {
+    setAtBench((prev) => {
+      const next = !prev;
+      teleportRef.current = {
+        token: teleportRef.current.token + 1,
+        pose: next
+          ? { x: 0.1, z: 0.05, yaw: 0, pitch: -0.42 }
+          : { x: 0, z: 1.25, yaw: 0, pitch: -0.15 },
+      };
+      return next;
+    });
   }, []);
 
   // Chrome refuses a re-lock for about a second after Esc; the hint asks for another click.
@@ -212,6 +243,21 @@ const LabRoomPage = () => {
       setters.current.setField("lockHint", true);
     }
   }, [enterDragMode]);
+
+  const toggleControlMode = useCallback(() => {
+    if (modeRef.current === "drag") {
+      modeRef.current = "pointer";
+      setters.current.setField("lockMode", "pointer");
+      play();
+    } else {
+      if (document.pointerLockElement) document.exitPointerLock();
+      enterDragMode();
+    }
+  }, [enterDragMode, play]);
+
+  const dropHeldItem = useCallback(() => {
+    inputRef.current.events.push({ type: "drop" });
+  }, [inputRef]);
 
   const handleReady = useCallback(() => {
     setters.current.setField("ready", true);
@@ -351,45 +397,79 @@ const LabRoomPage = () => {
       {live && boot.debug.hud && (
         <header className="pointer-events-none absolute inset-x-0 top-3 z-30 flex items-center justify-between px-4 select-none">
           {/* Left: Exit & Brand */}
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-zinc-950/80 p-1.5 backdrop-blur-xl border border-zinc-800/80 shadow-2xl">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-zinc-950/85 p-1.5 backdrop-blur-2xl border border-zinc-800/80 shadow-2xl">
             <button
               type="button"
               onClick={actions.exit}
               title="Kimyo bo'limiga qaytish"
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
             >
               <ArrowLeft className="size-3.5" />
               <span>Kimyo</span>
             </button>
             <div className="h-3 w-px bg-zinc-800" />
-            <div className="flex items-center gap-1.5 px-2 text-xs font-semibold text-zinc-200">
+            <div className="flex items-center gap-1.5 px-2 text-xs font-bold text-zinc-100">
               <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>SmartLab 3D</span>
             </div>
           </div>
 
-          {/* Center: VR indicator / Quick Tools */}
+          {/* Center: Workbench Navigation & Quick Action Dock */}
           <div className="pointer-events-auto flex items-center gap-2">
             {vrMode && (
               <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-400/40 backdrop-blur-xl shadow-lg">
                 <Glasses className="size-3.5" />
-                <span>VR Stereo Split</span>
+                <span>VR Stereo</span>
               </div>
             )}
-            <div className="flex items-center gap-1 rounded-full bg-zinc-950/80 p-1 backdrop-blur-xl border border-zinc-800/80 shadow-2xl">
+            <div className="flex items-center gap-1 rounded-full bg-zinc-950/85 p-1 backdrop-blur-2xl border border-zinc-800/90 shadow-2xl">
+              {/* Bench Focus / Walk Toggle */}
+              <button
+                type="button"
+                onClick={toggleBenchFocus}
+                title={atBench ? "Erkin yurish rejimiga o'tish" : "Asosiy laboratoriya stoliga yaqinlashish"}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition cursor-pointer",
+                  atBench
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                    : "text-zinc-300 hover:bg-zinc-800 hover:text-white",
+                )}
+              >
+                {atBench ? <Footprints className="size-3.5 text-emerald-400" /> : <Eye className="size-3.5 text-cyan-400" />}
+                <span>{atBench ? "Erkin yurish" : "Stolga qarash"}</span>
+              </button>
+
+              <div className="h-3 w-px bg-zinc-800" />
+
+              {/* Cabinet Drawer */}
               <button
                 type="button"
                 onClick={actions.openCabinet}
-                title="Moddalar shkafi (E)"
+                title="Moddalar va jihozlar shkafi (E)"
                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
               >
                 <PackageOpen className="size-3.5 text-cyan-400" />
                 <span>Shkaf (E)</span>
               </button>
+
+              {/* Lab Monitor Log */}
+              <button
+                type="button"
+                onClick={actions.openMonitor}
+                title="Tajriba monitori va reaksiyalar daftari"
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
+              >
+                <BookOpen className="size-3.5 text-violet-400" />
+                <span>Daftarcha</span>
+              </button>
+
+              <div className="h-3 w-px bg-zinc-800" />
+
+              {/* Reset Workbench */}
               <button
                 type="button"
                 onClick={actions.reset}
-                title="Laboratoriyani boshlang'ich holatga qaytarish"
+                title="Laboratoriya stolini tozalash va tiklash"
                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white transition cursor-pointer"
               >
                 <RotateCcw className="size-3.5 text-amber-400" />
@@ -398,21 +478,39 @@ const LabRoomPage = () => {
             </div>
           </div>
 
-          {/* Right: VR Toggle, Sound, Fullscreen, Menu */}
-          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-zinc-950/80 p-1 backdrop-blur-xl border border-zinc-800/80 shadow-2xl">
+          {/* Right: Touchpad/Mouse Mode, VR, Sound, Fullscreen, Menu */}
+          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-zinc-950/85 p-1 backdrop-blur-2xl border border-zinc-800/90 shadow-2xl">
+            {/* Control mode switch: Trekpad vs Sichqoncha */}
+            <button
+              type="button"
+              onClick={toggleControlMode}
+              title={dragging ? "Sichqoncha FPS rejimiga o'tish" : "Trekpad / Noutbuk rejimiga o'tish"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition cursor-pointer",
+                dragging
+                  ? "bg-cyan-500/20 border border-cyan-400/40 text-cyan-300"
+                  : "bg-emerald-500/20 border border-emerald-400/40 text-emerald-300",
+              )}
+            >
+              {dragging ? <Laptop className="size-3.5 text-cyan-300" /> : <MousePointer className="size-3.5 text-emerald-300" />}
+              <span>{dragging ? "Trekpad" : "Sichqoncha"}</span>
+            </button>
+
+            <div className="h-3 w-px bg-zinc-800" />
+
             <button
               type="button"
               onClick={toggleVrMode}
               title={vrMode ? "Oddiy 3D ko'rinishga qaytish" : "Cardboard VR ko'rinishini yoqish"}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition cursor-pointer",
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition cursor-pointer",
                 vrMode
                   ? "bg-emerald-500/20 border border-emerald-400/50 text-emerald-300"
                   : "text-zinc-300 hover:bg-zinc-800 hover:text-white",
               )}
             >
               <Glasses className="size-3.5" />
-              <span>{vrMode ? "VR: Faol" : "VR Mode"}</span>
+              <span>VR</span>
             </button>
             <button
               type="button"
@@ -446,12 +544,19 @@ const LabRoomPage = () => {
 
       {playing && boot.debug.hud && <Crosshair />}
       {playing && boot.debug.hud && <InteractionPrompt world={world} />}
-      {playing && boot.debug.hud && <Hotbar world={world} thumbs={thumbs} />}
+      {playing && boot.debug.hud && <TelemetryHUD world={world} lab={lab} />}
+      {playing && boot.debug.hud && (
+        <Hotbar
+          world={world}
+          thumbs={thumbs}
+          onDrop={dropHeldItem}
+          onOpenCabinet={actions.openCabinet}
+        />
+      )}
       {playing && boot.debug.hud && <ReactionFeed lab={lab} />}
       {playing && <HazardOverlay lab={lab} />}
       {phase === "menu" && overlay === "cabinet" && <CabinetMenu world={world} thumbs={thumbs} onClose={actions.closeCabinet} />}
       {phase === "menu" && overlay === "monitor" && <MonitorReader lab={lab} onClose={actions.closeCabinet} />}
-      {playing && dragging && boot.debug.hud && <DragHint />}
       {settings.showFps && <FpsBadge store={fpsStore} />}
 
       {phase === "start" && (

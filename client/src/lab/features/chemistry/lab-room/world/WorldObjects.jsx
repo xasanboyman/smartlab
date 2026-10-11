@@ -7,6 +7,7 @@ import EquipmentModel from "../equipment/EquipmentModel";
 import BodyColliders from "./BodyColliders";
 import { objectType } from "./objectTypes";
 import { spillMixture } from "../sim/spills";
+import { pushSound } from "../sound/queue";
 
 const BREAK_SPEED = { glass: 2.4, porcelain: 3.2 };
 // Below this the mouth points sideways enough for the contents to run out.
@@ -39,13 +40,19 @@ const WorldObject = ({ object, world, lab }) => {
 
   const onImpact = () => {
     const body = bodyRef.current;
-    if (!body || !breaks || lastSpeed.current < BREAK_SPEED[breaks]) return;
+    if (!body) return;
     const t = body.translation();
     const r = body.rotation();
     const v = body.linvel();
-    // Whatever was inside lands where the glass broke.
-    if (lab) spillMixture(lab, object.id, [t.x, t.y, t.z]);
-    queueMicrotask(() => world.shatter(object.id, [t.x, t.y, t.z], [r.x, r.y, r.z, r.w], [v.x, v.y, v.z]));
+
+    if (breaks && lastSpeed.current >= BREAK_SPEED[breaks]) {
+      // Whatever was inside lands where the glass broke.
+      if (lab) spillMixture(lab, object.id, [t.x, t.y, t.z]);
+      queueMicrotask(() => world.shatter(object.id, [t.x, t.y, t.z], [r.x, r.y, r.z, r.w], [v.x, v.y, v.z]));
+    } else if (lastSpeed.current > 0.4 && lab) {
+      // Physical glass/metal contact sound
+      pushSound(lab, { type: breaks ? "clink" : "thud", position: [t.x, t.y, t.z] });
+    }
   };
 
   return (
@@ -57,8 +64,12 @@ const WorldObject = ({ object, world, lab }) => {
       {...(dynamic ? { linearVelocity: object.velocity } : {})}
       colliders={false}
       ccd={dynamic}
+      friction={0.45}
+      restitution={0.18}
+      linearDamping={0.35}
+      angularDamping={0.45}
       userData={{ objectId: object.id }}
-      {...(dynamic && breaks ? { onCollisionEnter: onImpact } : {})}
+      {...(dynamic ? { onCollisionEnter: onImpact } : {})}
     >
       <BodyColliders body={type.body} />
       <EquipmentModel id={object.typeId} simId={object.id} {...object.props} />

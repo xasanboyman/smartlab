@@ -14,7 +14,7 @@ import GlassShowcaseModal from "@/shared/components/ui/GlassShowcaseModal";
 const COMPACT_CONTROLS = [
   { keys: ["W", "A", "S", "D"], label: "Yurish" },
   { keys: ["Shift"], label: "Tez yugurish" },
-  { keys: ["Sichqoncha"], label: "Atrofga qarash" },
+  { keys: ["Trekpad / Sichqoncha"], label: "Atrofga qarash" },
   { keys: ["1–5"], label: "Slot tanlash" },
   { keys: ["Chap tugma"], label: "Olish / qo'yish" },
   { keys: ["Bosib turing"], label: "Quyish / qizdirish" },
