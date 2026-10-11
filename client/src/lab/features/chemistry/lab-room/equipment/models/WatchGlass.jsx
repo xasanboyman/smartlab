@@ -41,23 +41,18 @@ const getAssets = () => {
 };
 
 const WatchGlass = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
-  const kit = useKit();
   const { vessel, mouth } = useMemo(() => getAssets(), []);
 
   return (
     <group {...props}>
-      <BlobShadow radius={RADIUS * 1.05} opacity={0.35} />
-      <GlassVessel geometry={vessel.geometry} renderOrder={kit.renderOrder} />
-      {simId && (
+      <GlassVessel vessel={vessel}>
         <Contents
           simId={simId}
-          mouth={mouth}
-          vesselInnerProfile={vessel.innerProfile}
-          nominalVolumeMl={30}
-          liquidColor={liquidColor}
-          liquidOpacity={liquidOpacity}
+          vessel={mouth}
+          fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }}
         />
-      )}
+      </GlassVessel>
+      <BlobShadow radius={RADIUS * 1.05} opacity={0.35} />
     </group>
   );
 };

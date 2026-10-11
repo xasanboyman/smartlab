@@ -1,4 +1,4 @@
-import { atm, consume, toxicWarn } from "./helpers";
+import { atm, consume, toxicWarn } from "./helpers.js";
 
 // Sim seconds to use up the limiting reactant, reaction heat (kJ/mol) and the ion formed (doc 14, № 11–12).
 // heatScale is the share of that heat still in the tube at simulation speed: the real reaction takes minutes and cools as it goes.

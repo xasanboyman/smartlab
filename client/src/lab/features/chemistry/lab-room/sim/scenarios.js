@@ -1,5 +1,5 @@
-import { addGasMl, addPiece, addPowder, mixIn, reagentPortion } from "../chemistry/mixture";
-import { SUBSTANCE_BY_ID } from "../substances/catalog";
+import { addGasMl, addPiece, addPowder, mixIn, reagentPortion } from "../chemistry/mixture.js";
+import { SUBSTANCE_BY_ID } from "../substances/catalog.js";
 
 // Dev review scenes for ?fxlab=name,name&t=seconds. Timelines drive the real engine; `fx` forces visuals for effect work.
 const label = (sourceId) => SUBSTANCE_BY_ID[sourceId]?.formula ?? sourceId;

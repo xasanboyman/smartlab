@@ -89,6 +89,7 @@ export const LabRoomClothBanner = ({
   const geometry = useMemo(() => {
     return new THREE.PlaneGeometry(width, height, segmentsX, segmentsY);
   }, [width, height, segmentsX, segmentsY]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
 
   // Setup offscreen canvas texture
   useEffect(() => {
@@ -108,10 +109,19 @@ export const LabRoomClothBanner = ({
       meshRef.current.material.needsUpdate = true;
     }
 
+    renderCanvasTexture();
+
     return () => {
       texture.dispose();
+      textureRef.current = null;
+      canvasRef.current = null;
     };
   }, []);
+
+  // Redraw canvas ONLY when active tab or reaction telemetry updates
+  useEffect(() => {
+    renderCanvasTexture();
+  }, [activeTab, lastReactionTitle]);
 
   // Render 2D UI onto texture canvas
   const renderCanvasTexture = () => {
@@ -428,10 +438,13 @@ export const LabRoomClothBanner = ({
     }
   };
 
+  const motionFramesRef = useRef(120);
+
   // Pointer interaction: cycle tabs & apply smooth spring flex
   const handlePointerDown = (e) => {
     e.stopPropagation();
     setActiveTab((prev) => (prev + 1) % 3);
+    motionFramesRef.current = 90;
 
     // Apply inward impulse to center particles
     const { pos, oldPos, pinned, totalParticles } = physics;
@@ -443,14 +456,9 @@ export const LabRoomClothBanner = ({
     }
   };
 
-  // Canvas texture refresh at ~12fps
-  const lastDrawRef = useRef(0);
   useFrame((state, delta) => {
-    const time = state.clock.getElapsedTime();
-    if (time - lastDrawRef.current > 0.08) {
-      lastDrawRef.current = time;
-      renderCanvasTexture();
-    }
+    if (motionFramesRef.current <= 0) return;
+    motionFramesRef.current -= 1;
 
     // Spring-mass cloth physics for the screen
     const { pos, oldPos, pinned, dx, dy, nx, ny } = physics;

@@ -1,4 +1,4 @@
-import { warnOnce } from "./helpers";
+import { warnOnce } from "./helpers.js";
 
 // Na + H₂O (doc 14, № 37): the ball skates, hisses and finishes with a pop; a big piece or a narrow vessel is dangerous.
 export const sodiumWater = {
@@ -13,8 +13,10 @@ export const sodiumWater = {
     if (!piece || m.volumeMl <= k.EPS || !watery) {
       if (state.grams > 0 && !state.popped) {
         state.popped = true;
-        k.emit(events, "pop", { strength: Math.min(1, state.grams * 4) });
-        k.emit(events, "spatter", { radius: m.narrow ? 0.6 : 0.2 + state.grams, acid: false });
+        k.emit(events, "pop", { strength: Math.min(1, Math.max(0.4, state.grams * 4)) });
+        k.emit(events, "flash", { color: "#ffc400", strength: 0.85 });
+        k.emit(events, "spatter", { radius: m.narrow ? 0.8 : 0.35 + state.grams, acid: false });
+        k.fx(m, "smoke", { rate: 0.6, color: "#f5f5f5" });
       }
       return 0;
     }
@@ -40,13 +42,23 @@ export const sodiumWater = {
     k.evolveGas(m, "H2", n / 2, dt, { site: "surface" });
     k.heat(m, 184, n);
     k.fx(m, "sodiumBall", { size: Math.min(1, Math.cbrt(grams / 0.1)), burning: state.burning });
-    k.fx(m, "steam", Math.min(0.6, (n / Math.max(dt, 1e-3)) * 3));
-    if (state.burning) k.fx(m, "flame", { kind: "sodium-water", intensity: Math.min(1, state.grams * 3) });
+    k.fx(m, "steam", Math.min(0.7, (n / Math.max(dt, 1e-3)) * 3));
+    if (state.burning) {
+      k.fx(m, "flame", { kind: "sodium-water", intensity: Math.min(1, Math.max(0.6, state.grams * 3)) });
+      k.fx(m, "sparks", 0.5);
+      k.fx(m, "flash", 0.3);
+    }
     // A tube holds the hydrogen and the heat in: one rice grain only burns, but a second one cracks it.
     if (m.narrow && !state.banged && (state.grams > 0.3 || state.total > 0.15)) {
       state.banged = true;
       k.emit(events, "bang", { strength: 1, radius: 1.5 });
+      k.emit(events, "flash", { color: "#ffc400", strength: 1 });
       k.emit(events, "shatter");
+    } else if (!state.banged && (state.grams > 0.35 || state.total > 0.25)) {
+      state.banged = true;
+      k.emit(events, "bang", { strength: 0.85, radius: 1.2 });
+      k.emit(events, "flash", { color: "#ffc400", strength: 1 });
+      k.emit(events, "spatter", { radius: 0.9, acid: false });
     }
     return n;
   },

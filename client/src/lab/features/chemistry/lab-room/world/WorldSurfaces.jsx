@@ -12,9 +12,12 @@ const surfacesFor = (boxes, anchors = {}) => {
   list.push(box("floor", [0, -0.05, 0], [5.5, 0.05, 4.5]));
 
   for (const name of ["bench_1", "bench_2"]) {
-    const top = anchors[`${name}_top`];
     const blocker = boxes.find((b) => b.name === name);
-    if (!top || !blocker) continue;
+    if (!blocker) continue;
+    const top = anchors[`${name}_top`] ?? {
+      position: [blocker.center[0], 0.9, blocker.center[2]],
+      size: [blocker.half[0] * 2, blocker.half[2] * 2],
+    };
     const [x, y, z] = top.position;
     list.push(box(`${name}_worktop`, [blocker.center[0], y / 2, blocker.center[2]], [blocker.half[0], y / 2, blocker.half[2]]));
     list.push(box(`${name}_upstand`, [x, y + 0.175, z], [top.size[0] / 2 - 0.1, 0.175, 0.1]));
@@ -47,8 +50,8 @@ const WorldSurfaces = ({ boxes, anchors }) => {
           args={s.half}
           position={s.center}
           collisionGroups={GROUPS.surface}
-          friction={0.9}
-          restitution={0.05}
+          friction={1.2}
+          restitution={0.02}
         />
       ))}
     </RigidBody>

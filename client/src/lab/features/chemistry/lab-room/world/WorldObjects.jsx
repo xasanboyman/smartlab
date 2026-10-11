@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody } from "@react-three/rapier";
-import { Quaternion, Vector3 } from "three";
+import { Euler, Quaternion, Vector3 } from "three";
 import { useSnap } from "@/shared/utils/snapStore";
 import EquipmentModel from "../equipment/EquipmentModel";
 import BodyColliders from "./BodyColliders";
@@ -15,6 +15,7 @@ const TIP_UP = 0.55;
 
 const up = new Vector3();
 const tmpQuat = new Quaternion();
+const scratchEuler = new Euler(0, 0, 0, "XYZ");
 
 const WorldObject = ({ object, world, lab }) => {
   const bodyRef = useRef(null);
@@ -23,12 +24,34 @@ const WorldObject = ({ object, world, lab }) => {
   const dynamic = object.state === "dynamic";
   const breaks = type.body.breaks;
 
+  const restFrames = useRef(0);
+
   // Collision callbacks run after the solver changed the velocity, so keep the pre-impact speed.
   useFrame((_, delta) => {
     const body = bodyRef.current;
     if (!dynamic || !body) return;
     const v = body.linvel();
-    lastSpeed.current = Math.hypot(v.x, v.y, v.z);
+    const ang = body.angvel();
+    const speed = Math.hypot(v.x, v.y, v.z);
+    const angSpeed = Math.hypot(ang.x, ang.y, ang.z);
+    lastSpeed.current = speed;
+
+    // Resting stability: settle back to placed (fixed) when speed stays near zero on the workbench
+    if (speed < 0.08 && angSpeed < 0.12) {
+      restFrames.current += 1;
+      if (restFrames.current > 15) {
+        const t = body.translation();
+        const r = body.rotation();
+        tmpQuat.set(r.x, r.y, r.z, r.w);
+        scratchEuler.setFromQuaternion(tmpQuat);
+        world.settle?.(object.id, [t.x, t.y, t.z], [scratchEuler.x, scratchEuler.y, scratchEuler.z]);
+        restFrames.current = 0;
+        return;
+      }
+    } else {
+      restFrames.current = 0;
+    }
+
     // A knocked-over container empties itself onto whatever is below.
     if (!lab?.mixture(object.id)) return;
     const r = body.rotation();
@@ -64,10 +87,10 @@ const WorldObject = ({ object, world, lab }) => {
       {...(dynamic ? { linearVelocity: object.velocity } : {})}
       colliders={false}
       ccd={dynamic}
-      friction={0.45}
-      restitution={0.18}
-      linearDamping={0.35}
-      angularDamping={0.45}
+      friction={1.5}
+      restitution={0.01}
+      linearDamping={1.5}
+      angularDamping={2.0}
       userData={{ objectId: object.id }}
       {...(dynamic ? { onCollisionEnter: onImpact } : {})}
     >

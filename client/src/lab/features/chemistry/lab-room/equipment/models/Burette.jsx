@@ -78,20 +78,21 @@ const stopcockMaterial = new MeshStandardMaterial({
 const Burette = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
   const kit = useKit();
   const { vessel, mouth, createTexture, printGeometry } = useMemo(() => getAssets(), []);
-  const printTexture = useMemo(() => createTexture(), [createTexture]);
+  const print = useMemo(() => ({
+    geometry: printGeometry,
+    material: kit.print("burette-50", createTexture),
+  }), [kit, createTexture, printGeometry]);
 
   return (
     <group {...props}>
-      <BlobShadow radius={0.03} opacity={0.25} />
-      <GlassVessel geometry={vessel.geometry} renderOrder={kit.renderOrder} />
-      <mesh geometry={printGeometry} renderOrder={kit.renderOrder + 1}>
-        <meshStandardMaterial
-          map={printTexture}
-          transparent
-          roughness={0.4}
-          depthWrite={false}
+      <GlassVessel vessel={vessel} print={print}>
+        <Contents
+          simId={simId}
+          vessel={mouth}
+          fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }}
         />
-      </mesh>
+      </GlassVessel>
+      <BlobShadow radius={0.03} opacity={0.25} />
       {/* Teflon Stopcock Valve at the lower neck (y = 0.04) */}
       <group position={[0, 0.04, 0]}>
         <mesh rotation-z={Math.PI / 2} material={stopcockMaterial}>
@@ -101,16 +102,6 @@ const Burette = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) 
           <boxGeometry args={[0.005, 0.016, 0.008]} />
         </mesh>
       </group>
-      {simId && (
-        <Contents
-          simId={simId}
-          mouth={mouth}
-          vesselInnerProfile={vessel.innerProfile}
-          nominalVolumeMl={50}
-          liquidColor={liquidColor}
-          liquidOpacity={liquidOpacity}
-        />
-      )}
     </group>
   );
 };

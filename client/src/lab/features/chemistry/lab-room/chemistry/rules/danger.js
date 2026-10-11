@@ -1,4 +1,4 @@
-import { atm, toxicWarn, warnOnce } from "./helpers";
+import { atm, toxicWarn, warnOnce } from "./helpers.js";
 
 // Water poured onto concentrated sulfuric acid (doc 14, № 40): it boils at the surface and throws acid out.
 export const waterIntoAcid = {
@@ -14,16 +14,19 @@ export const waterIntoAcid = {
       // Any watery liquid does it: water, alkali or ammonia solution (doc 14, № 40).
       if (mix.portionSulfuric > 0.5 || mix.portionWater * 0.018 < 0.3 * mix.addedMl) continue;
       warnOnce(k, m, events, ctx, "water-into-acid", 15);
-      k.emit(events, "spatter", { radius: 0.4, acid: true });
+      k.emit(events, "spatter", { radius: 0.75, acid: true });
+      k.emit(events, "pop", { strength: 0.5 });
+      k.emit(events, "flash", { color: "#ffffff", strength: 0.35 });
       // A thin test tube sometimes cracks from the shock (doc 14, № 40).
-      if (m.narrow && Math.random() < 0.2) k.emit(events, "shatter");
-      state.until = now + 2;
+      if (m.narrow && Math.random() < 0.35) k.emit(events, "shatter");
+      state.until = now + 2.5;
       total += mix.addedMl;
     }
     if (now < state.until) {
       k.fx(m, "spatter", 1);
       k.fx(m, "steam", 1);
-      k.fx(m, "boiling", 0.8);
+      k.fx(m, "boiling", 1.0);
+      k.fx(m, "smoke", { rate: 0.55, color: "#f0f0f0", toxic: true });
     }
     return total;
   },

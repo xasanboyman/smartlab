@@ -1,7 +1,7 @@
-import { ROOM_C, SPECIES } from "./species";
-import * as mixture from "./mixture";
-import { phOf } from "./acidity";
-import { RULES } from "./rules";
+import { ROOM_C, SPECIES } from "./species.js";
+import * as mixture from "./mixture.js";
+import { phOf } from "./acidity.js";
+import { RULES } from "./rules/index.js";
 
 const { EPS } = mixture;
 const LATENT_J_PER_G = 2260;

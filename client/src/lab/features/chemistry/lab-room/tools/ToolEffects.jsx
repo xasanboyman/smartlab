@@ -39,30 +39,52 @@ const flashParams = (lab) => {
 };
 
 const DropletTrail = ({ lab }) => {
-  const meshRef = useRef(null);
+  const groupRef = useRef(null);
 
   useFrame(({ clock }) => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
+    const group = groupRef.current;
+    if (!group) return;
     const drop = lab.activity.drop;
     if (!drop?.from || !drop?.to) {
-      mesh.visible = false;
+      group.visible = false;
       return;
     }
-    mesh.visible = true;
-    const t = (clock.elapsedTime * 6) % 1;
-    mesh.position.set(
-      drop.from[0] + (drop.to[0] - drop.from[0]) * t,
-      drop.from[1] + (drop.to[1] - drop.from[1]) * t,
-      drop.from[2] + (drop.to[2] - drop.from[2]) * t,
-    );
+    group.visible = true;
+    const count = group.children.length;
+    for (let i = 0; i < count; i++) {
+      const child = group.children[i];
+      const offset = i / count;
+      const linearT = ((clock.elapsedTime * 4.2 + offset) % 1);
+      // Accelerated fall under gravity
+      const t = Math.pow(linearT, 1.35);
+      child.position.set(
+        drop.from[0] + (drop.to[0] - drop.from[0]) * linearT,
+        drop.from[1] + (drop.to[1] - drop.from[1]) * t,
+        drop.from[2] + (drop.to[2] - drop.from[2]) * linearT,
+      );
+      // Teardrop elongation in flight
+      child.scale.set(0.85, 1.25, 0.85);
+      if (child.material && drop.color) {
+        child.material.color.set(drop.color);
+      }
+    }
   });
 
   return (
-    <mesh ref={meshRef} visible={false}>
-      <sphereGeometry args={[0.0038, 12, 12]} />
-      <meshStandardMaterial color="#bae6fd" transparent opacity={0.88} roughness={0.05} />
-    </mesh>
+    <group ref={groupRef} visible={false}>
+      {[0, 1, 2].map((idx) => (
+        <mesh key={idx}>
+          <sphereGeometry args={[0.0035, 14, 14]} />
+          <meshStandardMaterial
+            color="#bae6fd"
+            transparent
+            opacity={0.88}
+            roughness={0.03}
+            metalness={0.05}
+          />
+        </mesh>
+      ))}
+    </group>
   );
 };
 

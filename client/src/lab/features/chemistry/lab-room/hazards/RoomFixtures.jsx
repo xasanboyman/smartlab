@@ -192,22 +192,98 @@ const SafetyShower = ({ active, time }) => {
   );
 };
 
-// 3D Sink Faucet Running Stream
+// 3D Realistic Translucent Laminar Sink Faucet Water Stream & Basin Drain Splash
 const SinkFaucetStream = ({ active, time }) => {
   if (!active) return null;
-  const pulse = 0.048 + Math.sin(time * 20) * 0.008;
+  const pulse = 0.055 + Math.sin(time * 24) * 0.007;
+  const ripple1 = (time * 0.4) % 1;
+  const ripple2 = (time * 0.4 + 0.5) % 1;
+  const splashWave = Math.sin(time * 30) * 0.003;
+
   return (
-    <group>
-      {/* Running stream cylinder from faucet outlet into drain bowl */}
-      <mesh position={[0.6, 0.92, 3.69]}>
-        <cylinderGeometry args={[0.012, 0.01, 0.56, 16]} />
-        <meshStandardMaterial color="#bae6fd" transparent opacity={0.72} roughness={0.05} metalness={0.05} />
+    <group position={[0.6, 0, 3.69]}>
+      {/* 1. Outer Translucent Laminar Stream (narrowing as it falls due to gravity) */}
+      <mesh position={[0, 0.92, 0]}>
+        <cylinderGeometry args={[0.0075, 0.011, 0.56, 24, 1, true]} />
+        <meshPhysicalMaterial
+          color="#d0f0ff"
+          transparent
+          opacity={0.62}
+          roughness={0.02}
+          metalness={0.02}
+          ior={1.333}
+          clearcoat={0.9}
+          clearcoatRoughness={0.01}
+          side={DoubleSide}
+          depthWrite={false}
+        />
       </mesh>
-      {/* Bottom splash disc */}
-      <mesh position={[0.6, 0.64, 3.69]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[pulse, 16]} />
-        <meshStandardMaterial color="#c7edfd" transparent opacity={0.65} roughness={0.1} />
+
+      {/* 2. Inner Aerated High-Velocity Core */}
+      <mesh position={[0, 0.92, 0]}>
+        <cylinderGeometry args={[0.0038, 0.006, 0.56, 16]} />
+        <meshStandardMaterial
+          color="#ffffff"
+          transparent
+          opacity={0.4}
+          roughness={0.1}
+        />
       </mesh>
+
+      {/* 3. Drain Basin Impact Splash Disk & Turbulent Froth */}
+      <mesh position={[0, 0.64 + splashWave, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[pulse, 24]} />
+        <meshStandardMaterial
+          color="#bae6fd"
+          transparent
+          opacity={0.78}
+          roughness={0.08}
+        />
+      </mesh>
+
+      {/* 4. Froth Aeration Collar at Basin Floor */}
+      <mesh position={[0, 0.642, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.018, 0.045, 24]} />
+        <meshStandardMaterial
+          color="#f0f9ff"
+          transparent
+          opacity={0.6}
+          roughness={0.2}
+        />
+      </mesh>
+
+      {/* 5. Expanding Radial Water Ripples in Basin */}
+      <mesh position={[0, 0.641, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.02 + ripple1 * 0.07, 0.026 + ripple1 * 0.07, 24]} />
+        <meshStandardMaterial
+          color="#cceeff"
+          transparent
+          opacity={(1 - ripple1) * 0.55}
+          roughness={0.05}
+        />
+      </mesh>
+      <mesh position={[0, 0.641, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.02 + ripple2 * 0.07, 0.026 + ripple2 * 0.07, 24]} />
+        <meshStandardMaterial
+          color="#cceeff"
+          transparent
+          opacity={(1 - ripple2) * 0.55}
+          roughness={0.05}
+        />
+      </mesh>
+
+      {/* 6. Dynamic Tiny Droplet Airborne Beads */}
+      {[0, 1, 2, 3].map((i) => {
+        const angle = i * (Math.PI / 2) + time * 6;
+        const radius = 0.025 + Math.sin(time * 12 + i) * 0.012;
+        const dropY = 0.645 + Math.abs(Math.sin(time * 18 + i * 2)) * 0.035;
+        return (
+          <mesh key={i} position={[Math.cos(angle) * radius, dropY, Math.sin(angle) * radius]}>
+            <sphereGeometry args={[0.0022, 8, 8]} />
+            <meshStandardMaterial color="#e0f4ff" transparent opacity={0.8} roughness={0.02} />
+          </mesh>
+        );
+      })}
     </group>
   );
 };

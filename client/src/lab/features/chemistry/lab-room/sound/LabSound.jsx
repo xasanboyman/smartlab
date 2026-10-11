@@ -176,9 +176,13 @@ const step = (audio, world, lab, camera, dt) => {
   }
 
   const pour = lab.activity.pour;
+  const faucet = Boolean(lab.utilityState?.faucet);
   const pourLevel = pour?.rate ? Math.min(1, 0.25 + pour.rate * 0.9) : 0;
-  voices.pour.set(pourLevel * 0.9, pour ? placeAt(camera, pour.to ?? pour.from) : null);
-  if (pourLevel > 0) voices.pour.tune(pourLevel);
+  const faucetLevel = faucet ? 0.72 : 0;
+  const effectivePour = Math.max(pourLevel, faucetLevel);
+  const pourPos = pour ? (pour.to ?? pour.from) : faucet ? [0.6, 0.8, 3.69] : null;
+  voices.pour.set(effectivePour * 0.9, pourPos ? placeAt(camera, pourPos) : null);
+  if (effectivePour > 0) voices.pour.tune(effectivePour);
 
   const spray = lab.activity.spray;
   voices.hiss.set(spray ? 0.8 : 0, spray ? placeAt(camera, spray.origin) : null, spray ? 0.05 : 0.25);
@@ -193,6 +197,7 @@ const step = (audio, world, lab, camera, dt) => {
 
   // Single bubbles on top of the fizz, at the rate the chemistry is making them.
   state.bubbleCarry += survey_.bubbles * dt;
+  if (state.bubbleCarry > 3) state.bubbleCarry = 3;
   while (state.bubbleCarry >= 1) {
     state.bubbleCarry -= 1;
     player.bubble(survey_.fizzAt ?? { pan: 0, gain: 0.5 });

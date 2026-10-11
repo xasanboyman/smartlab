@@ -177,10 +177,10 @@ export const dressSurfaces = (room, lightmap, scale, textureCap = 2048) => {
   );
 
   const phenolic = createPhenolicResinTexture();
-  swap("static_epoxy_black", litSurface({ map: phenolic, roughness: 0.38, metalness: 0.04 }, lightmap, scale), phenolic);
+  swap("static_epoxy_black", litSurface({ map: phenolic, roughness: 0.32, metalness: 0.05 }, lightmap, scale), phenolic);
 
   const floor = createSafetyFloorTexture();
-  swap("static_floor_vinyl", litSurface({ map: floor, roughness: 0.48, metalness: 0.0 }, lightmap, scale), floor);
+  swap("static_floor_vinyl", litSurface({ map: floor, roughness: 0.38, metalness: 0.02 }, lightmap, scale), floor);
 
   const originalSignsMap = room.surfaces.static_signs_atlas?.original?.map;
   const signs = createSafetySignAtlasTexture(originalSignsMap?.image);

@@ -1,6 +1,6 @@
-import { SPECIES } from "./species";
-import { EPS, aq, conc, gasFraction, nitricFraction, sulfuricFraction } from "./mixture";
-import { phOf, phPaperColor } from "./acidity";
+import { SPECIES } from "./species.js";
+import { EPS, aq, conc, gasFraction, nitricFraction, sulfuricFraction } from "./mixture.js";
+import { phOf, phPaperColor } from "./acidity.js";
 
 const WATER_TINT = { color: "#0d2230", alpha: 0.08 };
 

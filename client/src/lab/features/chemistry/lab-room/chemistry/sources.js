@@ -1,4 +1,4 @@
-import { GAS_ML_PER_MMOL } from "./species";
+import { GAS_ML_PER_MMOL } from "./species.js";
 
 // What one unit of each cabinet reagent adds to a mixture, from the catalog concentrations.
 // Liquids: mmol per ml. Powders: solid per g. Solid pieces: one piece per pick with tongs. Gases: per ml.

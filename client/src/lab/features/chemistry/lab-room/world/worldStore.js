@@ -123,6 +123,20 @@ export const createWorld = (layout) => {
       return { ok: true };
     },
 
+    settle: (id, position, rotation) => {
+      const object = state.objects.get(id);
+      if (!object || object.state !== "dynamic") return { ok: false };
+      Object.assign(object, {
+        position,
+        rotation,
+        state: "placed",
+        velocity: [0, 0, 0],
+        rev: object.rev + 1,
+      });
+      commit();
+      return { ok: true };
+    },
+
     removeHeld: (id) => {
       const object = state.objects.get(id);
       if (!object || object.state !== "held") return { ok: false };

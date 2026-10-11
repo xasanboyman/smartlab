@@ -1,4 +1,4 @@
-import { solidsOf } from "./helpers";
+import { solidsOf } from "./helpers.js";
 
 // Dissolving (doc 14, № 42–43): sim seconds unstirred, saturation in mol/L, and the ions or molecules released.
 const SOLUBLE = {

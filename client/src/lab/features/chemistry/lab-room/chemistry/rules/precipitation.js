@@ -1,4 +1,4 @@
-import { solidsOf } from "./helpers";
+import { solidsOf } from "./helpers.js";
 
 // Ag⁺ + I⁻ → AgI↓ (doc 14, № 5): pale yellow and even less soluble than the chloride, so iodide goes first.
 export const silverIodide = {

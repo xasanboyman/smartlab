@@ -18,26 +18,26 @@ const createBlobTexture = () => {
   return new CanvasTexture(canvas);
 };
 
-// Borosilicate lab glass: nearly black diffuse so it only tints, reflections come from the room capture.
+// Borosilicate lab glass (Pyrex / Duran): ultra-clear transparency, subtle edge reflection, high specular sheen.
 const createGlass = () =>
   applySpecularAlpha(
     new MeshPhysicalMaterial({
       color: "#0e1715",
-      roughness: 0.02,
+      roughness: 0.015,
       metalness: 0,
       ior: 1.517,
       specularIntensity: 1,
-      clearcoat: 0.8,
-      clearcoatRoughness: 0.02,
-      opacity: 0.065,
-      envMapIntensity: 1.35,
+      clearcoat: 0.95,
+      clearcoatRoughness: 0.01,
+      opacity: 0.055,
+      envMapIntensity: 1.45,
     }),
-    0.6,
+    0.65,
   );
 
-// Enamel graduations and labels fired onto the glass; opaque so they sort before the glass.
+// Enamel graduations and labels fired onto the glass; crisp opaque markings.
 const createPrint = (map) =>
-  new MeshStandardMaterial({ map, color: "#ffffff", roughness: 0.55, alphaTest: 0.35, side: DoubleSide });
+  new MeshStandardMaterial({ map, color: "#ffffff", roughness: 0.4, alphaTest: 0.28, side: DoubleSide });
 
 // Clear liquids use physically plausible water IOR 1.333, clearcoat, and high specular reflection.
 export const createLiquidMaterial = ({ color = "#0d2230", opacity = 0.08 } = {}) =>

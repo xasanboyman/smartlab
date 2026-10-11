@@ -1,4 +1,4 @@
-import { gasFraction } from "../mixture";
+import { gasFraction } from "../mixture.js";
 
 export const AIR_O2 = 0.21;
 

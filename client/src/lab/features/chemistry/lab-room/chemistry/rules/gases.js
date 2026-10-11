@@ -1,4 +1,4 @@
-import { consume, foamFrom, toxicWarn } from "./helpers";
+import { consume, foamFrom, toxicWarn } from "./helpers.js";
 
 // Solid carbonates in acid (doc 14, № 10): H⁺ per formula unit, sim seconds for one heap or chip, ΔH in kJ/mol.
 const CARBONATES = {
@@ -18,7 +18,7 @@ export const carbonateAcid = {
   id: "carbonate-acid",
   info: "nahco3-hcl",
   notice: 0.05,
-  step(m, dt, ctx, k) {
+  step(m, dt, ctx, k, events) {
     if (k.aq(m, "H+") <= k.EPS) return 0;
     let total = 0;
     for (const s of [...m.solids]) {
@@ -47,7 +47,25 @@ export const carbonateAcid = {
       k.heat(m, -12.7, n);
       total += n;
     }
-    if (total > k.EPS) foamFrom(k, m, total / Math.max(dt, 1e-3));
+    if (total > k.EPS) {
+      const rate = total / Math.max(dt, 1e-3);
+      foamFrom(k, m, rate);
+      if (ctx.covered && rate > 0.8) {
+        k.fx(m, "foam", 1.0);
+        k.fx(m, "spatter", 1.0);
+        k.emit(events, "pop", { strength: Math.min(1.0, 0.4 + rate / 4) });
+        k.emit(events, "spatter", { radius: Math.min(1.2, 0.4 + rate / 3), acid: false });
+        if (m.narrow && rate > 4) {
+          k.emit(events, "shatter");
+        }
+      } else if (rate > 6) {
+        k.fx(m, "spatter", Math.min(1, rate / 10));
+        k.emit(events, "spatter", { radius: Math.min(0.8, rate / 8), acid: false });
+        if (rate > 10) {
+          k.emit(events, "pop", { strength: 0.4 });
+        }
+      }
+    }
     return total;
   },
 };

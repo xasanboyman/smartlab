@@ -1,5 +1,5 @@
-import { GAS_ML_PER_MMOL, ROOM_C, SPECIES, species } from "./species";
-import { SOURCES, gasMmol } from "./sources";
+import { GAS_ML_PER_MMOL, ROOM_C, SPECIES, species } from "./species.js";
+import { SOURCES, gasMmol } from "./sources.js";
 
 export const EPS = 1e-7;
 

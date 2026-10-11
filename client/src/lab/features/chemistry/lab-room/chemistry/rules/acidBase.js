@@ -1,4 +1,4 @@
-import { peek } from "./helpers";
+import { peek } from "./helpers.js";
 
 // Strong acid + strong base: diffusion-limited, so it completes within the step and keeps pH exact during titration.
 export const neutralization = {

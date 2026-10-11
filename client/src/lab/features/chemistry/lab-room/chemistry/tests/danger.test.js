@@ -123,3 +123,52 @@ test("safety · hot glass and heated concentrated acid warn before anyone grabs 
   assert.ok(warnings(events).includes("hot-glass"), "the tube itself is dangerous now");
   assert.ok(b.m.tempC > 120, `${b.m.tempC.toFixed(0)} °C`);
 });
+
+// Energetic reaction events verification
+test("energetic · water into concentrated acid emits pop, spatter and flash", () => {
+  const b = bench("test-tube");
+  b.pour("h2so4", 5).pour("water", 1);
+  const events = b.run(2);
+  assert.ok(saw(events, "spatter"), "acid droplets spatter");
+  assert.ok(saw(events, "pop"), "violent boil pop");
+  assert.ok(saw(events, "flash"), "bright steam flash");
+});
+
+test("energetic · catalytic peroxide runaway emits spatter and pop", () => {
+  const b = bench("conical-flask");
+  b.pour("h2o2", 10).powder("mno2", 0.2);
+  const events = b.run(6);
+  assert.ok(saw(events, "reaction", "h2o2-mno2"));
+  assert.ok(saw(events, "spatter"), "violent geyser spatter");
+  assert.ok(saw(events, "pop"), "geyser boiling pop");
+});
+
+test("energetic · sodium in narrow tube triggers pop or bang with flash", () => {
+  const b = bench("test-tube");
+  b.pour("water", 10).piece("sodium", { state: {} });
+  b.piece("sodium", { state: {} });
+  const events = b.run(15);
+  assert.ok(saw(events, "flash"), "sodium ignition flash");
+  assert.ok(saw(events, "pop") || saw(events, "bang"), "pop or bang");
+});
+
+test("energetic · capped acid-carbonate foam explosion bursts with pop and spatter", () => {
+  const b = bench("test-tube");
+  b.pour("hcl", 5).powder("nahco3", 2);
+  const events = b.run(2, { covered: true });
+  assert.ok(saw(events, "pop"), "overpressure pop");
+  assert.ok(saw(events, "spatter"), "violent foam spatter");
+  assert.ok(saw(events, "shatter"), "test tube shatters from gas pressure");
+});
+
+test("energetic · hypergolic permanganate and glycerin in narrow tube ruptures", () => {
+  const b = bench("test-tube");
+  b.powder("kmno4", 2).pour("glycerin", 0.5);
+  b.run(9);
+  b.run(8);
+  const fire = b.run(15);
+  assert.ok(saw(fire, "flash"), "lilac flame flash");
+  assert.ok(saw(fire, "shatter"), "thermal rupture shatters narrow tube");
+});
+
+

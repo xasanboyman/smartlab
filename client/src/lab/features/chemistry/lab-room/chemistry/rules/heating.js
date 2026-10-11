@@ -1,4 +1,4 @@
-import { solidsOf } from "./helpers";
+import { solidsOf } from "./helpers.js";
 
 // Cu(OH)₂ →(t) CuO + H₂O (doc 14, № 6): the pale blue gel turns black powder in about 10 s of boiling.
 export const copperHydroxideHeat = {

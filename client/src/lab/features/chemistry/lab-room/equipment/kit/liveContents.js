@@ -144,7 +144,8 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
 
   const crystalUniforms = { uGrowth: { value: 0 } };
   const crystalMaterial = createCrystalMaterial(crystalUniforms);
-  const crystals = hidden(new Mesh(crystalGeometry(crystalRoots()), crystalMaterial));
+  const crystalGeom = crystalGeometry(crystalRoots());
+  const crystals = hidden(new Mesh(crystalGeom, crystalMaterial));
 
   // Anchors are attached by the component so effects can be its children; the controller only moves them.
   // Contents draw between the fluid's absorption pass (2) and its scattering pass (2.05).
@@ -273,10 +274,10 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
   const releaseSlot = (slot) => {
     if (!slot.mesh) return;
     group.remove(slot.mesh);
-    slot.material.dispose();
-    slot.mesh.dispose();
+    slot.material?.dispose();
     slot.mesh = null;
     slot.material = null;
+    slot.uniforms = null;
     slot.anchor = null;
     slot.species = null;
   };
@@ -610,6 +611,7 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
 
   const dispose = () => {
     [absorbMaterial, scatterMaterial, bedMaterial, floatMaterial, foamMaterial, columnMaterial, crystalMaterial].forEach((m) => m.dispose());
+    crystalGeom?.dispose();
     slots.forEach(releaseSlot);
   };
 

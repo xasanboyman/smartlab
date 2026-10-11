@@ -1,4 +1,4 @@
-import { toxicWarn } from "./helpers";
+import { toxicWarn } from "./helpers.js";
 
 // 2Fe³⁺ + 2I⁻ → 2Fe²⁺ + I₂ (doc 14, № 22): the solution goes darker brown than either reagent.
 export const ironIodide = {

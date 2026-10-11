@@ -295,7 +295,8 @@ const createTexture = (widthMm, heightMm, pxPerMm, draw) => {
   paint();
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
-  texture.anisotropy = 8;
+  texture.anisotropy = 16;
+  texture.generateMipmaps = true;
   // Labels made before the web font arrives are repainted once it loads.
   if (document.fonts && !document.fonts.check(font(800, 20))) {
     document.fonts.load(font(800, 20)).then(() => {
@@ -307,7 +308,7 @@ const createTexture = (widthMm, heightMm, pxPerMm, draw) => {
 };
 
 export const createSubstanceLabelTexture = (substance, { widthMm, heightMm, amount, scale = 1 }) =>
-  createTexture(widthMm, heightMm, Math.max(12, 1024 / widthMm) * scale, (ctx, px, W, H) =>
+  createTexture(widthMm, heightMm, Math.max(16, 1280 / widthMm) * scale, (ctx, px, W, H) =>
     drawReagentLabel(ctx, px, substance, W, H, amount),
   );
 

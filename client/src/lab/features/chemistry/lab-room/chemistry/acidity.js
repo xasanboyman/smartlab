@@ -1,4 +1,4 @@
-import { EPS, aq } from "./mixture";
+import { EPS, aq } from "./mixture.js";
 
 // Weak acids (incl. hydrated metal ions) that set the pH when no strong acid or base is left.
 const WEAK_ACIDS = [

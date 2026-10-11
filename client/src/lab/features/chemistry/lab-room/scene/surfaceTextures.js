@@ -333,32 +333,40 @@ export const createPhenolicResinTexture = (width = 1024, height = 1024) => {
   const imgData = ctx.createImageData(width, height);
   const data = imgData.data;
 
-  // Base charcoal resin color: deep graphite #181a1e
-  // Add micro-stipple and subtle resin flecks
+  // Professional chemical-resistant black epoxy / phenolic resin (Trespa TopLab / Durcon)
+  // Deep charcoal matte base (#16181b) with ultra-fine mineral particulate
   for (let i = 0; i < data.length; i += 4) {
-    const noise = (Math.random() - 0.5) * 14;
-    const fleck = Math.random() < 0.005 ? (Math.random() < 0.5 ? 18 : -10) : 0;
-    const baseR = 24 + noise + fleck;
-    const baseG = 26 + noise + fleck;
-    const baseB = 29 + noise * 0.9 + fleck;
+    const noise = (Math.random() - 0.5) * 10;
+    const fleck = Math.random() < 0.008 ? (Math.random() < 0.5 ? 14 : -8) : 0;
+    const baseR = 22 + noise + fleck;
+    const baseG = 24 + noise + fleck;
+    const baseB = 27 + noise * 0.9 + fleck;
 
-    data[i] = Math.max(12, Math.min(48, Math.round(baseR)));
-    data[i + 1] = Math.max(14, Math.min(50, Math.round(baseG)));
-    data[i + 2] = Math.max(16, Math.min(54, Math.round(baseB)));
+    data[i] = Math.max(14, Math.min(42, Math.round(baseR)));
+    data[i + 1] = Math.max(16, Math.min(44, Math.round(baseG)));
+    data[i + 2] = Math.max(18, Math.min(48, Math.round(baseB)));
     data[i + 3] = 255;
   }
   ctx.putImageData(imgData, 0, 0);
 
-  // Subtle directional satin polish sheen
+  // Subtle directional satin sheen polish
   const g = ctx.createLinearGradient(0, 0, width, height);
-  g.addColorStop(0, "rgba(255, 255, 255, 0.025)");
-  g.addColorStop(0.5, "rgba(0, 0, 0, 0.02)");
-  g.addColorStop(1, "rgba(255, 255, 255, 0.025)");
+  g.addColorStop(0, "rgba(255, 255, 255, 0.035)");
+  g.addColorStop(0.5, "rgba(0, 0, 0, 0.015)");
+  g.addColorStop(1, "rgba(255, 255, 255, 0.035)");
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, width, height);
 
-  const texture = toTexture(canvas, 8, RepeatWrapping);
+  // Micro-surface specular sheen
+  const g2 = ctx.createRadialGradient(width / 2, height / 2, width * 0.1, width / 2, height / 2, width * 0.7);
+  g2.addColorStop(0, "rgba(255, 255, 255, 0.02)");
+  g2.addColorStop(1, "rgba(0, 0, 0, 0.01)");
+  ctx.fillStyle = g2;
+  ctx.fillRect(0, 0, width, height);
+
+  const texture = toTexture(canvas, 16, RepeatWrapping);
   texture.repeat.set(4, 4);
+  texture.generateMipmaps = true;
   return texture;
 };
 
@@ -367,40 +375,40 @@ export const createPhenolicResinTexture = (width = 1024, height = 1024) => {
 export const createSafetyFloorTexture = (width = 1024, height = 1024) => {
   const { canvas, ctx } = makeCanvas(width, height);
 
-  // Light slate-gray lab vinyl floor base
-  ctx.fillStyle = "#9ba3af";
+  // Light slate-gray sealed vinyl floor base
+  ctx.fillStyle = "#9ca3af";
   ctx.fillRect(0, 0, width, height);
 
-  // 4x4 modular tile layout (256x256 tiles)
+  // 4x4 modular tile layout with subtle gradient tone
   const tileSize = width / 4;
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
-      const shade = ((r + c * 3) % 4 - 1.5) * 2;
-      ctx.fillStyle = `rgba(${shade > 0 ? "255,255,255" : "0,0,0"}, ${Math.abs(shade) * 0.015})`;
+      const shade = ((r + c * 3) % 4 - 1.5) * 1.8;
+      ctx.fillStyle = `rgba(${shade > 0 ? "255,255,255" : "0,0,0"}, ${Math.abs(shade) * 0.018})`;
       ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
     }
   }
 
   // Draw fine anti-slip mineral flecks: quartz white, dark slate, and subtle amber
-  const fleckCount = 12000;
+  const fleckCount = 16000;
   for (let i = 0; i < fleckCount; i++) {
     const x = Math.random() * width;
     const y = Math.random() * height;
     const r = Math.random();
-    if (r < 0.45) {
-      ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
-    } else if (r < 0.85) {
-      ctx.fillStyle = "rgba(55, 65, 81, 0.5)";
+    if (r < 0.5) {
+      ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+    } else if (r < 0.88) {
+      ctx.fillStyle = "rgba(55, 65, 81, 0.55)";
     } else {
-      ctx.fillStyle = "rgba(217, 119, 6, 0.35)";
+      ctx.fillStyle = "rgba(217, 119, 6, 0.38)";
     }
-    const s = 1 + Math.random() * 2;
+    const s = 1 + Math.random() * 1.8;
     ctx.fillRect(x, y, s, s);
   }
 
   // Heat-welded vinyl seam lines
   ctx.lineWidth = 2.5;
-  ctx.strokeStyle = "#6b7280";
+  ctx.strokeStyle = "#4b5563";
   for (let i = 0; i <= 4; i++) {
     const pos = i * tileSize;
     ctx.beginPath();
@@ -414,9 +422,9 @@ export const createSafetyFloorTexture = (width = 1024, height = 1024) => {
     ctx.stroke();
   }
 
-  // Fine weld highlight line
+  // Crisp heat-weld highlight line
   ctx.lineWidth = 1;
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
   for (let i = 0; i < 4; i++) {
     const pos = i * tileSize + 1.5;
     ctx.beginPath();
@@ -430,8 +438,9 @@ export const createSafetyFloorTexture = (width = 1024, height = 1024) => {
     ctx.stroke();
   }
 
-  const texture = toTexture(canvas, 8, RepeatWrapping);
+  const texture = toTexture(canvas, 16, RepeatWrapping);
   texture.repeat.set(6, 6);
+  texture.generateMipmaps = true;
   return texture;
 };
 

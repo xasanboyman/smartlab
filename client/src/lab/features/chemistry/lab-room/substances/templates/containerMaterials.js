@@ -11,19 +11,22 @@ import {
 } from "three";
 import { applySpecularAlpha } from "../../equipment/kit/glassShading";
 
-// Ground (frosted) glass of stopper cones and sockets: pale, rough, semi-opaque.
-export const createGroundGlass = (color = "#cfd8d5", opacity = 0.24) =>
+// Ground (frosted) glass of stopper cones and sockets: pale, rough, semi-opaque borosilicate joint finish.
+export const createGroundGlass = (color = "#d6dfdc", opacity = 0.28) =>
   applySpecularAlpha(
     new MeshPhysicalMaterial({
       color,
-      roughness: 0.44,
-      metalness: 0,
+      roughness: 0.36,
+      metalness: 0.02,
       ior: 1.517,
+      specularIntensity: 1.0,
+      clearcoat: 0.85,
+      clearcoatRoughness: 0.22,
       opacity,
-      envMapIntensity: 1.1,
+      envMapIntensity: 1.35,
       side: DoubleSide,
     }),
-    0.22,
+    0.28,
   );
 
 const TINT_VERTEX = /* glsl */ `
@@ -44,7 +47,8 @@ varying vec3 vTintNormal;
 varying vec3 vTintView;
 void main() {
   float facing = abs(dot(normalize(vTintNormal), normalize(vTintView)));
-  gl_FragColor = vec4(pow(tint, vec3(1.0 / max(facing, 0.2))), 1.0);
+  float path = 1.0 / max(facing, 0.16);
+  gl_FragColor = vec4(pow(tint, vec3(path * 1.1)), 1.0);
 }
 `;
 
@@ -61,8 +65,8 @@ export const createGlassTint = (color) =>
   });
 
 // Natural HDPE: opaque, but the contents show as a slightly darker, tinted band below the fill level.
-export const createHdpeMaterial = ({ color = "#eeece6", roughness = 0.52, level = -1, content = "#b9c2c6", strength = 0.3 }) => {
-  const material = new MeshStandardMaterial({ color, roughness });
+export const createHdpeMaterial = ({ color = "#eeece6", roughness = 0.38, level = -1, content = "#b9c2c6", strength = 0.32 }) => {
+  const material = new MeshStandardMaterial({ color, roughness, metalness: 0.02 });
   const uniforms = {
     hdpeLevel: { value: level },
     hdpeContent: { value: new Color(content) },
@@ -92,7 +96,7 @@ diffuseColor.rgb *= 1.0 - hdpeLine * hdpeStrength * 0.35;`,
   return material;
 };
 
-export const createBrass = () => new MeshStandardMaterial({ color: "#c7a052", metalness: 1, roughness: 0.3 });
+export const createBrass = () => new MeshStandardMaterial({ color: "#c7a052", metalness: 1, roughness: 0.28 });
 
 export const canvasTexture = (size, paint, { srgb = false, repeat = true } = {}) => {
   const canvas = document.createElement("canvas");
@@ -108,7 +112,7 @@ export const canvasTexture = (size, paint, { srgb = false, repeat = true } = {})
     texture.wrapS = RepeatWrapping;
     texture.wrapT = RepeatWrapping;
   }
-  texture.anisotropy = 4;
+  texture.anisotropy = 16;
   return texture;
 };
 

@@ -1,4 +1,4 @@
-import { atm, toxicWarn, warnOnce } from "./helpers";
+import { atm, toxicWarn, warnOnce } from "./helpers.js";
 
 // Only a fraction of the combustion heat stays in the dish or jar; the rest goes up with the flame.
 const FLAME_TO_VESSEL = 0.08;
@@ -233,6 +233,7 @@ export const hydrogenBang = {
     const strength = Math.min(1, charge.kj / 4);
     k.emit(events, "bang", { strength, radius: 0.5 + 1.5 * strength });
     k.emit(events, "flash", { color: "#ffffff", strength: 1 });
+    k.fx(m, "smoke", { rate: 1, color: "#f0f0f0" });
     warnOnce(k, m, events, ctx, "hydrogen-impure", 20);
     if (charge.kj > 3) k.emit(events, "shatter");
     return charge.burned;
@@ -274,6 +275,11 @@ export const permanganateGlycerin = {
     k.fx(m, "flame", { kind: "permanganate", intensity: 1 });
     k.fx(m, "smoke", { rate: 1, color: "#cfcfcf", toxic: false });
     k.fx(m, "sparks", 0.9);
+    k.emit(events, "flash", { color: "#d896ff", strength: 0.9 });
+    if (m.narrow) {
+      k.emit(events, "pop", { strength: 0.8 });
+      k.emit(events, "shatter");
+    }
     return n;
   },
 };
