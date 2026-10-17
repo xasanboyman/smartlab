@@ -13,6 +13,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { setupDrawableCanvas } from "../chemistry/canvas-lab/htmlInCanvas";
+import { CatSimulation, preloadCatAssets } from "./catPhysics";
 
 /**
  * Laser Scanning & Page Chunk Slicing Engine
@@ -49,6 +50,18 @@ export default function PixiScannerLanding() {
     // Sliced chunk particles & sparks
     const sparks = [];
     const trailPoints = [];
+
+    // Interactive Cat simulation from Zyie/pixijs-html-in-canvas
+    const cat = new CatSimulation({ scale: 1.25, power: 0.45, skid: 0.91 });
+    let mousePos = { x: 300, y: 300, lastMove: 0 };
+
+    const onPointerMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mousePos.x = e.clientX - rect.left;
+      mousePos.y = e.clientY - rect.top;
+      mousePos.lastMove = performance.now();
+    };
+    window.addEventListener("pointermove", onPointerMove);
 
     // Horizontal slice chunks (dividing the screen into horizontal bars)
     const NUM_CHUNKS = 24;
@@ -98,8 +111,14 @@ export default function PixiScannerLanding() {
 
       const laserY = laserProgress * H;
 
+      // Target for Cat: Laser point oscillating across laser beam, or tracking recent pointer
+      const isPointerRecent = now - mousePos.lastMove < 2800;
+      const autoLaserX = W * (0.5 + 0.36 * Math.sin(now * 0.0016));
+      const targetX = isPointerRecent ? mousePos.x : autoLaserX;
+      const targetY = isPointerRecent ? mousePos.y : laserY;
+
       // Add laser trail
-      trailPoints.push({ x: W / 2, y: laserY, life: 1.0 });
+      trailPoints.push({ x: targetX, y: laserY, life: 1.0 });
       if (trailPoints.length > 30) trailPoints.shift();
 
       // Emit sparks from laser
@@ -211,6 +230,10 @@ export default function PixiScannerLanding() {
       }
       ctx.restore();
 
+      // 5. Update & Render Interactive Cat chasing the laser beam
+      cat.update(dt, targetX, targetY);
+      cat.render(ctx, targetX, targetY);
+
       ctx.restore();
       animFrameRef.current = requestAnimationFrame(render);
     };
@@ -219,6 +242,7 @@ export default function PixiScannerLanding() {
 
     return () => {
       running = false;
+      window.removeEventListener("pointermove", onPointerMove);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [scannerActive, laserSpeed, sliceIntensity]);
@@ -276,6 +300,9 @@ export default function PixiScannerLanding() {
             >
               Kesish: {sliceIntensity.toFixed(1)}x
             </button>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-amber-400 border-l border-white/10 pl-2">
+              🐱 Mushuk ta'qibda
+            </span>
           </div>
         </header>
 
