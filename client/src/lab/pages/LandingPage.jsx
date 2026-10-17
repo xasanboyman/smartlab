@@ -1,23 +1,5 @@
-import {
-  CtaSection,
-  FeaturesSection,
-  HeroSection,
-  LandingFooter,
-  ProcessSection,
-  StatsSection,
-  WorldMapSection,
-} from "@/lab/components/landing";
+import PixiScannerLanding from "@/lab/features/landing/PixiScannerLanding";
 
-const LandingPage = () => (
-  <>
-    <HeroSection />
-    <StatsSection />
-    <WorldMapSection />
-    <FeaturesSection />
-    <ProcessSection />
-    <CtaSection />
-    <LandingFooter />
-  </>
-);
+const LandingPage = () => <PixiScannerLanding />;
 
 export default LandingPage;

@@ -12,12 +12,12 @@ const PAGES = {
   "chemistry/molecules": lazy(() =>
     import("@/lab/features/chemistry/molecules/MoleculesPage"),
   ),
-  // Walkable lab room; lab-3d stays as an alias for old links and review scripts.
+  // HTML-in-Canvas Chemistry Laboratory with Verlet cloth simulation
   "chemistry/lab": lazy(() =>
-    import("@/lab/features/chemistry/lab-room/LabRoomPage"),
+    import("@/lab/features/chemistry/canvas-lab/CanvasChemistryLab"),
   ),
   "chemistry/lab-3d": lazy(() =>
-    import("@/lab/features/chemistry/lab-room/LabRoomPage"),
+    import("@/lab/features/chemistry/canvas-lab/CanvasChemistryLab"),
   ),
   // The earlier single-bench lab, for phones and computers that can't run the room.
   "chemistry/lab-classic": lazy(() =>
