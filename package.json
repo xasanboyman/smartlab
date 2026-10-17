@@ -14,7 +14,7 @@
     "dev:client": "npm run dev --prefix client",
     "build:client": "npm run build --prefix client",
     "start:server": "npm start --prefix server",
-    "test": "node --test client/src/lab/features/chemistry/lab-room/chemistry/tests/*.test.js"
+    "test": "node --test client/src/lab/features/chemistry/lab-room/chemistry/tests/*.test.js client/src/lab/features/chemistry/html-lab/tests/*.test.js"
   },
   "repository": {
     "type": "git",

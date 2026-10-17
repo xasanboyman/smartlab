@@ -26,8 +26,9 @@ const MODES = [
 ];
 const MODE_NAME = Object.fromEntries(MODES.map((m) => [m.id, m.name]));
 
-const CAMERA = [4.2, 2.2, 6.8];
-const CONTROLS = { minDistance: 3.5, maxDistance: 16, regress: false };
+// Pulled back and raised to frame the full inline-4 bank (~4.3 units wide).
+const CAMERA = [5.7, 2.7, 9.3];
+const CONTROLS = { minDistance: 3.5, maxDistance: 28, regress: false };
 const START_RPM = 20;
 const VR_HINT = {
   headset: "Kontroller nuri bilan qismni tanlang · chapdagi paneldan dvigatelni boshqaring",
@@ -87,7 +88,7 @@ const PauseSync = ({ bridgeRef, onPause, onResume }) => {
 };
 
 const EnginePage = () => {
-  const simRef = useRef({ theta: 0, rpm: START_RPM, running: false, stepEnd: null });
+  const simRef = useRef({ theta: 0, rpm: START_RPM, running: true, stepEnd: null });
   const soundRef = useRef(null);
   const soundWanted = useRef(false);
   const pauseBridge = useRef({ paused: false, resume: null });
@@ -108,8 +109,8 @@ const EnginePage = () => {
     setField,
     setFields,
   } = useObjectState({
-    mode: "solid",
-    running: false,
+    mode: "xray",
+    running: true,
     stepping: false,
     rpm: START_RPM,
     soundOn: false,

@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Compass,
+  Bot,
 } from "lucide-react";
 
 const SUBJECT_ICONS = {
@@ -59,6 +60,14 @@ const LabHeader = () => {
 
         {/* Quick Launch Buttons */}
         <div className="hidden sm:flex items-center gap-2">
+          <Link
+            to="/riko"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-400 hover:to-fuchsia-400 text-white font-bold text-xs shadow-lg shadow-violet-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            title="Riko — 3D AI hamroh (Quantum VRM, Gemini Live)"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>Riko AI</span>
+          </Link>
           <Link
             to="/biology/simulator"
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold text-xs shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
@@ -113,6 +122,14 @@ const LabHeader = () => {
           })}
 
           <div className="pt-2 border-t border-zinc-800 flex flex-col gap-2">
+            <Link
+              to="/riko"
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white font-bold text-xs"
+            >
+              <Bot className="w-4 h-4" />
+              <span>Riko AI hamroh</span>
+            </Link>
             <Link
               to="/biology/simulator"
               onClick={() => setOpen(false)}

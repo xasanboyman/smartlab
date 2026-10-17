@@ -12,16 +12,13 @@ const PAGES = {
   "chemistry/molecules": lazy(() =>
     import("@/lab/features/chemistry/molecules/MoleculesPage"),
   ),
-  // HTML-in-Canvas Chemistry Laboratory with Verlet cloth simulation
+  // Walk-in chemistry lab room (the yaxyobekuz/smartlab blueprint: WASD, E cabinet, 5 slots, pouring, breakable glass).
   "chemistry/lab": lazy(() =>
-    import("@/lab/features/chemistry/canvas-lab/CanvasChemistryLab"),
+    import("@/lab/features/chemistry/lab-room/LabRoomPage"),
   ),
-  "chemistry/lab-3d": lazy(() =>
-    import("@/lab/features/chemistry/canvas-lab/CanvasChemistryLab"),
-  ),
-  // The earlier single-bench lab, for phones and computers that can't run the room.
-  "chemistry/lab-classic": lazy(() =>
-    import("@/lab/features/chemistry/lab/LabBenchPage"),
+  // HTML-in-Canvas bench with the html-cloth journal, kept on a side route.
+  "chemistry/lab-html": lazy(() =>
+    import("@/lab/features/chemistry/html-lab/HtmlLabPage"),
   ),
   "chemistry/atoms": lazy(() =>
     import("@/lab/features/chemistry/atoms/AtomsPage"),

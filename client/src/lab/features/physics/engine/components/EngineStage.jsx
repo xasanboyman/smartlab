@@ -12,7 +12,7 @@ const DESKTOP_POSITION = [0, -ENGINE_CENTER_Y, 0];
 const VR_POSITION = [0, -0.23, 2.9];
 const VR_SCALE = 0.3;
 // Assembled engine's projected half-width from the default camera azimuth, plus depth toward the camera.
-const MODEL_HALF_WIDTH = 2.2;
+const MODEL_HALF_WIDTH = 3.0;
 const MODEL_HALF_DEPTH = 1.0;
 const ORIGIN = new THREE.Vector3();
 const _offset = new THREE.Vector3();

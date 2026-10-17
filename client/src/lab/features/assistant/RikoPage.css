@@ -1,0 +1,94 @@
+/* Riko (Quantum VRM) page — lab-console navbar over a full-bleed iframe. Scoped under .rk */
+.rk {
+  --bg: #070a12; --panel: rgba(12, 18, 32, 0.9); --line: #1e2942; --line-soft: #172038;
+  --fg: #e8eefc; --muted: #b4c2dd; --faint: #7f91b5; --accent: #38e0c8; --accent-2: #5b8cff;
+  --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body: "IBM Plex Sans", Inter, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  display: flex; flex-direction: column; height: 100dvh; background: var(--bg); color: var(--fg);
+  font-family: var(--body); -webkit-font-smoothing: antialiased; overflow: hidden;
+}
+.rk *, .rk *::before, .rk *::after { box-sizing: border-box; }
+.rk a { color: inherit; text-decoration: none; }
+.rk button { font: inherit; color: inherit; cursor: pointer; }
+
+.rk-nav {
+  display: flex; align-items: center; gap: 14px; height: 58px; padding: 0 16px; flex: none;
+  background: linear-gradient(to bottom, rgba(9, 13, 24, 0.98), rgba(9, 13, 24, 0.9)); border-bottom: 1px solid var(--line-soft);
+  backdrop-filter: blur(12px);
+}
+.rk-brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 1rem; }
+.rk-brand b { color: var(--accent); }
+.rk-brand .mark {
+  width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: var(--accent);
+}
+.rk-links { display: flex; gap: 2px; }
+.rk-links a {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);
+  padding: 8px 10px; border-radius: 8px; transition: color 0.15s, background 0.15s;
+}
+.rk-links a:hover { color: var(--fg); background: var(--panel); }
+.rk-title {
+  margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--panel); color: var(--accent);
+}
+.rk-title b { color: var(--fg); font-family: var(--display); }
+.rk-title span { font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.rk-actions { display: flex; align-items: center; gap: 6px; }
+.rk-status {
+  display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: #ffb86b;
+}
+.rk-status .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: rk-pulse 1.4s infinite; }
+.rk-status.on { color: var(--accent); }
+.rk-status.on .dot { animation: none; box-shadow: 0 0 10px var(--accent); }
+@keyframes rk-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.rk-ic {
+  width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--muted); transition: color 0.15s, border-color 0.15s;
+}
+.rk-ic:hover { color: var(--fg); border-color: var(--accent); }
+
+.rk-stage { position: relative; flex: 1; min-height: 0; background: #05080f; }
+.rk-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #05080f; opacity: 0; transition: opacity 0.6s ease; }
+.rk.ready .rk-frame { opacity: 1; }
+
+/* interactive loader */
+.rk-loader {
+  position: absolute; inset: 0; z-index: 2; display: grid; grid-template-rows: 1fr auto; overflow: hidden;
+  background: radial-gradient(900px 600px at 50% 30%, rgba(91, 140, 255, 0.12), transparent 60%), var(--bg);
+  animation: rk-in 0.4s ease;
+}
+@keyframes rk-in { from { opacity: 0; } to { opacity: 1; } }
+.rk-orb { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+.rk-loader-ui {
+  position: relative; z-index: 1; grid-row: 2; text-align: center; padding: 0 20px clamp(28px, 6vh, 64px); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.rk-loader-ui > * { pointer-events: auto; }
+.rk-eyebrow { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+.rk-loader-ui h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: -0.02em; }
+.rk-step { margin: 0; color: var(--muted); font-size: 0.98rem; animation: rk-fade 0.5s ease; }
+.rk-tip { margin: 2px 0 0; color: var(--faint); font-size: 0.82rem; max-width: 52ch; animation: rk-fade 0.6s ease; }
+@keyframes rk-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rk-perms { display: flex; gap: 8px; margin-top: 6px; }
+.rk-perms span {
+  display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); padding: 5px 10px; border: 1px solid var(--line-soft); border-radius: 999px;
+}
+.rk-loader-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 10px; min-height: 40px; }
+.rk-btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 11px; border: 1px solid transparent; font-weight: 700;
+  background: linear-gradient(100deg, var(--accent), var(--accent-2)); color: #04121a;
+}
+.rk-btn.ghost { background: var(--panel); color: var(--fg); border-color: var(--line); }
+.rk-btn.ghost:hover { border-color: var(--accent); }
+.rk-warn { flex-basis: 100%; color: #ffb86b; font-size: 0.84rem; }
+
+@media (max-width: 900px) {
+  .rk-links { display: none; }
+  .rk-title span { display: none; }
+  .rk-status { display: none; }
+  .rk-nav { gap: 8px; padding: 0 10px; }
+}

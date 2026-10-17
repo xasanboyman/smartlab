@@ -1,0 +1,4 @@
+*.log
+.DS_Store
+client/dist-engine/
+node_modules/

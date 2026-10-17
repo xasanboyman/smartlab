@@ -7,40 +7,44 @@ import { GEOM } from "../engineMath";
 import { PARTS } from "../engineParts";
 import { ENGINE_FONT } from "./engineFont";
 import Block from "./parts/Block";
+import HeadGasket from "./parts/HeadGasket";
 import Head from "./parts/Head";
 import CamCover from "./parts/CamCover";
 import Crankcase from "./parts/Crankcase";
 import Camshafts from "./parts/Camshafts";
-import Valve from "./parts/Valve";
-import SparkPlug from "./parts/SparkPlug";
-import Piston from "./parts/Piston";
-import PistonPin from "./parts/PistonPin";
-import ConnectingRod from "./parts/ConnectingRod";
+import Valves from "./parts/Valves";
+import SparkPlugs from "./parts/SparkPlugs";
+import Pistons from "./parts/Pistons";
+import PistonPins from "./parts/PistonPins";
+import ConnectingRods from "./parts/ConnectingRods";
 import Crankshaft from "./parts/Crankshaft";
 import Flywheel from "./parts/Flywheel";
-import TimingBelt from "./parts/TimingBelt";
+import Pulley from "./parts/Pulley";
+import TimingChain from "./parts/TimingChain";
 import IntakeManifold from "./parts/IntakeManifold";
-import ExhaustPipe from "./parts/ExhaustPipe";
+import ExhaustManifold from "./parts/ExhaustManifold";
 import CombustionGas from "./parts/CombustionGas";
 import GasFlow from "./parts/GasFlow";
 
 const COMPONENTS = {
   block: Block,
+  headGasket: HeadGasket,
   head: Head,
   camCover: CamCover,
   crankcase: Crankcase,
   camshafts: Camshafts,
-  valveIntake: Valve,
-  valveExhaust: Valve,
-  sparkPlug: SparkPlug,
-  piston: Piston,
-  pin: PistonPin,
-  rod: ConnectingRod,
+  valveIntake: Valves,
+  valveExhaust: Valves,
+  sparkPlug: SparkPlugs,
+  piston: Pistons,
+  pin: PistonPins,
+  rod: ConnectingRods,
   crankshaft: Crankshaft,
   flywheel: Flywheel,
-  timing: TimingBelt,
+  pulley: Pulley,
+  timing: TimingChain,
   intake: IntakeManifold,
-  exhaust: ExhaustPipe,
+  exhaust: ExhaustManifold,
 };
 
 const EXTRA_PROPS = {
@@ -48,14 +52,14 @@ const EXTRA_PROPS = {
   valveExhaust: { which: "exhaust" },
 };
 
-// Pedestal top meets the crankcase feet (floorY + 0.005).
+// Pedestal top meets the oil pan (floorY + 0.005).
 const STAGE_Y = GEOM.floorY + 0.005;
-// Sink the stage while exploding so the crankcase (explode y -1.5) never pierces it.
-const STAGE_DROP = 1.6;
-const STAGE_RADIUS = 3.2;
-// Exploded engine is ~2x taller; shrink and lower it so the default camera still frames it.
-const EXPLODE_SCALE = 0.36;
-const EXPLODE_SHIFT_Y = -0.4;
+// Sink the stage while exploding so the pan (explode y -2.9) never pierces it.
+const STAGE_DROP = 3.3;
+const STAGE_RADIUS = 3.6;
+// Exploded engine is ~2.5x taller; shrink and lower it so the default camera still frames it.
+const EXPLODE_SCALE = 0.44;
+const EXPLODE_SHIFT_Y = 0.55;
 const LABEL_OFFSET = 0.07;
 // drei re-arms `frames` on every render, so the shadow refreshes only while the explode animation settles.
 const SHADOW_FRAMES = 150;
@@ -75,7 +79,7 @@ const StageShadow = memo(function StageShadow() {
       blur={2.5}
       resolution={512}
       far={4}
-      scale={7}
+      scale={8}
       frames={SHADOW_FRAMES}
       color="#04060c"
     />
@@ -153,7 +157,7 @@ const EngineModel = ({ simRef, mode, selectedId, onSelectPart, inVR = false }) =
     }
   }, [mode]);
 
-  // Hover raycasts hit ~200k render triangles every pointer move (and every XR frame) without a BVH.
+  // Hover raycasts hit ~250k render triangles every pointer move (and every XR frame) without a BVH.
   useEffect(() => {
     const build = () => {
       for (const part of PARTS) {
@@ -273,8 +277,6 @@ const EngineModel = ({ simRef, mode, selectedId, onSelectPart, inVR = false }) =
 
         <CombustionGas simRef={simRef} active={mode === "xray"} />
         {mode === "xray" && <GasFlow simRef={simRef} />}
-
-        <Stage stageRef={stageRef} mode={mode} shadow={!inVR} />
       </group>
 
       <Suspense fallback={null}>
@@ -337,6 +339,8 @@ const EngineModel = ({ simRef, mode, selectedId, onSelectPart, inVR = false }) =
           );
         })}
       </Suspense>
+
+      <Stage stageRef={stageRef} mode={mode} shadow={!inVR} />
     </group>
   );
 };

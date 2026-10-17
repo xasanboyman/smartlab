@@ -9,13 +9,19 @@ import {
   SubjectPage,
   TopicPage,
   NotFoundPage,
+  RikoPage,
 } from "@/lab";
 
 const Routes = () => (
   <RoutesWrapper>
+    {/* Landing - full-page, carries its own header */}
+    <Route index element={<LandingPage />} />
+
+    {/* Riko AI companion (Quantum VRM) - full-page, own navbar */}
+    <Route path="/riko" element={<RikoPage />} />
+
     {/* Content pages - with header */}
     <Route element={<LabLayout />}>
-      <Route index element={<LandingPage />} />
       <Route path="/:subject" element={<SubjectPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Route>

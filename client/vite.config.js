@@ -27,6 +27,7 @@ export default defineConfig(({ command }) => ({
           three: ["three", "@react-three/fiber"],
           rapier: ["@react-three/rapier"],
           postfx: ["@react-three/postprocessing", "postprocessing", "n8ao"],
+          pixi: ["pixi.js", "pixi-filters"],
         },
       },
     },
