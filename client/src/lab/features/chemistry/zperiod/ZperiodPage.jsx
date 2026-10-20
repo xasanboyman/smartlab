@@ -64,9 +64,12 @@ const ZperiodPage = () => {
 
   // Apply theme to document and body
   useEffect(() => {
+    const isDark = theme === "dark";
     document.documentElement.setAttribute("data-theme", theme);
-    document.body.classList.toggle("dark-theme", theme === "dark");
-    document.body.classList.toggle("light-theme", theme === "light");
+    document.documentElement.classList.toggle("dark-theme", isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+    document.body.classList.toggle("dark-theme", isDark);
+    document.body.classList.toggle("light-theme", !isDark);
     localStorage.setItem("smartlab_theme", theme);
     localStorage.setItem("zperiod_theme", theme);
   }, [theme]);

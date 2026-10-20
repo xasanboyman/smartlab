@@ -267,7 +267,8 @@
   scroll-snap-type: y proximity;
   position: relative;
   z-index: 2;
-  background: #ffffff;
+  background: var(--element-bg, #ffffff);
+  color: var(--text-primary, #1a1a1a);
 }
 
 .modal-info-pane.no-scroll {
@@ -3616,4 +3617,309 @@ body.tutorial-active .level-lock-btn {
   visibility: visible !important;
   pointer-events: auto !important;
   z-index: 9999 !important;
+}
+
+/* =============================================================================
+   Specimen Sample Card on Level 1
+   ============================================================================= */
+
+.l1-specimen-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.l1-specimen-card:hover {
+  background: rgba(255, 255, 255, 0.85);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.l1-specimen-thumb-wrap {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.l1-specimen-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.l1-specimen-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  line-height: 1;
+}
+
+.l1-specimen-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.l1-specimen-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--modal-text-main, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.l1-specimen-action {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #4f46e5;
+  margin-top: 2px;
+}
+
+/* =============================================================================
+   DARK THEME SYSTEM FOR MODALS (Matches zperiod.app visual design)
+   ============================================================================= */
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-overlay {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-content,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .customizer-modal {
+  background: rgba(22, 22, 30, 0.94) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.65) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-info-pane {
+  background: #181920 !important;
+  color: #e8e6f0 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .level-header {
+  background: rgba(24, 24, 32, 0.75) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-info-pane.scrolled .level-header {
+  background: rgba(24, 24, 32, 0.95) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .headline-name,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .headline-symbol {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .headline-mass,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .headline-atomic {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .simplified-element-box {
+  background: #181920 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .cards-slider-wrapper {
+  background: transparent !important;
+}
+
+/* Card slide themes */
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .green-rectangle {
+  background: rgb(29, 36, 48) !important;
+  box-shadow: rgba(0, 0, 0, 0.42) 0px 6px 14px !important;
+  border: 1px solid rgba(176, 190, 209, 0.16) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .yellow-rectangle {
+  background: rgb(28, 42, 53) !important;
+  box-shadow: rgba(0, 0, 0, 0.4) 0px 4px 12px !important;
+  border: 1px solid rgba(167, 197, 217, 0.15) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .blue-rectangle {
+  background: rgb(29, 46, 43) !important;
+  box-shadow: rgba(0, 0, 0, 0.4) 0px 4px 12px !important;
+  border: 1px solid rgba(157, 203, 195, 0.15) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .red-rectangle {
+  background: rgb(42, 33, 29) !important;
+  box-shadow: rgba(0, 0, 0, 0.42) 0px 6px 14px !important;
+  border: 1px solid rgba(219, 197, 156, 0.13) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sand-rectangle {
+  background: rgb(111, 105, 87) !important;
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 3px 8px !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .card-info-container {
+  color: rgb(232, 230, 240) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .info-row {
+  color: rgb(232, 230, 240) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .info-label {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .info-value {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .info-divider {
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.12), transparent) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .ions-section {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .ion-item {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .ion-item:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .ion-symbol {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .ion-name {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .stat-box {
+  background: none !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .stat-value {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .stat-label,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .stat-unit {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .element-symbol,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .element-name {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .element-category {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .l1-specimen-card {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .l1-specimen-card:hover {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .l1-specimen-title {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .l1-specimen-action {
+  color: #818cf8 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-close,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-back,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-help-btn,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .level-lock-btn,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .archive-detail-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-close:hover,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-back:hover,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-help-btn:hover,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .level-lock-btn:hover,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .archive-detail-close:hover {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .slider-dots .dot {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .slider-dots .dot.active {
+  background: #ffffff;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .red-rectangle .prop-cell[style*="16, 185, 129"] {
+  background: rgba(6, 78, 59, 0.25) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .red-rectangle .prop-cell[style*="220, 38, 38"] {
+  background: rgba(127, 29, 29, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.22) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .red-rectangle .info-label {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .red-rectangle .info-value {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .modal-visual-pane {
+  background: radial-gradient(circle, rgba(30, 40, 60, 0.5), rgba(14, 14, 18, 0) 75%);
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
 }

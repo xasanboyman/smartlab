@@ -23,6 +23,65 @@
   --global-nav-scale: 1;
 }
 
+html.dark-theme,
+html.dark,
+body.dark-theme,
+[data-theme="dark"] {
+  --bg-color: #0e0e12;
+  --element-bg: #1a1a22;
+  --element-hover: #2a2a36;
+  --text-primary: #e8e6f0;
+  --text-secondary: #9a97a8;
+  --text-muted: #605d6d;
+  --text-highlight: #f0a050;
+  --border-color: rgba(255, 255, 255, .06);
+  --modal-bg-glass: rgba(22, 22, 30, .94);
+  --modal-text-main: #ffffff;
+  --modal-text-sub: #b0b0c0;
+  --p-grad: linear-gradient(135deg, #d0505f 0%, #f0a060 100%);
+  --e-grad: linear-gradient(135deg, #2a9ab0 0%, #75d5e8 100%);
+  --n-grad: linear-gradient(135deg, #a0a8b0 0%, #3f4a5a 100%);
+  --brand-glow: linear-gradient(135deg, #009ac0 0%, #70cc80 100%);
+  --premium-grad: linear-gradient(135deg, #5568c8 0%, #6040a0 100%);
+  --tm-mark-color: rgba(198, 208, 232, .62);
+  --cat-alkali-bg: #6c303d;
+  --cat-alkali-fg: #ff9ca8;
+  --cat-alkaline-bg: #6b5425;
+  --cat-alkaline-fg: #ffd37d;
+  --cat-transition-bg: #666122;
+  --cat-transition-fg: #fff27a;
+  --cat-post-bg: #354782;
+  --cat-post-fg: #8fc9ff;
+  --cat-metalloid-bg: #1f5d53;
+  --cat-metalloid-fg: #8ff2dc;
+  --cat-other-bg: #446227;
+  --cat-other-fg: #97f26f;
+  --cat-halogen-bg: #6c6a27;
+  --cat-halogen-fg: #fff07a;
+  --cat-noble-bg: #5a347f;
+  --cat-noble-fg: #d79aff;
+  --cat-lanthanide-bg: #8b5b2d;
+  --cat-lanthanide-fg: #ffbf80;
+  --cat-actinide-bg: #7a3655;
+  --cat-actinide-fg: #ff92be;
+  --cat-poly-cation-bg: #382a10;
+  --cat-poly-anion-bg: #142840;
+  --cat-unknown-bg: #2a2a32;
+  --cat-unknown-fg: #aaaaaa;
+  --segment-track-bg: rgba(255, 255, 255, .06);
+  --segment-active-bg: rgba(255, 255, 255, .12);
+  --segment-text: #888888;
+  --segment-text-hover: #cccccc;
+  --segment-text-active: #ffffff;
+  --segment-active-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.2);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.5);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

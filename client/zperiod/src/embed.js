@@ -34,7 +34,15 @@ import { elements } from "../js/data/elementsData.js";
 export const PAGES = ["table", "ions", "tools", "worksheet", "settings"];
 const PAGE_TO_INTERNAL = { table: "table", ions: "ions", tools: "blank1", worksheet: "blank2", settings: "settings" };
 // Body classes the upstream controllers toggle; mirrored onto the scoped root.
-const MIRRORED_BODY_CLASSES = ["hide-nav", "lang-menu-blur", "tutorial-active", "reduce-motion"];
+const MIRRORED_BODY_CLASSES = [
+  "hide-nav",
+  "lang-menu-blur",
+  "tutorial-active",
+  "reduce-motion",
+  "dark-theme",
+  "light-theme",
+  "dark",
+];
 
 let root = null;
 let pageCtrl = null;
@@ -62,9 +70,32 @@ function initGlobalDragTracking() {
 
 function mirrorBodyClasses() {
   const sync = () => {
-    for (const cls of MIRRORED_BODY_CLASSES) root.classList.toggle(cls, document.body.classList.contains(cls));
+    if (!root) return;
+    const isDark =
+      document.body.classList.contains("dark-theme") ||
+      document.body.classList.contains("dark") ||
+      document.documentElement.classList.contains("dark-theme") ||
+      document.documentElement.classList.contains("dark") ||
+      document.documentElement.getAttribute("data-theme") === "dark";
+
+    root.classList.toggle("dark-theme", isDark);
+    root.classList.toggle("dark", isDark);
+    root.classList.toggle("light-theme", !isDark);
+    root.setAttribute("data-theme", isDark ? "dark" : "light");
+
+    for (const cls of MIRRORED_BODY_CLASSES) {
+      root.classList.toggle(cls, document.body.classList.contains(cls));
+    }
   };
-  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
+  new MutationObserver(sync).observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  new MutationObserver(sync).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["class", "data-theme"],
+  });
   sync();
 }
 

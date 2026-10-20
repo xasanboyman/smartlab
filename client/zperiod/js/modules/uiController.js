@@ -22,7 +22,9 @@ import {
   initArchiveLensController,
   renderArchiveLens,
   closeArchiveDetail,
+  resolveArchiveImageUrl,
 } from "./archiveLensController.js";
+import { elementArchives } from "../data/elementArchives.js";
 import { initCardSlider } from "./cardSliderController.js";
 import { createEITController } from "./ui/eitController.js";
 import { initElementTutorial } from "./tutorialController.js";
@@ -1751,6 +1753,26 @@ function populateSimplifiedView(element) {
       return "—";
     };
     setText("#l1-electron-block-value", getElectronBlock(element.number, element.column));
+
+    const specimenCard = document.getElementById("l1-specimen-card");
+    const specimenImg = document.getElementById("l1-specimen-img");
+    const specimenTitle = document.getElementById("l1-specimen-title");
+    if (specimenCard && specimenImg) {
+      const archives = elementArchives[String(element.number)] || [];
+      const primarySample = archives[0];
+      if (primarySample && primarySample.image) {
+        const imgUrl = resolveArchiveImageUrl(primarySample.image, 640);
+        specimenImg.src = imgUrl;
+        specimenImg.alt = primarySample.title || `${element.name} sample`;
+        if (specimenTitle) specimenTitle.textContent = primarySample.title || `${localizeElementName(element)} specimen`;
+        specimenCard.style.display = "flex";
+        specimenCard.onclick = () => {
+          switchModalVisualizationMode("img");
+        };
+      } else {
+        specimenCard.style.display = "none";
+      }
+    }
 
     const ionsSection = greenCard.querySelector(".ions-section");
     if (ionsSection) {

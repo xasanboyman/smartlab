@@ -63,22 +63,23 @@ export function initCardSlider(options = {}) {
   }
 
   function update3DEffect() {
-    if (slider.clientWidth === 0) return;
+    if (!slider || slider.clientWidth === 0) return;
 
     const scrollLeft = slider.scrollLeft;
-    const slideWidth = getSlideWidth();
+    const slideWidth = getSlideWidth() || slider.clientWidth;
 
     slides.forEach((slide, index) => {
-      const offset = (index * slideWidth - scrollLeft) / slider.clientWidth;
-      if (Math.abs(offset) < 2) {
-        const rotY = -25 * offset;
-        const scale = 1 - 0.12 * Math.abs(offset);
-        const opacity = 1 - 0.4 * Math.abs(offset);
-        slide.style.transform = `perspective(800px) rotateY(${rotY}deg) scale(${scale})`;
-        slide.style.opacity = Math.max(0.3, opacity);
-        slide.style.zIndex = String(10 - Math.abs(Math.round(offset)));
+      const offset = (index * slideWidth - scrollLeft) / slideWidth;
+      const absOffset = Math.abs(offset);
+      if (absOffset < 1.5) {
+        slide.style.transform = "none";
+        slide.style.opacity = absOffset < 0.1 ? "1" : String(Math.max(0.3, 1 - 0.5 * absOffset));
+        slide.style.zIndex = String(10 - Math.min(9, Math.round(absOffset)));
+        slide.style.pointerEvents = absOffset < 0.5 ? "auto" : "none";
       } else {
         slide.style.opacity = "0";
+        slide.style.transform = "none";
+        slide.style.pointerEvents = "none";
       }
     });
   }

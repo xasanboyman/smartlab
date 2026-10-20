@@ -17,7 +17,7 @@ export function resolveArchiveImageUrl(rawPath, width = 640) {
   const prefix = "images/elements/";
   if (rawPath.startsWith(prefix)) {
     const rel = rawPath.slice(prefix.length);
-    return `https://zperiod.app/images/archive/${width}/${rel}.webp`;
+    return `/images/archive/${width}/${rel}.webp`;
   }
   return rawPath;
 }
@@ -45,9 +45,9 @@ function localizeKind(kind, lang) {
 
 function setImageWithFallback(imgEl, fallbackEl, entry, width = 640) {
   if (!imgEl) return;
-  const url = resolveArchiveImageUrl(entry?.image, width);
-  if (url) {
-    imgEl.src = url;
+  const localUrl = resolveArchiveImageUrl(entry?.image, width);
+  if (localUrl) {
+    imgEl.src = localUrl;
     imgEl.alt = entry.title || entry.kind || "";
     imgEl.decoding = "async";
     imgEl.style.display = "";
@@ -56,6 +56,13 @@ function setImageWithFallback(imgEl, fallbackEl, entry, width = 640) {
       fallbackEl.style.display = "none";
     }
     imgEl.onerror = () => {
+      // Try remote zperiod.app CDN if local failed
+      if (!imgEl.dataset.triedRemote && entry?.image?.startsWith("images/elements/")) {
+        imgEl.dataset.triedRemote = "true";
+        const rel = entry.image.slice("images/elements/".length);
+        imgEl.src = `https://zperiod.app/images/archive/${width}/${rel}.webp`;
+        return;
+      }
       imgEl.removeAttribute("src");
       imgEl.style.display = "none";
       if (fallbackEl) {
