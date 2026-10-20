@@ -1265,10 +1265,36 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-visual-pane ion-visual-pane">
-                <div class="ion-visual-placeholder">
-                    <div class="coming-soon-badge" data-i18n="ionModal.comingSoonBadge">COMING SOON</div>
-                    <div class="ion-visual-hint" data-i18n="ionModal.visualHint">3D Ion Models & Interactivity are under development.</div>
+            <div class="modal-visual-pane ion-visual-pane" id="ion-visual-pane">
+                <div id="ion-modal-watermark" class="modal-watermark">Mg²⁺</div>
+                <div id="ion-3d-container" class="ion-3d-container"></div>
+                <div class="ion-hud-overlay">
+                    <div class="ion-badge-strip">
+                        <span class="ion-hud-badge charge-badge" id="ion-hud-charge">+2 Kation</span>
+                        <span class="ion-hud-badge electrons-badge" id="ion-hud-electrons">10 e⁻</span>
+                        <span class="ion-hud-badge radius-badge" id="ion-hud-radius">Radius: 72 pm</span>
+                    </div>
+                    <div class="ion-hud-controls">
+                        <button type="button" class="ion-tool-btn" id="ion-toggle-hydration" title="Gidratatsiya qobig'i (suvdagi H₂O dipollari)">
+                            <span class="btn-icon">💧</span>
+                            <span class="btn-text">Gidratatsiya</span>
+                        </button>
+                        <button type="button" class="ion-tool-btn active" id="ion-toggle-field" title="Elektrostatik zaryad maydoni">
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">Maydon</span>
+                        </button>
+                        <button type="button" class="ion-tool-btn active" id="ion-toggle-orbitals" title="Elektron qatlamlari">
+                            <span class="btn-icon">⚛️</span>
+                            <span class="btn-text">Qatlamlar</span>
+                        </button>
+                        <button type="button" class="ion-tool-btn active" id="ion-toggle-rotate" title="3D Aylanish">
+                            <span class="btn-icon">🔄</span>
+                            <span class="btn-text">Aylanish</span>
+                        </button>
+                        <button type="button" class="ion-tool-btn" id="ion-reset-view" title="Ko'rinishni tiklash">
+                            <span class="btn-icon">🎯</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

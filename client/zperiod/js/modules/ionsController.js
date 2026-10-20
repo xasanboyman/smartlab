@@ -6,6 +6,7 @@
 import { ionsData } from "../data/ionsData.js";
 import { IonAnimations } from "../ionAnimations.js";
 import { initCardSlider } from "./cardSliderController.js";
+import { initIon3D, cleanupIon3D } from "./ion3dRenderer.js";
 import {
   fetchIonLocale,
   getLang,
@@ -1227,6 +1228,12 @@ function openIonModal(ion) {
   modal.classList.add("active");
   document.title = `Zperiod - ${localizedIon.name}`;
 
+  // Launch 3D Ion Simulation
+  const ion3dContainer = document.getElementById("ion-3d-container");
+  if (ion3dContainer) {
+    initIon3D(ion3dContainer, ion).catch((err) => console.error("3D Ion init error:", err));
+  }
+
   // Re-apply fitText after modal is active to ensure clientWidth is correct
   setTimeout(() => {
     if (localizedIon.customData) {
@@ -1257,21 +1264,17 @@ function openIonModal(ion) {
   const closeBtn = document.getElementById("ion-modal-close");
   if (closeBtn) {
     closeBtn.onclick = () => {
+      cleanupIon3D();
       modal.classList.remove("active");
       document.body.classList.remove("hide-nav");
       document.title = "Zperiod";
-
-      // Reset headline layout for element modal?
-      // No, this is #ion-modal, distinct from #element-modal.
-      // So hiding elements inside it is permanent until re-opened?
-      // Re-opening calls this function again, which re-hides.
-      // So it's safe.
     };
   }
 
   modal.onclick = (e) => {
     if (window._zperiodIsDragging) return;
     if (e.target === modal) {
+      cleanupIon3D();
       modal.classList.remove("active");
       document.body.classList.remove("hide-nav");
       document.title = "Zperiod";

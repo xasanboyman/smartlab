@@ -1,18 +1,24 @@
-/* SmartLab lab-console theme for the natively mounted Zperiod. Loaded last; scoped under .zp-root
-   at build time like every other stylesheet. Element category colours stay as upstream (pastel tiles
-   with dark text read well on the dark background). */
-:root {
+/* =============================================================================
+   SmartLab 3D Chemistry Studio & Zperiod Dynamic Theme System
+   Supports: Dark Theme (default) & Light Theme with smooth transitions.
+   ============================================================================= */
+
+/* --- Dark Theme (Default) --- */
+:root,
+html[data-theme="dark"],
+body.dark-theme,
+.zp-page[data-theme="dark"] {
   --bg-color: #070a12;
   --element-bg: #121a2e;
   --element-hover: #1a2440;
-  --text-primary: #e8eefc;
-  --text-secondary: #b4c2dd;
-  --text-muted: #7f91b5;
-  --text-highlight: #93c5fd;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-highlight: #38bdf8;
   --border-color: #1e2942;
-  --modal-bg-glass: rgba(14, 20, 36, 0.97);
-  --modal-text-main: #e8eefc;
-  --modal-text-sub: #b4c2dd;
+  --modal-bg-glass: rgba(13, 20, 36, 0.96);
+  --modal-text-main: #f8fafc;
+  --modal-text-sub: #94a3b8;
   --zp-panel: #0e1424;
   --zp-panel-2: #121a2e;
   --zp-accent: #2563eb;
@@ -20,7 +26,28 @@
   --zp-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-/* host box */
+/* --- Light Theme --- */
+html[data-theme="light"],
+body.light-theme,
+.zp-page[data-theme="light"] {
+  --bg-color: #f8fafc;
+  --element-bg: #ffffff;
+  --element-hover: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-highlight: #0284c7;
+  --border-color: #e2e8f0;
+  --modal-bg-glass: rgba(255, 255, 255, 0.98);
+  --modal-text-main: #0f172a;
+  --modal-text-sub: #475569;
+  --zp-panel: #ffffff;
+  --zp-panel-2: #f1f5f9;
+  --zp-accent: #2563eb;
+  --zp-accent-soft: rgba(37, 99, 235, 0.12);
+}
+
+/* Host & Base Box */
 html,
 body {
   height: 100%;
@@ -29,15 +56,18 @@ body {
   font-family: inherit;
   background: var(--bg-color);
   color: var(--text-primary);
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
+
 body {
   position: relative;
 }
+
 .global-nav {
   display: none !important;
 }
 
-/* The element search lives in the SmartLab bar (moved there by the embed). */
+/* Search Box */
 .element-search-wrapper {
   max-width: 100%;
 }
@@ -50,7 +80,7 @@ body {
   color: var(--text-muted);
 }
 .element-search-input:focus {
-  background: #15203a;
+  background: var(--element-bg);
   border-color: var(--zp-accent);
   box-shadow: 0 0 0 3px var(--zp-accent-soft);
 }
@@ -64,7 +94,7 @@ body {
   background: var(--element-hover);
 }
 
-/* pages fill the host instead of the viewport */
+/* Pages fill container */
 #main-container {
   min-width: 0;
   padding: 14px 16px 10px;
@@ -86,7 +116,7 @@ body {
   display: none;
 }
 
-/* cards & panels */
+/* Cards & Panels */
 .chem-tool-card,
 .sv-card,
 .sv-link-card,
@@ -120,38 +150,7 @@ body {
   color: var(--text-primary);
 }
 
-/* modals */
-.modal-content,
-.tool-modal-content,
-.feature-modal-content {
-  background: var(--modal-bg-glass);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-/* keyboard focus ring on table cells */
-.element:focus-visible {
-  outline: 2px solid var(--zp-accent);
-  outline-offset: 2px;
-}
-
-/* Modal-only mode: the root is attached to <body> just to show the element card. */
-.zp-modal-only {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  pointer-events: none;
-  background: transparent;
-  overflow: visible;
-}
-.zp-modal-only > :not(#element-modal) {
-  display: none !important;
-}
-.zp-modal-only #element-modal {
-  pointer-events: auto;
-}
-
-/* Category-coloured tiles keep dark ink (the pastel fills stay as upstream). */
+/* Category-coloured tiles keep dark ink for readability */
 .element,
 .element .symbol,
 .element .number,
@@ -160,102 +159,171 @@ body {
 .ion-element * {
   color: #1c2130;
 }
-.element.lanthanide,
-.element.actinide {
-  color: #1c2130;
+
+/* Keyboard focus ring */
+.element:focus-visible {
+  outline: 2px solid var(--zp-accent);
+  outline-offset: 2px;
 }
 
-/* legend chips, EIT controls */
-.legend-item {
-  background: var(--zp-panel-2);
-  color: var(--text-secondary);
+/* =============================================================================
+   Modals (Element & Ion Modal) - Dark & Light Adaptability
+   ============================================================================= */
+.modal-content,
+.tool-modal-content,
+.feature-modal-content {
+  background: var(--modal-bg-glass);
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
-}
-.legend-item.active,
-.legend-item:hover {
-  background: var(--element-hover);
-  color: var(--text-primary);
-}
-.eit-controller,
-.eit-property-trigger,
-.eit-mode-group,
-.eit-property-panel,
-.eit-chip,
-.eit-reset-btn {
-  background: var(--zp-panel-2);
-  color: var(--text-primary);
-  border-color: var(--border-color);
-}
-.eit-trigger-prefix,
-.eit-current-property,
-.eit-trigger-caret,
-.eit-trigger-icon,
-.eit-chip-group-label,
-.eit-panel-title {
-  color: var(--text-primary);
-}
-.eit-mode-btn {
-  color: var(--text-secondary);
-}
-.eit-mode-btn.active {
-  color: #fff;
-}
-.eit-mode-slider {
-  background: var(--zp-accent);
-}
-.eit-chip.active {
-  background: var(--zp-accent);
-  color: #fff;
+  transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
-/* ions page headings */
-.ion-section-title,
-.ions-section-title,
-.ion-group-title {
-  color: var(--text-primary);
+/* Dark Mode Modal Enhancements */
+html[data-theme="dark"] .modal-content,
+body.dark-theme .modal-content,
+.zp-page[data-theme="dark"] .modal-content {
+  background: rgba(13, 20, 36, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.85), 0 0 40px rgba(37, 99, 235, 0.15) !important;
+  color: #f1f5f9 !important;
 }
 
-/* element card header sits on a pastel category tint: dark ink */
-.headline-name,
-.headline-mass,
-.headline-atomic,
-.headline-symbol {
-  color: #1c2130;
-}
-.ion-table-section h3,
-.ion-table-group-header {
-  color: var(--text-primary);
+html[data-theme="dark"] .level-header,
+body.dark-theme .level-header,
+.zp-page[data-theme="dark"] .level-header {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* polish: card header ink, balancer input groups, worksheet summary strip */
-.headline-name,
-.headline-mass,
-.headline-atomic,
-.headline-symbol {
-  color: #0b1220 !important;
-  opacity: 1 !important;
+html[data-theme="dark"] .headline-name,
+body.dark-theme .headline-name,
+.zp-page[data-theme="dark"] .headline-name {
+  color: #f8fafc !important;
 }
-.balancer-input-group,
-.balancer-input-group:hover,
-.balancer-input-group:focus-within {
-  background: var(--zp-panel-2);
-  border-color: var(--border-color);
+
+html[data-theme="dark"] .headline-symbol,
+body.dark-theme .headline-symbol,
+.zp-page[data-theme="dark"] .headline-symbol {
+  color: #38bdf8 !important;
+  text-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
 }
-.balancer-input-group input,
-.balancer-input-label {
-  color: var(--text-primary);
-  background: transparent;
+
+html[data-theme="dark"] .headline-mass,
+html[data-theme="dark"] .headline-atomic,
+body.dark-theme .headline-mass,
+body.dark-theme .headline-atomic {
+  color: #94a3b8 !important;
 }
-.preview-summary-bar {
-  background: var(--zp-panel-2);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
+
+html[data-theme="dark"] .modal-visual-pane,
+body.dark-theme .modal-visual-pane,
+.zp-page[data-theme="dark"] .modal-visual-pane {
+  background: radial-gradient(circle at center, rgba(30, 58, 138, 0.28) 0%, rgba(9, 14, 26, 0.98) 75%) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
-.preview-summary-bar * {
-  color: var(--text-secondary);
+
+html[data-theme="dark"] #modal-watermark,
+html[data-theme="dark"] #ion-modal-watermark,
+body.dark-theme #modal-watermark,
+body.dark-theme #ion-modal-watermark {
+  color: rgba(255, 255, 255, 0.06) !important;
 }
-.tool-padding-label,
-.tool-modal-title,
-.tool-modal-title-group {
-  color: var(--text-primary);
+
+html[data-theme="dark"] .green-rectangle,
+html[data-theme="dark"] .blue-rectangle,
+html[data-theme="dark"] .red-rectangle,
+html[data-theme="dark"] .yellow-rectangle,
+body.dark-theme .green-rectangle,
+body.dark-theme .blue-rectangle,
+body.dark-theme .red-rectangle,
+body.dark-theme .yellow-rectangle {
+  background: rgba(15, 23, 42, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="dark"] .info-label,
+body.dark-theme .info-label {
+  color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .info-value,
+body.dark-theme .info-value {
+  color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .prop-cell,
+body.dark-theme .prop-cell {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .key-compound-item,
+body.dark-theme .key-compound-item {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .key-compound-item .formula,
+body.dark-theme .key-compound-item .formula {
+  color: #38bdf8 !important;
+}
+
+html[data-theme="dark"] .key-compound-item .name,
+body.dark-theme .key-compound-item .name {
+  color: #cbd5e1 !important;
+}
+
+html[data-theme="dark"] .h-plus-visual-card,
+body.dark-theme .h-plus-visual-card {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #f1f5f9 !important;
+}
+
+html[data-theme="dark"] .modal-close,
+body.dark-theme .modal-close {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Light Mode Overrides */
+html[data-theme="light"] .modal-content,
+body.light-theme .modal-content {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .level-header,
+body.light-theme .level-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .headline-name,
+body.light-theme .headline-name {
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] .headline-symbol,
+body.light-theme .headline-symbol {
+  color: #0284c7 !important;
+}
+
+html[data-theme="light"] .modal-visual-pane,
+body.light-theme .modal-visual-pane {
+  background: radial-gradient(circle at center, rgba(220, 235, 255, 0.6) 0%, rgba(248, 250, 252, 0.98) 75%) !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] #modal-watermark,
+html[data-theme="light"] #ion-modal-watermark,
+body.light-theme #modal-watermark,
+body.light-theme #ion-modal-watermark {
+  color: rgba(0, 0, 0, 0.06) !important;
 }
