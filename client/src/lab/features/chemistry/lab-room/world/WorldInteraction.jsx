@@ -189,11 +189,15 @@ const WorldInteraction = ({ world, lab, inputRef, activeRef, anchors, onMonitor,
           const from = camera.position.clone().addScaledVector(tmpDir, 0.4).addScaledVector(tmpRight, 0.12);
           from.y -= 0.22;
           const body = objectType(held.typeId).body;
+          // Let go, don't throw: the item keeps the hand's small forward drift and tumbles a little.
+          const release = lab.activity.release ?? [0, 0, 0];
           world.dropHeld(
             held.id,
-            { position: from.toArray(), rotation: body.lying ? [0, facePlayer, Math.PI / 2] : [0, facePlayer, 0] },
-            [tmpDir.x * 1.5, tmpDir.y * 1.2 + 0.5, tmpDir.z * 1.5],
+            { position: from.toArray(), rotation: body.lying ? [0.15, facePlayer, Math.PI / 2 - 0.2] : [0.12, facePlayer, -0.08] },
+            [tmpDir.x * 0.25 + release[0] * 0.6, -0.1 + release[1] * 0.3, tmpDir.z * 0.25 + release[2] * 0.6],
+            [(Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 1.5],
           );
+          pushSound(lab, { type: "click", soft: true });
         } else if (event.type === "slot") {
           world.selectSlot(event.slot);
           pushSound(lab, { type: "click", soft: true });

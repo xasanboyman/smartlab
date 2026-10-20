@@ -26,3 +26,7 @@ package-lock.json
 
 # Env
 .env
+!zperiod/package-lock.json
+zperiod/node_modules/
+zperiod/dist/
+dist-*/

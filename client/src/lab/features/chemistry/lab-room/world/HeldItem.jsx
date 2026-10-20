@@ -4,7 +4,7 @@ import { Euler, Quaternion, Vector3 } from "three";
 import { useSnap } from "@/shared/utils/snapStore";
 import EquipmentModel from "../equipment/EquipmentModel";
 import { BlobVisibleContext } from "../equipment/kit/blobContext";
-import { bodyBounds, objectType } from "./objectTypes";
+import { bodyBounds, objectType, physicsOf } from "./objectTypes";
 import { actionPose, gasOutletWorld, ignitePose, lipWorld, mouthWorld } from "../tools/poses";
 import { CONTAINERS } from "../sim/containers";
 
@@ -12,6 +12,11 @@ const BLEND_S = 0.12;
 
 // Wall fittings are carried low, at arm's length, so they don't fill half the view.
 const FIXTURE_POSE = { position: [0.3, -0.72, -0.78], rotation: [0.2, -1.05, -0.12] };
+
+// Hand sway: a spring-damper that lags behind the camera and swings with its acceleration and turning.
+// Heavier items lag more and settle slower, like a full bottle versus a spatula.
+const SWAY = { stiffness: 70, damping: 11, lag: 0.028, tilt: 0.045, yawLag: 0.09, maxOffset: 0.05, maxTilt: 0.32 };
+const MAX_DT = 0.05;
 
 // Hand position in camera space: lower right, far enough to stay out of the near plane.
 const handPose = (typeId) => {
@@ -31,6 +36,15 @@ const handQuaternion = new Quaternion();
 const tmpQuaternion = new Quaternion();
 const tmpEuler = new Euler();
 const tmpPoint = new Vector3();
+const camVel = new Vector3();
+const camAccel = new Vector3();
+const localAccel = new Vector3();
+const localVel = new Vector3();
+const swayOffset = new Vector3();
+const swayEuler = new Euler();
+const swayQuat = new Quaternion();
+const inverseCam = new Quaternion();
+const springForce = new Vector3();
 
 const surfaceOf = (lab, target) => {
   const point = mouthWorld(target, tmpPoint);
@@ -40,11 +54,60 @@ const surfaceOf = (lab, target) => {
   return point.toArray();
 };
 
+// Integrates the sway springs from this frame's camera motion; writes anim.offset (camera space) and anim.tilt.
+const stepSway = (anim, camera, held, dt) => {
+  const s = anim.sway;
+  if (!s.ready) {
+    s.prevPos.copy(camera.position);
+    s.prevVel.set(0, 0, 0);
+    s.prevYaw = camera.rotation.y;
+    s.ready = true;
+  }
+  camVel.subVectors(camera.position, s.prevPos).divideScalar(dt);
+  camAccel.subVectors(camVel, s.prevVel).divideScalar(dt).clampLength(0, 25);
+  s.prevPos.copy(camera.position);
+  s.prevVel.copy(camVel);
+  let yawRate = (camera.rotation.y - s.prevYaw) / dt;
+  if (yawRate > Math.PI * 10) yawRate -= (Math.PI * 2) / dt;
+  if (yawRate < -Math.PI * 10) yawRate += (Math.PI * 2) / dt;
+  yawRate = Math.max(-8, Math.min(8, yawRate));
+  s.prevYaw = camera.rotation.y;
+
+  inverseCam.copy(camera.quaternion).invert();
+  localVel.copy(camVel).applyQuaternion(inverseCam);
+  localAccel.copy(camAccel).applyQuaternion(inverseCam);
+
+  // Mass scales the lag (more inertia) and slows the spring a little.
+  const massK = Math.min(2.2, 0.6 + physicsOf(held.typeId).mass * 1.4);
+  const k = SWAY.stiffness / massK;
+  const c = SWAY.damping / Math.sqrt(massK);
+  // Target: fall behind motion, swing out when turning, dip when accelerating up.
+  s.target.set(-localVel.x * SWAY.lag * massK - yawRate * SWAY.yawLag * 0.35, -localVel.y * SWAY.lag * massK * 0.6 - Math.abs(localVel.z) * 0.004, -localVel.z * SWAY.lag * massK * 0.5);
+  s.target.clampLength(0, SWAY.maxOffset);
+  springForce.subVectors(s.target, s.offset).multiplyScalar(k).addScaledVector(s.velocity, -c);
+  s.velocity.addScaledVector(springForce, dt);
+  s.offset.addScaledVector(s.velocity, dt);
+
+  // Pendulum tilt: the item swings opposite to the acceleration and trails the turn.
+  const tiltTargetX = Math.max(-SWAY.maxTilt, Math.min(SWAY.maxTilt, localAccel.z * SWAY.tilt * massK));
+  const tiltTargetZ = Math.max(-SWAY.maxTilt, Math.min(SWAY.maxTilt, localAccel.x * SWAY.tilt * massK + yawRate * 0.05));
+  s.tiltVel.x += ((tiltTargetX - s.tilt.x) * k * 0.6 - s.tiltVel.x * c) * dt;
+  s.tiltVel.y += ((tiltTargetZ - s.tilt.y) * k * 0.6 - s.tiltVel.y * c) * dt;
+  s.tilt.x += s.tiltVel.x * dt;
+  s.tilt.y += s.tiltVel.y * dt;
+};
+
 // Moves the held model between the hand and the pose of the running action, and publishes where it is.
 const followHand = (group, camera, held, lab, world, anim, delta) => {
+  const dt = Math.max(1e-3, Math.min(delta, MAX_DT));
   const pose = handPose(held.typeId);
-  handPosition.set(...pose.position).applyMatrix4(camera.matrixWorld);
-  handQuaternion.copy(camera.quaternion).multiply(tmpQuaternion.setFromEuler(tmpEuler.set(...pose.rotation)));
+  stepSway(anim, camera, held, dt);
+  const sway = anim.sway;
+  const calm = lab.prefs?.reduceMotion ? 0.35 : 1;
+  swayOffset.set(pose.position[0] + sway.offset.x * calm, pose.position[1] + sway.offset.y * calm, pose.position[2] + sway.offset.z * calm);
+  handPosition.copy(swayOffset).applyMatrix4(camera.matrixWorld);
+  swayEuler.set(pose.rotation[0] + sway.tilt.x * calm, pose.rotation[1], pose.rotation[2] - sway.tilt.y * calm);
+  handQuaternion.copy(camera.quaternion).multiply(tmpQuaternion.setFromEuler(swayEuler));
 
   const activity = lab.activity;
   const action = activity.action;
@@ -66,6 +129,11 @@ const followHand = (group, camera, held, lab, world, anim, delta) => {
   if (anim.pose && anim.weight > 0.001) {
     group.position.lerpVectors(handPosition, anim.pose.position, anim.weight);
     group.quaternion.slerpQuaternions(handQuaternion, anim.pose.quaternion, anim.weight);
+    // A little of the hand tremor stays on the action pose so a pour still breathes.
+    if (anim.weight > 0.5) {
+      swayQuat.setFromEuler(swayEuler.set(sway.tilt.x * 0.25, 0, -sway.tilt.y * 0.25));
+      group.quaternion.multiply(swayQuat);
+    }
   } else {
     group.position.copy(handPosition);
     group.quaternion.copy(handQuaternion);
@@ -74,6 +142,7 @@ const followHand = (group, camera, held, lab, world, anim, delta) => {
   group.updateMatrixWorld();
 
   activity.heldPositions = { [held.id]: group.position.toArray() };
+  activity.release = [camVel.x, camVel.y, camVel.z];
   if (activity.pour && desired?.lip && target) {
     activity.pour.from = anim.weight > 0.85 ? lipWorld(group.position, group.quaternion, desired.lip).toArray() : null;
     activity.pour.to = surfaceOf(lab, world.get(activity.pour.intoId) ?? target);
@@ -92,10 +161,22 @@ const followHand = (group, camera, held, lab, world, anim, delta) => {
   }
 };
 
+const createSway = () => ({
+  ready: false,
+  prevPos: new Vector3(),
+  prevVel: new Vector3(),
+  prevYaw: 0,
+  target: new Vector3(),
+  offset: new Vector3(),
+  velocity: new Vector3(),
+  tilt: { x: 0, y: 0 },
+  tiltVel: { x: 0, y: 0 },
+});
+
 const HeldItem = ({ world, lab }) => {
   const { hotbar, activeSlot, objects } = useSnap(world.store);
   const groupRef = useRef(null);
-  const anim = useRef({ weight: 0, pose: null, holdS: 0, actionKey: null });
+  const anim = useRef({ weight: 0, pose: null, holdS: 0, actionKey: null, heldId: null, sway: createSway() });
   const heldId = hotbar[activeSlot];
   const held = heldId ? objects.find((o) => o.id === heldId) : null;
 
@@ -103,7 +184,14 @@ const HeldItem = ({ world, lab }) => {
   useFrame(({ camera }, delta) => {
     const group = groupRef.current;
     if (!group || !held) return;
-    followHand(group, camera, held, lab, world, anim.current, delta);
+    const a = anim.current;
+    if (a.heldId !== held.id) {
+      a.heldId = held.id;
+      a.sway = createSway();
+      // A fresh item swings in from below as the hand lifts it.
+      a.sway.offset.set(0.02, -0.06, 0.01);
+    }
+    followHand(group, camera, held, lab, world, a, delta);
   }, 0.6);
 
   if (!held) return null;

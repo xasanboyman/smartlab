@@ -74,7 +74,8 @@ export const actionPose = ({ action, held, target, lamp, camera, holdS, lab }) =
     const dir = new Vector3(forward.z, 0, -forward.x);
     const yaw = Math.atan2(-dir.z, dir.x);
     const kind = held.typeId.startsWith("sub:") ? "bottle" : held.typeId;
-    const tilt = Math.min(1, holdS / 0.45) * (POUR_TILT[kind] ?? POUR_TILT.default);
+    // The interaction step writes the physical tilt (surface at the lip + head); the ramp is only a fallback.
+    const tilt = lab?.activity?.pour?.tilt ?? Math.min(1, holdS / 0.45) * (POUR_TILT[kind] ?? POUR_TILT.default);
     const q = new Quaternion().setFromAxisAngle(UP, yaw);
     q.premultiply(tmpQ.setFromAxisAngle(tmpA.crossVectors(UP, dir).normalize(), tilt));
     const lip = [heldMouth[1], heldMouth[0], 0];

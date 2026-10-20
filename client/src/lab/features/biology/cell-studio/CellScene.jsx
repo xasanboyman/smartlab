@@ -1,53 +1,40 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Center, ContactShadows, Float, Html, OrbitControls, RoundedBox, useGLTF, useProgress } from "@react-three/drei";
+import { Center, ContactShadows, Float, Html, OrbitControls, RoundedBox } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Color,
-  Box3,
   CatmullRomCurve3,
   DoubleSide,
   FrontSide,
   Float32BufferAttribute,
   MeshStandardMaterial,
   PCFShadowMap,
-  PMREMGenerator,
   ACESFilmicToneMapping,
   TubeGeometry,
   Vector3,
 } from "three";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { MUSCLE_ANNOTATIONS, MUSCLE_OVERVIEW_CAMERA } from "./data/muscleAnnotations";
 import ErrorBoundary from "@/shared/components/ErrorBoundary";
-
-function StudioEnvironment() {
-  const { gl, scene } = useThree();
-  useEffect(() => {
-    const pmrem = new PMREMGenerator(gl);
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    scene.environment = env;
-    pmrem.dispose();
-    return () => {
-      scene.environment = null;
-      env.dispose();
-    };
-  }, [gl, scene]);
-  return null;
-}
+import BioStudio from "../shared/BioStudio";
+import { assetUrl, useBioGLTF } from "../shared/loaders";
 
 // Highlight/dim a procedural organelle based on the active selection + view mode.
-function CellMaterial({ id, activeOrganelle, viewMode, color, opacity = 1, roughness = 0.36, metalness = 0.08 }) {
+function CellMaterial({ id, activeOrganelle, viewMode, color, opacity = 1, roughness = 0.36, metalness = 0.04 }) {
   const active = id === activeOrganelle;
   const dimmed = viewMode === "focus" && !active;
+  // Wet organelle finish: clearcoat picks up the studio rim light.
   const material = {
     color,
     roughness,
     metalness,
+    clearcoat: 0.45,
+    clearcoatRoughness: 0.35,
     transparent: opacity < 1 || dimmed,
     opacity: dimmed ? Math.min(opacity, 0.18) : opacity,
     emissive: active ? color : "#000000",
     emissiveIntensity: active ? 0.55 : 0,
   };
-  return <meshStandardMaterial {...material} />;
+  return <meshPhysicalMaterial {...material} />;
 }
 
 function CurveTube({ id, color, points, radius = 0.035, activeOrganelle, viewMode }) {
@@ -474,10 +461,8 @@ function AssetCellModel({
   onSelectLandmark,
   showLabels = true,
 }) {
-  const base = import.meta.env.BASE_URL || "/";
-  const dracoPath = `${base}draco/`.replace(/\/+/g, "/");
-  const modelUrl = asset.url.startsWith("http") ? asset.url : `${base}${asset.url.replace(/^\//, "")}`;
-  const { scene } = useGLTF(modelUrl, dracoPath);
+  const modelUrl = asset.url.startsWith("http") ? asset.url : assetUrl(asset.url);
+  const { scene } = useBioGLTF(modelUrl);
   const isMuscle = !!asset.isSketchfabSkeletalMuscle;
 
   const clonedScene = useMemo(() => {
@@ -814,24 +799,6 @@ function CellModel({
   );
 }
 
-function ModelLoadingOverlay({ cell }) {
-  const { progress } = useProgress();
-  const displayProgress = Math.max(8, Math.min(100, Math.round(progress)));
-
-  return (
-    <Html center>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 180, color: "#334155", fontSize: 13 }}>
-        <span style={{ opacity: 0.75 }}>3D namuna yuklanmoqda</span>
-        <strong>{cell.name}</strong>
-        <i style={{ width: "100%", height: 6, borderRadius: 999, background: "rgba(0,0,0,0.08)", overflow: "hidden", fontStyle: "normal" }}>
-          <b style={{ display: "block", height: "100%", width: `${displayProgress}%`, background: cell.accent }} />
-        </i>
-        <em style={{ fontStyle: "normal", opacity: 0.7 }}>{displayProgress}%</em>
-      </div>
-    </Html>
-  );
-}
-
 function CameraResetWatcher({ resetKey, isMuscle, controlsRef }) {
   const { camera } = useThree();
   useEffect(() => {
@@ -892,7 +859,7 @@ export default function CellScene({
     };
   }, [isMuscle]);
 
-  const bgColor = studioTheme === "light" ? "#f8fafc" : "#0d131f";
+  const bgColor = studioTheme === "light" ? "#f1f5f9" : "#0b1018";
 
   return (
     <ErrorBoundary>
@@ -904,49 +871,42 @@ export default function CellScene({
           antialias: true,
           alpha: true,
           toneMapping: ACESFilmicToneMapping,
-          toneMappingExposure: 1.15,
+          toneMappingExposure: 1.05,
           premultipliedAlpha: false,
+          powerPreference: "high-performance",
         }}
         camera={initialCamera}
         style={{ width: "100%", height: "100%" }}
       >
-        {!isMuscle && <color attach="background" args={[bgColor]} />}
-        <StudioEnvironment />
+        <color attach="background" args={[bgColor]} />
         <CameraResetWatcher resetKey={resetKey} isMuscle={isMuscle} controlsRef={controlsRef} />
         {isMuscle && <MuscleCameraSetup isMuscle={isMuscle} controlsRef={controlsRef} />}
         {isMuscle && <MuscleSmoothZoom controlsRef={controlsRef} />}
 
-      {/* Studio Lighting */}
+      {/* Studio Lighting: the muscle model is Z-up and ~20 units wide, so it keeps a rig
+          tuned to that frame; every other cell shares the biology studio rig. */}
       {isMuscle ? (
         <>
+          <BioStudio preset="organ" scale={1} shadow={false} />
           <directionalLight
             position={[8.93, 38.39, 18.5]}
-            intensity={1.75}
+            intensity={2.2}
             castShadow
-            shadow-mapSize={[1024, 1024]}
-            shadow-bias={-0.001}
-            color="#fff8f0"
+            shadow-mapSize={[2048, 2048]}
+            shadow-bias={-0.0006}
+            shadow-normalBias={0.03}
+            shadow-camera-left={-22}
+            shadow-camera-right={22}
+            shadow-camera-top={22}
+            shadow-camera-bottom={-22}
+            shadow-camera-far={90}
+            color="#fff4e6"
           />
-          <directionalLight
-            position={[-10.6, 16.2, 6.0]}
-            intensity={1.1}
-            color="#dbeafe"
-          />
-          <directionalLight
-            position={[21.2, -12.7, 4.0]}
-            intensity={0.8}
-            color="#bae6fd"
-          />
-          <ambientLight intensity={0.75} />
+          <directionalLight position={[-10.6, 16.2, 6.0]} intensity={1.0} color="#dbe7ff" />
+          <directionalLight position={[21.2, -12.7, 4.0]} intensity={1.4} color="#ffd9b8" />
         </>
       ) : (
-        <>
-          <ambientLight intensity={0.8} />
-          <hemisphereLight skyColor="#ffffff" groundColor="#334155" intensity={0.65} />
-          <directionalLight position={[4.5, 6.0, 5.5]} intensity={1.5} castShadow />
-          <directionalLight position={[-4.5, 2.5, 3.5]} intensity={0.85} color="#e2e8f0" />
-          <pointLight position={[2.5, -1.5, 3.0]} intensity={0.5} color="#94a3b8" />
-        </>
+        <BioStudio preset={cell.modelAsset ? "organ" : "cell"} scale={4} contact={false} />
       )}
 
       <Suspense fallback={null}>

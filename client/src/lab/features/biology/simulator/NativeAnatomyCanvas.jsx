@@ -4,50 +4,53 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { Loader2, AlertCircle, RefreshCw, Scissors, Sparkles, Eye, RotateCcw } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { LIGHTING_PRESETS, setupCanvasDrawable, ANATOMICAL_REGIONS } from "./engine/HtmlCanvasManager";
 import { anatomyAudio } from "./engine/AnatomyAudio";
 
-// Texture & Material mapping for all 23 anatomical meshes
-const BASE = import.meta.env.BASE_URL || "/";
-const TEXTURE_DIR = `${BASE}models/textures/`.replace(/\/+/g, "/");
-const MODEL_URL = `${BASE}models/human_anatomy_draco.glb`.replace(/\/+/g, "/");
+import { assetUrl, DRACO_PATH } from "../shared/loaders";
+
+// Texture & Material mapping for all 23 anatomical meshes.
+// Textures are WebP (albedo/normal 1536px, roughness 1024px); the GLB is Draco-only
+// (the Sketchfab export also shipped 12 MB of unused uncompressed fallback data).
+const TEXTURE_DIR = assetUrl("models/anatomy-tex/");
+export const MODEL_URL = assetUrl("models/human_anatomy.glb");
 
 const MESH_SPECS = {
   // Organs (Moist natural tissue)
-  Brain_2: { map: "Brain_Albedo.jpeg", normal: "Brain_Normal_DirectX.jpeg", roughness: "Brain_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.48, clearcoat: 0.12, specularIntensity: 0.3 },
-  Diafragma_2: { map: "Diafragma_Albedo.jpg", normal: "Diafragma_Normal_DirectX.jpeg", roughness: "Diafragma_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.55, specularIntensity: 0.25 },
-  Eye_2: { map: "eye_Albedo.jpeg", normal: "eye_Normal_DirectX.jpeg", roughness: "eye_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.12, clearcoat: 0.45, specularIntensity: 0.8 },
-  Gallbladder_2: { map: "Galbladder_Mat_Albedo.jpeg", normal: "Galbladder_Mat_Normal_DirectX.jpeg", roughness: "Galbladder_Mat_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.42, clearcoat: 0.15, specularIntensity: 0.3 },
-  Humanlungs_2: { map: "lungs_LP_albedo.jpeg", normal: "lungs_LP_normal.jpeg", roughness: "lungs_LP_roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.58, specularIntensity: 0.25 },
-  Liver_2: { map: "Liver_Mat_Albedo.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.45, clearcoat: 0.12, specularIntensity: 0.3 },
-  Urinary_system_2: { map: "Urinary_System_Albedo.jpeg", normal: "Urinary_System_Normal_DirectX.jpeg", roughness: "Urinary_System_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.45, clearcoat: 0.12, specularIntensity: 0.3 },
-  Digestivesystem_2: { map: "DigestiveSystem_Albedo.jpeg", normal: "DigestiveSystem_Normal_DirectX.jpeg", roughness: "DigestiveSystem_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.5, clearcoat: 0.12, specularIntensity: 0.3 },
-  Heart_2: { map: "Heart_Albedo.jpeg", normal: "Heart_Normal_DirectX.jpeg", roughness: "Heart_Roughness.jpeg", layer: "organs", color: "#ffffff", roughnessVal: 0.38, clearcoat: 0.2, specularIntensity: 0.35 },
+  Brain_2: { map: "Brain_Albedo.webp", normal: "Brain_Normal_DirectX.webp", roughness: "Brain_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.48, clearcoat: 0.12, specularIntensity: 0.3 },
+  Diafragma_2: { map: "Diafragma_Albedo.webp", normal: "Diafragma_Normal_DirectX.webp", roughness: "Diafragma_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.55, specularIntensity: 0.25 },
+  Eye_2: { map: "eye_Albedo.webp", normal: "eye_Normal_DirectX.webp", roughness: "eye_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.12, clearcoat: 0.45, specularIntensity: 0.8 },
+  Gallbladder_2: { map: "Galbladder_Mat_Albedo.webp", normal: "Galbladder_Mat_Normal_DirectX.webp", roughness: "Galbladder_Mat_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.42, clearcoat: 0.15, specularIntensity: 0.3 },
+  Humanlungs_2: { map: "lungs_LP_albedo.webp", normal: "lungs_LP_normal.webp", roughness: "lungs_LP_roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.58, specularIntensity: 0.25 },
+  Liver_2: { map: "Liver_Mat_Albedo.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.45, clearcoat: 0.12, specularIntensity: 0.3 },
+  Urinary_system_2: { map: "Urinary_System_Albedo.webp", normal: "Urinary_System_Normal_DirectX.webp", roughness: "Urinary_System_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.45, clearcoat: 0.12, specularIntensity: 0.3 },
+  Digestivesystem_2: { map: "DigestiveSystem_Albedo.webp", normal: "DigestiveSystem_Normal_DirectX.webp", roughness: "DigestiveSystem_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.5, clearcoat: 0.12, specularIntensity: 0.3 },
+  Heart_2: { map: "Heart_Albedo.webp", normal: "Heart_Normal_DirectX.webp", roughness: "Heart_Roughness.webp", layer: "organs", color: "#ffffff", roughnessVal: 0.38, clearcoat: 0.2, specularIntensity: 0.35 },
   Eyelash_2: { layer: "organs", color: "#18181b", roughnessVal: 0.9, specularIntensity: 0.1 },
 
   // Skeleton (Matte porous ivory bone)
-  Legs_2: { map: "Legs_Albedo.jpeg", normal: "Legs_Normal_DirectX.jpeg", roughness: "Legs_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
-  Pelvis_2: { map: "Pelvis_Albedo.jpeg", normal: "Pelvis_Normal_DirectX.jpeg", roughness: "Pelvis_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
-  Hands_2: { map: "Hands_Albedo.jpeg", normal: "Hands_Normal_DirectX.jpeg", roughness: "Hands_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
-  Ribcage_2: { map: "Ribcage_Albedo.jpeg", normal: "Ribcage_Normal_DirectX.jpeg", roughness: "Ribcage_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
-  Spine_2: { map: "Spine_Albedo.jpeg", normal: "Spine_Normal_DirectX.jpeg", roughness: "Spine_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
-  Skull_2: { map: "Skull_Albedo.jpeg", normal: "Skull_Normal_DirectX.jpeg", roughness: "Skull_Roughness.jpeg", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Legs_2: { map: "Legs_Albedo.webp", normal: "Legs_Normal_DirectX.webp", roughness: "Legs_Roughness.webp", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Pelvis_2: { map: "Pelvis_Albedo.webp", normal: "Pelvis_Normal_DirectX.webp", roughness: "Pelvis_Roughness.webp", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Hands_2: { map: "Hands_Albedo.webp", normal: "Hands_Normal_DirectX.webp", roughness: "Hands_Roughness.webp", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Ribcage_2: { map: "Ribcage_Albedo.webp", normal: "Ribcage_Normal_DirectX.webp", roughness: "Ribcage_Roughness.webp", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Spine_2: { map: "Spine_Albedo.webp", normal: "Spine_Normal_DirectX.webp", roughness: "Spine_Roughness.webp", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
+  Skull_2: { map: "Skull_Albedo.webp", normal: "Skull_Normal_DirectX.webp", roughness: "Skull_Roughness.webp", layer: "skeleton", color: "#ffffff", roughnessVal: 0.75, specularIntensity: 0.2 },
 
   // Muscles (Anatomical striated fibers)
-  Musclespart_1_2: { map: "Muscles_MusclesPart_1_BaseColor.jpg", normal: "Muscles_MusclesPart_1_Normal.jpg", roughness: "Muscles_MusclesPart_1_Roughness.jpg", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
-  Musclespart_2_2: { map: "Muscles_MusclesPart_2_BaseColor.jpg", normal: "Muscles_MusclesPart_2_Normal.jpg", roughness: "Muscles_MusclesPart_2_Roughness.jpg", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
-  Musclespart_3_2: { map: "Muscles_MusclesPart_3_BaseColor.jpg", normal: "Muscles_MusclesPart_3_Normal.jpg", roughness: "Muscles_MusclesPart_3_Roughness.jpg", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
+  Musclespart_1_2: { map: "Muscles_MusclesPart_1_BaseColor.webp", normal: "Muscles_MusclesPart_1_Normal.webp", roughness: "Muscles_MusclesPart_1_Roughness.webp", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
+  Musclespart_2_2: { map: "Muscles_MusclesPart_2_BaseColor.webp", normal: "Muscles_MusclesPart_2_Normal.webp", roughness: "Muscles_MusclesPart_2_Roughness.webp", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
+  Musclespart_3_2: { map: "Muscles_MusclesPart_3_BaseColor.webp", normal: "Muscles_MusclesPart_3_Normal.webp", roughness: "Muscles_MusclesPart_3_Roughness.webp", layer: "muscles", color: "#ffffff", roughnessVal: 0.58, clearcoat: 0.05, specularIntensity: 0.22 },
 
   // Vessels (Circulatory tree)
-  Arteriasmesh_2: { map: "CirculatorySystem_albedo.jpeg", normal: "CirculatorySystem_normal.jpg", roughness: "CirculatorySystem_roughness.jpeg", layer: "vessels", color: "#ffffff", roughnessVal: 0.42, specularIntensity: 0.3 },
-  Venasmesh_2: { map: "CirculatorySystem_albedo.jpeg", normal: "CirculatorySystem_normal.jpg", roughness: "CirculatorySystem_roughness.jpeg", layer: "vessels", color: "#ffffff", roughnessVal: 0.42, specularIntensity: 0.3 },
+  Arteriasmesh_2: { map: "CirculatorySystem_albedo.webp", normal: "CirculatorySystem_normal.webp", roughness: "CirculatorySystem_roughness.webp", layer: "vessels", color: "#ffffff", roughnessVal: 0.42, specularIntensity: 0.3 },
+  Venasmesh_2: { map: "CirculatorySystem_albedo.webp", normal: "CirculatorySystem_normal.webp", roughness: "CirculatorySystem_roughness.webp", layer: "vessels", color: "#ffffff", roughnessVal: 0.42, specularIntensity: 0.3 },
 
   // Skin & Outer (Natural human melanin finish)
   HumanSkin_2: {
-    map: "HumanSkin_BaseColor.jpg",
-    normal: "HumanSkin_Normal.jpg",
-    roughness: "HumanSkin_Roughness.jpg",
+    map: "HumanSkin_BaseColor.webp",
+    normal: "HumanSkin_Normal.webp",
+    roughness: "HumanSkin_Roughness.webp",
     layer: "skin",
     color: "#ffffff",
     roughnessVal: 0.82,
@@ -55,7 +58,7 @@ const MESH_SPECS = {
     sheen: 0.14,
     isSkin: true,
   },
-  Shorts_2: { map: "Shorts_BaseColor.jpg", normal: "Shorts_Normal.jpg", roughness: "Shorts_Roughness.jpg", layer: "skin", color: "#ffffff", roughnessVal: 0.9, specularIntensity: 0.08 },
+  Shorts_2: { map: "Shorts_BaseColor.webp", normal: "Shorts_Normal.webp", roughness: "Shorts_Roughness.webp", layer: "skin", color: "#ffffff", roughnessVal: 0.9, specularIntensity: 0.08 },
 };
 
 const LAYER_RENDER_ORDER = {
@@ -159,6 +162,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
   const [loadProgress, setLoadProgress] = useState(0);
   const [loadError, setLoadError] = useState(null);
   const [modelLoaded, setModelLoaded] = useState(false);
+  const [texturesReady, setTexturesReady] = useState(false);
 
   const onPickRef = useRef(onPick);
   useEffect(() => {
@@ -306,8 +310,9 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     // High-Definition Renderer with transparent canvas & crisp anti-aliasing (Forced 2.0x minimum supersampling)
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setSize(width, height);
-    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2.0), 3.0);
-    renderer.setPixelRatio(dpr);
+    // Native DPR capped at 2: the old forced 2-3x supersampling quadrupled fill cost on laptops/phones.
+    const pickDpr = () => Math.min(window.devicePixelRatio || 1, window.innerWidth < 900 ? 1.5 : 2);
+    renderer.setPixelRatio(pickDpr());
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = true;
@@ -428,10 +433,18 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     const dirLight1 = new THREE.DirectionalLight(0xfffaed, 1.45);
     dirLight1.position.set(-90, 110, 120);
     dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 4096;
-    dirLight1.shadow.mapSize.height = 4096;
-    dirLight1.shadow.bias = -0.0001;
-    dirLight1.shadow.radius = 1.2;
+    dirLight1.shadow.mapSize.width = 2048;
+    dirLight1.shadow.mapSize.height = 2048;
+    dirLight1.shadow.bias = -0.0002;
+    dirLight1.shadow.normalBias = 0.6;
+    dirLight1.shadow.radius = 3;
+    // Tight frustum around the 1.8 m (176 unit) body keeps the 2k map crisp.
+    dirLight1.shadow.camera.left = -110;
+    dirLight1.shadow.camera.right = 110;
+    dirLight1.shadow.camera.top = 110;
+    dirLight1.shadow.camera.bottom = -110;
+    dirLight1.shadow.camera.near = 20;
+    dirLight1.shadow.camera.far = 500;
     scene.add(dirLight1);
 
     // Fill Light - subtle cool fill to gently light shadowed crevices
@@ -692,8 +705,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       const h = container.clientHeight;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2.0), 3.0);
-      renderer.setPixelRatio(dpr);
+      renderer.setPixelRatio(pickDpr());
       renderer.setSize(w, h);
     };
     window.addEventListener("resize", handleResize);
@@ -721,7 +733,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     setLoading(true);
     setLoadError(null);
 
-    const draco = new DRACOLoader().setDecoderPath(`${BASE}draco/`.replace(/\/+/g, "/"));
+    const draco = new DRACOLoader().setDecoderPath(DRACO_PATH);
     const loader = new GLTFLoader().setDRACOLoader(draco);
     const texLoader = new THREE.TextureLoader();
 
@@ -745,15 +757,24 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
         // Textures & Materials setup with Ultra-Sharp Full-Resolution Texture Filtering
         const textureCache = new Map();
-        const maxAniso = rendererRef.current?.capabilities?.getMaxAnisotropy() || 16;
+        const maxAniso = Math.min(8, rendererRef.current?.capabilities?.getMaxAnisotropy() || 8);
+        let texPending = 0;
         const getTex = (filename, isColor = true) => {
           if (!filename) return null;
           if (!textureCache.has(filename)) {
-            const t = texLoader.load(TEXTURE_DIR + filename);
+            texPending += 1;
+            const t = texLoader.load(TEXTURE_DIR + filename, () => {
+              texPending -= 1;
+              if (texPending === 0) setTexturesReady(true);
+            }, undefined, () => {
+              texPending -= 1;
+              if (texPending === 0) setTexturesReady(true);
+            });
             t.colorSpace = isColor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+            // Trilinear + anisotropic: no shimmer at a distance, sharp up close.
             t.anisotropy = maxAniso;
             t.generateMipmaps = true;
-            t.minFilter = THREE.LinearFilter; // Always sharpest 1536x1536 base texture
+            t.minFilter = THREE.LinearMipmapLinearFilter;
             t.magFilter = THREE.LinearFilter;
             textureCache.set(filename, t);
           }
@@ -829,6 +850,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         window.__anatomyBounds = box;
 
         draco.dispose();
+        if (texPending === 0) setTexturesReady(true);
         setLoading(false);
         setModelLoaded(true);
       },
@@ -1100,36 +1122,31 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         style={{ touchAction: "none" }}
       />
 
-      {/* Loading Overlay */}
-      {loading && (
-        <div
-          className={`absolute inset-0 flex flex-col items-center justify-center backdrop-blur-md z-30 transition-colors ${
-            isDay ? "bg-white/90 text-slate-900" : "bg-[#08090d]/90 text-white"
-          }`}
-        >
-          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mb-4" />
-          <h3
-            className={`text-base font-bold tracking-wide ${
-              isDay ? "text-slate-800" : "text-white"
+      {/* Loading Overlay: GLB (2 MB) first, then the WebP texture set streams in behind it */}
+      {(loading || !texturesReady) && !loadError && (
+        <div role="status" className="pointer-events-none absolute inset-0 z-30 grid place-items-center p-6">
+          <div
+            className={`w-full max-w-xs rounded-xl border p-4 shadow-2xl backdrop-blur ${
+              isDay ? "border-slate-200 bg-white/90 text-slate-900" : "border-zinc-800 bg-zinc-950/90 text-white"
             }`}
           >
-            Anatomiya 3D modeli yuklanmoqda...
-          </h3>
-          <p className={`text-xs mt-1 ${isDay ? "text-slate-500" : "text-zinc-400"}`}>
-            Yuqori aniqlikdagi mahalliy WebGL modeli
-          </p>
-          {loadProgress > 0 && (
-            <div
-              className={`w-48 rounded-full h-1.5 mt-3 overflow-hidden ${
-                isDay ? "bg-slate-200" : "bg-zinc-800"
-              }`}
-            >
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-emerald-500" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium">{loading ? "Anatomiya modeli yuklanmoqda" : "Teksturalar yuklanmoqda"}</div>
+                <div className={`truncate text-xs ${isDay ? "text-slate-500" : "text-zinc-400"}`}>
+                  {loading ? "23 ta a'zo · Draco siqilgan GLB" : "61 ta WebP tekstura (teri, mushak, suyak, a'zolar)"}
+                </div>
+              </div>
+              <span className="font-mono text-xs tabular-nums text-emerald-500">{loading ? `${loadProgress}%` : ""}</span>
+            </div>
+            <div className={`mt-3 h-1 overflow-hidden rounded-full ${isDay ? "bg-slate-200" : "bg-zinc-800"}`}>
               <div
-                className="bg-emerald-500 h-full transition-all duration-200"
-                style={{ width: `${loadProgress}%` }}
+                className={`h-full rounded-full bg-emerald-500 transition-all duration-200 ${loading ? "" : "animate-pulse"}`}
+                style={{ width: loading ? `${Math.max(4, loadProgress)}%` : "100%" }}
               />
             </div>
-          )}
+          </div>
         </div>
       )}
 

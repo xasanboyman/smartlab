@@ -33,8 +33,7 @@ import LabRoomClothBanner from "./LabRoomClothBanner";
 
 const FPS_WINDOW = 0.5;
 
-const exposeRendererInDev = ({ gl, scene }) => {
-  if (!import.meta.env.DEV) return;
+const exposeRenderer = ({ gl, scene }) => {
   window.__labRoomGl = gl;
   window.__labScene = scene;
 };
@@ -92,7 +91,7 @@ const LabRoomCanvas = ({
       gl={{ antialias: false, powerPreference: "high-performance", stencil: false }}
       shadows={tier.effects ? "percentage" : false}
       camera={{ fov: debug.fov ?? 70, near: 0.02, far: 80 }}
-      onCreated={exposeRendererInDev}
+      onCreated={debug.enabled || import.meta.env.DEV ? exposeRenderer : undefined}
     >
       <color attach="background" args={["#dfe6ee"]} />
       <Suspense fallback={null}>

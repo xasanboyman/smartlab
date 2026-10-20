@@ -77,14 +77,14 @@ const getAssets = () => {
   return assets;
 };
 
-const CrystallizingDish = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
+const CrystallizingDish = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, cracked = false, ...props }) => {
   const kit = useKit();
   const { vessel, mouth, printGeometry } = getAssets();
   const print = { geometry: printGeometry, material: kit.print("crystallizing-dish-150", createStampTexture) };
 
   return (
     <group {...props}>
-      <GlassVessel vessel={vessel} print={print}>
+      <GlassVessel cracked={cracked} vessel={vessel} print={print}>
         <Contents simId={simId} vessel={mouth} fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }} />
       </GlassVessel>
       <BlobShadow radius={RADIUS * 1.35} opacity={0.3} />

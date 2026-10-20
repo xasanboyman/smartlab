@@ -4,6 +4,7 @@ import { createHazards } from "../hazards/hazardStore";
 import { createMixture } from "../chemistry/mixture";
 import { stepMixture } from "../chemistry/engine";
 import { CONTAINERS } from "./containers";
+import { createJournal } from "./journal";
 
 // Holds the live state behind every lab object: container mixtures and device states, keyed by simId (object id).
 export const createLab = () => {
@@ -24,13 +25,15 @@ export const createLab = () => {
 
   const lab = {
     // Player settings effects must honour (reduceMotion dims flashes and shakes).
-    prefs: { reduceMotion: false },
+    prefs: { reduceMotion: false, goggles: false },
     // Spills, fires, room gas and the alarm.
     hazards: createHazards(),
     // What the player is doing this frame (pouring, heating, stirring…); written by the interaction system.
     activity: {},
     // Reaction pop-ups, warnings and the monitor's current reaction.
     feed: createSnapStore({ items: [], monitor: null, history: [] }),
+    // Chronological experiment log shown in the lab notebook.
+    journal: createJournal(),
     // Short-lived world-space light flashes (pops, bangs, ignition).
     flashes: [],
     // When each repeatable warning was last shown, so toasts don't repeat every step.
@@ -117,6 +120,8 @@ export const createLab = () => {
       lab.notices.clear();
       lab.sounds.length = 0;
       lab.feed.set({ items: [], monitor: null, history: [] });
+      lab.journal.set({ entries: [], seq: 0 });
+      lab.utilityState = {};
       for (const simId of listeners.keys()) notify(simId);
       now = 0;
       generation += 1;

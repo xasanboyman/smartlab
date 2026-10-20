@@ -18,9 +18,12 @@ import {
 import { phOf, phPaperColor, phWord } from "../chemistry/acidity";
 import { CONTAINERS } from "../sim/containers";
 import { spillPortion } from "../sim/spills";
-import { pushFeed } from "../sim/feed";
+import { pushFeed, warnOnce } from "../sim/feed";
 import { pushSound } from "../sound/queue";
 import { SUBSTANCE_PREFIX } from "../world/objectTypes";
+import { displayName } from "../world/prompts";
+import { logJournal } from "../sim/journal";
+import { pourGeometry, pourMaxRate, pourRateAt, pourTilt } from "./pourPhysics";
 
 const DROP_ML = 0.05;
 const DROP_EVERY_S = 0.22;
@@ -248,6 +251,8 @@ export const runClick = (action, { lab, world, held }) => {
     case "lamp-toggle":
       lab.setDevice(target.id, { lit: !device.lit, capOn: device.lit, dousing: 0, boost: 0 });
       pushSound(lab, { type: device.lit ? "click" : "whoosh", position: target.position });
+      logJournal(lab, { kind: "device", text: `${displayName(target.typeId)} ${device.lit ? "o'chirildi" : "yoqildi"}` });
+      if (!device.lit) checkGoggles(lab, { hazards: ["corrosive"] });
       return;
     case "bunsen-air": {
       const airOpen = !(device.airOpen ?? true);
@@ -255,13 +260,17 @@ export const runClick = (action, { lab, world, held }) => {
       pushSound(lab, { type: "click", soft: true });
       return;
     }
-    case "hotplate-heat":
-      lab.setDevice(target.id, { level: (device.level + 1) % HOT_PLATE_STEPS.length });
+    case "hotplate-heat": {
+      const level = (device.level + 1) % HOT_PLATE_STEPS.length;
+      lab.setDevice(target.id, { level });
       pushSound(lab, { type: "click" });
+      logJournal(lab, { kind: "device", text: `Isitgich: ${HOT_PLATE_STEPS[level]}` });
       return;
+    }
     case "hotplate-stir":
       lab.setDevice(target.id, { stir: !device.stir });
       pushSound(lab, { type: "click" });
+      logJournal(lab, { kind: "device", text: `Magnit aralashtirgich ${device.stir ? "o'chirildi" : "yoqildi"}` });
       return;
     case "cover-toggle":
       lab.setDevice(target.id, { coverOn: !device.coverOn });
@@ -321,6 +330,7 @@ export const runClick = (action, { lab, world, held }) => {
       addPowder(lab.mixture(target.id), load.sourceId, load.grams, { label });
       lab.setDevice(held.id, { load: null });
       pushSound(lab, { type: "click", soft: true });
+      logJournal(lab, { kind: "add", text: `${load.grams} g ${label} → ${displayName(target.typeId)}` });
       return;
     }
     case "spatula-return": {
@@ -369,9 +379,12 @@ export const runClick = (action, { lab, world, held }) => {
       });
       return;
     }
-    case "tongs-release":
+    case "tongs-release": {
+      const piece = lab.device(held.id)?.piece;
       moveTongsPiece(lab, held.id, target.id);
+      if (piece) logJournal(lab, { kind: "add", text: `${SPECIES[piece.species]?.formula ?? piece.species} bo'lagi → ${displayName(target.typeId)}` });
       return;
+    }
     case "ph-test": {
       const mixture = lab.mixture(target.id);
       const ph = phOf(mixture) ?? 7;
@@ -399,12 +412,15 @@ const dropOnce = (lab, dropperId, targetId) => {
   return true;
 };
 
-const pourRate = (holdS, sourceTypeId) => {
-  if (holdS < 0.3) return 0;
-  const t = holdS - 0.3;
-  const max = sourceTypeId === "test-tube" || sourceTypeId === "crucible" ? 4 : 18;
-  return Math.min(max, 1.2 + t * t * 7);
+// Pouring acid or alkali without goggles earns a safety warning (the room keeps running).
+const checkGoggles = (lab, substance) => {
+  if (lab.prefs?.goggles || !substance) return;
+  if (substance.hazards?.includes("corrosive")) warnOnce(lab, "no-goggles", 45);
 };
+
+// Fast pours into a narrow neck miss: part of the stream runs down the outside onto the bench.
+const SPLASH_START = 0.6;
+const SPLASH_SHARE = 0.45;
 
 const SPRAY_NOSE = 0.42;
 const SPRAY_DROP = 0.12;
@@ -437,19 +453,42 @@ export const runHold = (action, { lab, world, held }, dt, state) => {
     case "pour": {
       const into = lab.mixture(action.intoId);
       const heldSubstance = substanceOf(held.typeId);
-      const rate = pourRate(state.holdS, held.typeId);
+      const geometry = pourGeometry(lab, held);
+      const tilt = pourTilt(geometry, state.holdS);
+      const maxRate = pourMaxRate(geometry?.kind ?? "bottle");
+      let rate = pourRateAt(geometry, tilt);
       const available = liquidMl(lab, held);
       const free = into ? into.capacityMl - into.volumeMl - 0.3 : 0;
-      const ml = Math.max(0, Math.min(rate * dt, available, free));
+      // A hard pour into a narrow neck overshoots the mouth; that share lands on the bench instead.
+      const splash = into?.narrow && rate > maxRate * SPLASH_START ? ((rate / maxRate - SPLASH_START) / (1 - SPLASH_START)) * SPLASH_SHARE : 0;
+      const missMl = Math.min(available, rate * dt * splash);
+      rate *= 1 - splash;
+      const ml = Math.max(0, Math.min(rate * dt, available - missMl, free));
       activity.pour = {
         sourceId: held.id,
         targetId: target.id,
         intoId: action.intoId,
-        rate: rate / 18,
+        rate: Math.min(1, (rate + rate * splash) / maxRate),
+        tilt,
+        splash,
         addedMl: (activity.pour?.addedMl ?? 0) + ml,
+        label: heldSubstance ? heldSubstance.formula : displayName(held.typeId),
         ...streamLook(lab, held),
       };
       if (heldSubstance) lab.device(held.id).capOn = false;
+      if (!state.goggleChecked && rate > 0) {
+        state.goggleChecked = true;
+        checkGoggles(lab, heldSubstance);
+      }
+      if (missMl > EPS) {
+        const missed = heldSubstance ? reagentPortion(heldSubstance.id, missMl, { label: heldSubstance.formula }) : takePortion(lab.mixture(held.id), missMl);
+        if (heldSubstance) lab.device(held.id).remaining = Math.max(0, lab.device(held.id).remaining - missMl / heldSubstance.container.fillMl);
+        spillPortion(lab, missed, target.position);
+        if (!state.splashNoted) {
+          state.splashNoted = true;
+          world.flash("Sekinroq quying: suyuqlik yonidan to'kilmoqda");
+        }
+      }
       if (ml <= EPS) {
         // A full target means the rest of the pour runs down the outside of the glass.
         if (rate > 0 && free <= 0.05) {
@@ -583,9 +622,14 @@ const filterInto = (lab, funnelId, portion) => {
   lab.setDevice(funnelId, { solidsMl: funnel.solidsMl + ml, solidsColor: color, wet: 1 });
 };
 
-export const endHold = (action, { lab, held }) => {
+export const endHold = (action, { lab, world, held }) => {
   const activity = lab.activity;
   if (action.id === "pour") {
+    const pour = activity.pour;
+    const target = world?.get(action.intoId ?? action.targetId);
+    if (pour && pour.addedMl > 0.2 && target) {
+      logJournal(lab, { kind: "pour", text: `${Math.round(pour.addedMl * 2) / 2} ml ${pour.label} → ${displayName(target.typeId)}` });
+    }
     activity.pour = null;
     if (held && substanceOf(held.typeId)) lab.setDevice(held.id, { capOn: true });
   }

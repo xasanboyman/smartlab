@@ -74,12 +74,12 @@ const getAssets = () => {
   return assets;
 };
 
-const TestTube = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
+const TestTube = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, cracked = false, ...props }) => {
   const { vessel, mouth } = getAssets();
 
   return (
     <group {...props}>
-      <GlassVessel vessel={vessel}>
+      <GlassVessel cracked={cracked} vessel={vessel}>
         <Contents simId={simId} vessel={mouth} fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }} />
       </GlassVessel>
       <BlobShadow radius={RADIUS * 1.5} opacity={0.2} />

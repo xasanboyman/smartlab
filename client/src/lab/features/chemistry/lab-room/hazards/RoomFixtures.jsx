@@ -62,136 +62,6 @@ const step = (nodes, lab, world, light, time) => {
   }
 };
 
-// Dual arched spray jet stream for emergency eyewash
-const EyewashArc = ({ startX, flip, time }) => {
-  const sway = Math.sin(time * 18 + (flip ? 1 : 0)) * 0.003;
-  return (
-    <group position={[startX, 0.07, 0]}>
-      {/* Jet riser */}
-      <mesh position={[flip ? -0.015 : 0.015, 0.04 + sway, 0]} rotation={[0, 0, flip ? 0.45 : -0.45]}>
-        <cylinderGeometry args={[0.005, 0.007, 0.08, 8]} />
-        <meshStandardMaterial color="#b9e6fe" transparent opacity={0.75} roughness={0.06} />
-      </mesh>
-      {/* Jet apex fall */}
-      <mesh position={[flip ? -0.035 : 0.035, 0.02 + sway, 0]} rotation={[0, 0, flip ? 1.15 : -1.15]}>
-        <cylinderGeometry args={[0.004, 0.005, 0.06, 8]} />
-        <meshStandardMaterial color="#bae6fd" transparent opacity={0.7} roughness={0.06} />
-      </mesh>
-    </group>
-  );
-};
-
-// 3D Plumbed Emergency Eyewash Station
-const EyewashStation = ({ active, time }) => {
-  return (
-    <group position={[2.8, 1.05, 3.65]}>
-      {/* Wall supply pipe */}
-      <mesh position={[0, 0, 0.12]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.012, 0.012, 0.24, 12]} />
-        <meshStandardMaterial color="#d1d5db" metalness={0.9} roughness={0.15} />
-      </mesh>
-      {/* Drain pipe down to floor */}
-      <mesh position={[0, -0.52, 0]}>
-        <cylinderGeometry args={[0.016, 0.016, 1.04, 12]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.8} roughness={0.25} />
-      </mesh>
-      {/* Yellow polypropylene catch bowl */}
-      <mesh position={[0, 0, 0]}>
-        <cylinderGeometry args={[0.15, 0.13, 0.07, 24]} />
-        <meshStandardMaterial color="#facc15" roughness={0.35} metalness={0.1} />
-      </mesh>
-      {/* Push-flag actuator paddle */}
-      <mesh position={[0.14, 0.02, 0]} rotation={[0, 0.2, 0]}>
-        <boxGeometry args={[0.07, 0.05, 0.008]} />
-        <meshStandardMaterial color="#eab308" roughness={0.4} />
-      </mesh>
-      {/* Twin spray nozzles */}
-      <mesh position={[-0.045, 0.04, 0]}>
-        <cylinderGeometry args={[0.01, 0.014, 0.025, 12]} />
-        <meshStandardMaterial color="#e5e7eb" metalness={0.85} roughness={0.2} />
-      </mesh>
-      <mesh position={[0.045, 0.04, 0]}>
-        <cylinderGeometry args={[0.01, 0.014, 0.025, 12]} />
-        <meshStandardMaterial color="#e5e7eb" metalness={0.85} roughness={0.2} />
-      </mesh>
-
-      {/* Active aerated water spray jets */}
-      {active && (
-        <>
-          <EyewashArc startX={-0.045} flip={false} time={time} />
-          <EyewashArc startX={0.045} flip={true} time={time} />
-          {/* Froth ring in basin */}
-          <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[0.11, 20]} />
-            <meshStandardMaterial color="#bae6fd" transparent opacity={0.65} roughness={0.1} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-};
-
-// 3D Emergency Safety Shower Fixture
-const SafetyShower = ({ active, time }) => {
-  const ripple = 0.44 + Math.sin(time * 16) * 0.04;
-  return (
-    <group position={[2.8, 2.65, 3.3]}>
-      {/* Supply vertical pipe descending from ceiling */}
-      <mesh position={[0, 0.22, 0]}>
-        <cylinderGeometry args={[0.018, 0.018, 0.45, 12]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.85} roughness={0.2} />
-      </mesh>
-      {/* Horizontal pipe from wall */}
-      <mesh position={[0, 0, 0.18]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.018, 0.018, 0.36, 12]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.85} roughness={0.2} />
-      </mesh>
-      {/* High-visibility yellow drench shower bell */}
-      <mesh position={[0, -0.06, 0]}>
-        <coneGeometry args={[0.13, 0.09, 24, 1, true]} />
-        <meshStandardMaterial color="#facc15" roughness={0.3} metalness={0.2} side={DoubleSide} />
-      </mesh>
-      {/* Perforated drench shower face */}
-      <mesh position={[0, -0.105, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.125, 24]} />
-        <meshStandardMaterial color="#e5e7eb" metalness={0.9} roughness={0.15} />
-      </mesh>
-      {/* Shower pull rod and triangular handle */}
-      <mesh position={[0.08, -0.36, 0]}>
-        <cylinderGeometry args={[0.005, 0.005, 0.62, 8]} />
-        <meshStandardMaterial color="#d1d5db" metalness={0.9} roughness={0.15} />
-      </mesh>
-      <mesh position={[0.08, -0.68, 0]}>
-        <torusGeometry args={[0.04, 0.007, 8, 3]} />
-        <meshStandardMaterial color="#facc15" roughness={0.3} metalness={0.2} />
-      </mesh>
-
-      {/* Active deluge drench cascade */}
-      {active && (
-        <>
-          {/* Falling water deluge cone */}
-          <mesh position={[0, -1.35, 0]} scale={[1, -1, 1]}>
-            <coneGeometry args={[0.42, 2.5, 24, 1, true]} />
-            <meshStandardMaterial
-              color="#c7edfd"
-              transparent
-              opacity={0.48}
-              roughness={0.08}
-              depthWrite={false}
-              side={DoubleSide}
-            />
-          </mesh>
-          {/* Floor splash pool */}
-          <mesh position={[0, -2.63, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <circleGeometry args={[ripple, 24]} />
-            <meshStandardMaterial color="#bae6fd" transparent opacity={0.6} roughness={0.1} />
-          </mesh>
-        </>
-      )}
-    </group>
-  );
-};
-
 // 3D Realistic Translucent Laminar Sink Faucet Water Stream & Basin Drain Splash
 const SinkFaucetStream = ({ active, time }) => {
   if (!active) return null;
@@ -480,8 +350,6 @@ const Fixtures = ({ lab, world }) => {
     step(nodes, lab, world, lightRef.current, clock.elapsedTime);
   });
 
-  const eyewashActive = Boolean(lab.utilityState?.eyewash);
-  const showerActive = Boolean(lab.utilityState?.shower);
   const faucetActive = Boolean(lab.utilityState?.faucet);
   const gasOpen = lab.utilityState?.gasOpen ?? true;
 
@@ -490,8 +358,6 @@ const Fixtures = ({ lab, world }) => {
       <pointLight ref={lightRef} position={[-4.15, 2.42, 3.6]} color="#ff2b1d" intensity={0} distance={5} />
 
       {/* Safety infrastructure */}
-      <EyewashStation active={eyewashActive} time={timeRef.current} />
-      <SafetyShower active={showerActive} time={timeRef.current} />
       <SinkFaucetStream active={faucetActive} time={timeRef.current} />
       <GasShutoffBox gasOpen={gasOpen} />
       <FireBlanket />

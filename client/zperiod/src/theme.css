@@ -1,0 +1,261 @@
+/* SmartLab lab-console theme for the natively mounted Zperiod. Loaded last; scoped under .zp-root
+   at build time like every other stylesheet. Element category colours stay as upstream (pastel tiles
+   with dark text read well on the dark background). */
+:root {
+  --bg-color: #070a12;
+  --element-bg: #121a2e;
+  --element-hover: #1a2440;
+  --text-primary: #e8eefc;
+  --text-secondary: #b4c2dd;
+  --text-muted: #7f91b5;
+  --text-highlight: #93c5fd;
+  --border-color: #1e2942;
+  --modal-bg-glass: rgba(14, 20, 36, 0.97);
+  --modal-text-main: #e8eefc;
+  --modal-text-sub: #b4c2dd;
+  --zp-panel: #0e1424;
+  --zp-panel-2: #121a2e;
+  --zp-accent: #2563eb;
+  --zp-accent-soft: rgba(37, 99, 235, 0.18);
+  --zp-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* host box */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: inherit;
+  background: var(--bg-color);
+  color: var(--text-primary);
+}
+body {
+  position: relative;
+}
+.global-nav {
+  display: none !important;
+}
+
+/* The element search lives in the SmartLab bar (moved there by the embed). */
+.element-search-wrapper {
+  max-width: 100%;
+}
+.element-search-input {
+  background: var(--zp-panel-2);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.element-search-input::placeholder {
+  color: var(--text-muted);
+}
+.element-search-input:focus {
+  background: #15203a;
+  border-color: var(--zp-accent);
+  box-shadow: 0 0 0 3px var(--zp-accent-soft);
+}
+.element-search-results {
+  background: var(--zp-panel);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+.element-search-result:hover,
+.element-search-result.active {
+  background: var(--element-hover);
+}
+
+/* pages fill the host instead of the viewport */
+#main-container {
+  min-width: 0;
+  padding: 14px 16px 10px;
+}
+.blank-page {
+  position: absolute;
+  padding-top: 0;
+}
+.blank-page-content {
+  padding: 24px;
+}
+.ions-container {
+  padding-top: 16px;
+}
+.worksheet-generator-page {
+  padding-top: 16px;
+}
+.chemistry-tools-page::before {
+  display: none;
+}
+
+/* cards & panels */
+.chem-tool-card,
+.sv-card,
+.sv-link-card,
+.worksheet-controls,
+.worksheet-preview,
+.sv-changelog,
+.legend-item,
+.eit-controller,
+.eit-mode-btn,
+.eit-dropdown-menu {
+  background: var(--zp-panel-2);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+.chem-tool-card:hover {
+  background: var(--element-hover);
+}
+.chem-tool-name,
+.sv-card h3,
+.worksheet-title,
+.preview-header h3 {
+  color: var(--text-primary);
+}
+.chem-tool-desc,
+.sv-suggest-hint,
+.worksheet-subtitle {
+  color: var(--text-secondary);
+}
+.chem-tools-title,
+.chem-tools-subtitle {
+  color: var(--text-primary);
+}
+
+/* modals */
+.modal-content,
+.tool-modal-content,
+.feature-modal-content {
+  background: var(--modal-bg-glass);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* keyboard focus ring on table cells */
+.element:focus-visible {
+  outline: 2px solid var(--zp-accent);
+  outline-offset: 2px;
+}
+
+/* Modal-only mode: the root is attached to <body> just to show the element card. */
+.zp-modal-only {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  background: transparent;
+  overflow: visible;
+}
+.zp-modal-only > :not(#element-modal) {
+  display: none !important;
+}
+.zp-modal-only #element-modal {
+  pointer-events: auto;
+}
+
+/* Category-coloured tiles keep dark ink (the pastel fills stay as upstream). */
+.element,
+.element .symbol,
+.element .number,
+.element .name,
+.ion-element,
+.ion-element * {
+  color: #1c2130;
+}
+.element.lanthanide,
+.element.actinide {
+  color: #1c2130;
+}
+
+/* legend chips, EIT controls */
+.legend-item {
+  background: var(--zp-panel-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.legend-item.active,
+.legend-item:hover {
+  background: var(--element-hover);
+  color: var(--text-primary);
+}
+.eit-controller,
+.eit-property-trigger,
+.eit-mode-group,
+.eit-property-panel,
+.eit-chip,
+.eit-reset-btn {
+  background: var(--zp-panel-2);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+.eit-trigger-prefix,
+.eit-current-property,
+.eit-trigger-caret,
+.eit-trigger-icon,
+.eit-chip-group-label,
+.eit-panel-title {
+  color: var(--text-primary);
+}
+.eit-mode-btn {
+  color: var(--text-secondary);
+}
+.eit-mode-btn.active {
+  color: #fff;
+}
+.eit-mode-slider {
+  background: var(--zp-accent);
+}
+.eit-chip.active {
+  background: var(--zp-accent);
+  color: #fff;
+}
+
+/* ions page headings */
+.ion-section-title,
+.ions-section-title,
+.ion-group-title {
+  color: var(--text-primary);
+}
+
+/* element card header sits on a pastel category tint: dark ink */
+.headline-name,
+.headline-mass,
+.headline-atomic,
+.headline-symbol {
+  color: #1c2130;
+}
+.ion-table-section h3,
+.ion-table-group-header {
+  color: var(--text-primary);
+}
+
+/* polish: card header ink, balancer input groups, worksheet summary strip */
+.headline-name,
+.headline-mass,
+.headline-atomic,
+.headline-symbol {
+  color: #0b1220 !important;
+  opacity: 1 !important;
+}
+.balancer-input-group,
+.balancer-input-group:hover,
+.balancer-input-group:focus-within {
+  background: var(--zp-panel-2);
+  border-color: var(--border-color);
+}
+.balancer-input-group input,
+.balancer-input-label {
+  color: var(--text-primary);
+  background: transparent;
+}
+.preview-summary-bar {
+  background: var(--zp-panel-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.preview-summary-bar * {
+  color: var(--text-secondary);
+}
+.tool-padding-label,
+.tool-modal-title,
+.tool-modal-title-group {
+  color: var(--text-primary);
+}

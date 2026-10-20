@@ -221,14 +221,14 @@ const getAssets = () => {
   return assets;
 };
 
-const MeasuringCylinder = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
+const MeasuringCylinder = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, cracked = false, ...props }) => {
   const kit = useKit();
   const { vessel, mouth, foot, printGeometry, createTexture } = getAssets();
   const print = { geometry: printGeometry, material: kit.print("measuring-cylinder-100", createTexture) };
 
   return (
     <group {...props}>
-      <GlassVessel vessel={vessel} print={print}>
+      <GlassVessel cracked={cracked} vessel={vessel} print={print}>
         <Contents simId={simId} vessel={mouth} fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }} />
       </GlassVessel>
       <mesh geometry={foot} material={kit.glass} renderOrder={3} />

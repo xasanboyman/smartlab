@@ -15,6 +15,7 @@ import {
   BookOpen,
   Laptop,
   MousePointer,
+  ShieldCheck,
 } from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
 import { createSnapStore } from "@/shared/utils/snapStore";
@@ -42,6 +43,8 @@ import ReactionFeed from "./hud/ReactionFeed";
 import HazardOverlay from "./components/HazardOverlay";
 import MonitorReader from "./hud/MonitorReader";
 import TelemetryHUD from "./hud/TelemetryHUD";
+import { createDebugHandle, parsePose } from "./debug/labDebug";
+import { logJournal } from "./sim/journal";
 
 // Embedded frames without the pointer-lock permission can't capture the mouse.
 const pointerLockBlocked = () => document.featurePolicy?.allowsFeature?.("pointer-lock") === false;
@@ -50,24 +53,22 @@ const DEG = Math.PI / 180;
 
 const applyLabPrefs = (lab, settings, tier) => {
   lab.prefs.reduceMotion = Boolean(settings.reduceMotion);
+  lab.prefs.goggles = Boolean(settings.goggles);
   lab.prefs.tier = tier;
 };
 
-// Dev-only review helpers: ?debug=colliders &pose=x,z,yawDeg,pitchDeg &autostart=1 &hud=0 &showcase= &fxlab= &effects= &hazard= &t= &spacing= &eye= &fov= &lm=
+// Review helpers: ?debug=1 (any build) or the dev server. &pose=bench|cabinet|sink|x,z,yawDeg,pitchDeg &autostart=1 (enter without
+// pointer lock) &hud=0 &showcase= &fxlab= &effects= &hazard= &t= &spacing= &eye= &fov= &lm= &debug=colliders
 const readDebugParams = () => {
-  const off = { colliders: false, pose: null, autostart: false, hud: true, showcase: null, fxlab: null, effects: null, hazard: null, t: null, eye: null, fov: null, lightmap: null, spacing: null };
-  if (!import.meta.env.DEV) return off;
+  const off = { enabled: false, colliders: false, pose: null, autostart: false, hud: true, showcase: null, fxlab: null, effects: null, hazard: null, t: null, eye: null, fov: null, lightmap: null, spacing: null };
   const params = new URLSearchParams(window.location.search);
-  const parts = params.get("pose")?.split(",").map(Number);
-  const pose =
-    parts?.length === 4 && parts.every(Number.isFinite)
-      ? { x: parts[0], z: parts[1], yaw: parts[2] * DEG, pitch: parts[3] * DEG }
-      : null;
+  if (!import.meta.env.DEV && !params.has("debug")) return off;
   const number = (key) => (params.has(key) && Number.isFinite(Number(params.get(key))) ? Number(params.get(key)) : null);
   return {
     ...off,
+    enabled: true,
     colliders: params.get("debug") === "colliders",
-    pose,
+    pose: parsePose(params.get("pose")),
     autostart: params.get("autostart") === "1",
     hud: params.get("hud") !== "0",
     showcase: params.get("showcase"),
@@ -170,21 +171,26 @@ const LabRoomPage = () => {
     applyLabPrefs(lab, settings, tierName);
   }, [settings, lab, tierName]);
 
-  // Dev-only handle for automated walk-through tests.
+  // Scripted review handle (window.__lab) for headless screenshots; only with ?debug=1 or the dev server.
   useEffect(() => {
-    if (!import.meta.env.DEV) return undefined;
-    // aimAt([x, y, z], standOff): stand on the student side of a point and look straight at it.
-    const aimAt = (point, standOff = 0.6, eye = 1.65) => {
-      const [x, y, z] = point;
-      const from = { x, z: z + standOff };
-      const pose = { x: from.x, z: from.z, yaw: 0, pitch: Math.atan2(y - eye, standOff) };
-      teleportRef.current = { token: teleportRef.current.token + 1, pose };
-    };
-    window.__labRoom = { pose: () => poseRef.current, phase: () => phaseRef.current, mode: () => modeRef.current, world, lab, thumbs, input: inputRef, aimAt };
+    if (!boot.debug.enabled) return undefined;
+    window.__lab = createDebugHandle({
+      world,
+      lab,
+      inputRef,
+      teleportRef,
+      poseRef,
+      phaseRef,
+      modeRef,
+      actions: actionsRef,
+      settings: { get: () => settingsRef.current, set: (key, value) => setters.current.setField("settings", { ...settingsRef.current, [key]: value }) },
+    });
+    window.__labRoom = { pose: () => poseRef.current, phase: () => phaseRef.current, mode: () => modeRef.current, world, lab, thumbs, input: inputRef };
     return () => {
+      delete window.__lab;
       delete window.__labRoom;
     };
-  }, [world, lab, thumbs, inputRef]);
+  }, [boot, world, lab, thumbs, inputRef]);
 
   useEffect(() => {
     let alive = true;
@@ -293,6 +299,12 @@ const LabRoomPage = () => {
           playRef.current();
         }
       },
+      toggleGoggles: () => {
+        const next = !settingsRef.current.goggles;
+        setters.current.setField("settings", { ...settingsRef.current, goggles: next });
+        world.flash(next ? "Himoya ko'zoynagi taqildi" : "Himoya ko'zoynagi yechildi");
+        logJournal(lab, { kind: "note", text: next ? "Himoya ko'zoynagi taqildi" : "Himoya ko'zoynagi yechildi" });
+      },
       exit: () => {
         if (document.pointerLockElement) document.exitPointerLock();
         navigate(BACK_TO);
@@ -328,7 +340,12 @@ const LabRoomPage = () => {
         setters.current.setFields({ phase: "paused", view: "main" });
         return;
       }
-      if (e.code !== "KeyE" || e.repeat || e.target instanceof HTMLInputElement) return;
+      if (e.repeat || e.target instanceof HTMLInputElement) return;
+      if (e.code === "KeyQ" && (phaseRef.current === "playing" || phaseRef.current === "menu")) {
+        actionsRef.current.toggleGoggles();
+        return;
+      }
+      if (e.code !== "KeyE") return;
       if (phaseRef.current === "playing") actionsRef.current.openCabinet();
       else if (phaseRef.current === "menu") actionsRef.current.closeCabinet();
     };
@@ -462,6 +479,20 @@ const LabRoomPage = () => {
               >
                 <BookOpen className="size-3.5 text-violet-400" />
                 <span>Daftarcha</span>
+              </button>
+
+              {/* Safety goggles */}
+              <button
+                type="button"
+                onClick={actions.toggleGoggles}
+                title={settings.goggles ? "Ko'zoynakni yechish (Q)" : "Himoya ko'zoynagini taqish (Q)"}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition cursor-pointer",
+                  settings.goggles ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30" : "text-zinc-300 hover:bg-zinc-800 hover:text-white",
+                )}
+              >
+                <ShieldCheck className={cn("size-3.5", settings.goggles ? "text-emerald-400" : "text-zinc-400")} />
+                <span>Ko'zoynak (Q)</span>
               </button>
 
               <div className="h-3 w-px bg-zinc-800" />

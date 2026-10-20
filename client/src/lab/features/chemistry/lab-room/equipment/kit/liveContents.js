@@ -1,4 +1,4 @@
-import { Color, Euler, Group, InstancedMesh, Matrix4, Mesh, Quaternion, Vector3 } from "three";
+import { CapsuleGeometry, Color, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from "three";
 import { profileTable } from "./profileTable";
 import { columnGeometry, crystalGeometry, discGeometry, fluidGeometry, layerGeometry } from "./contentsGeometry";
 import { createFluidAbsorbMaterial, createFluidScatterMaterial, createFluidUniforms } from "./liquidShading";
@@ -28,6 +28,17 @@ const CHAR_STOPS = ["#f7f6f2", "#d9b44a", "#6b3e1e", "#111111"].map((hex) => new
 const POINT_FLAMES = ["magnesium", "sodium", "hydrogen", "sodium-water"];
 const FLASH_COLORS = { magnesium: "#ffffff", sodium: "#ffc400", hydrogen: "#bcd4ff", permanganate: "#d98cff" };
 const WHITE = new Color(1, 1, 1);
+// PTFE stir bar (25 × 6 mm) shared by every vessel; it only shows while a magnetic stirrer drives it.
+let stirBarGeometry = null;
+let stirBarMaterial = null;
+const stirBarAssets = () => {
+  if (!stirBarGeometry) {
+    stirBarGeometry = new CapsuleGeometry(0.003, 0.019, 3, 10);
+    stirBarGeometry.rotateZ(Math.PI / 2);
+    stirBarMaterial = new MeshStandardMaterial({ color: "#f4f4f1", roughness: 0.55 });
+  }
+  return { geometry: stirBarGeometry, material: stirBarMaterial };
+};
 
 const matrix = new Matrix4();
 const scratchPos = new Vector3();
@@ -162,7 +173,10 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
 
   const anchors = { vent: new Group(), pool: new Group(), point: new Group() };
   anchors.vent.position.y = mouthY;
-  group.add(absorb, scatter, bed, floating, foam, column, crystals);
+  const stirBar = hidden(new Mesh(stirBarAssets().geometry, stirBarAssets().material));
+  stirBar.renderOrder = 2.02;
+  stirBar.position.y = table.floor + 0.0032;
+  group.add(absorb, scatter, bed, floating, foam, column, crystals, stirBar);
 
   const slots = Array.from({ length: MAX_PIECE_SLOTS }, (_, i) => ({
     species: null,
@@ -230,6 +244,8 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
     flash: 0,
     growth: 0,
     slosh: 0,
+    vortex: 0,
+    spin: 0,
     prevWorldPos: new Vector3(),
     prevWorldVel: new Vector3(),
   };
@@ -433,7 +449,7 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
     uniforms.uWisps.value = s.gasOpacity > 0.02 ? 1 : 0;
     uniforms.uBoil.value = s.boil;
     uniforms.uRipple.value = s.ripple;
-    uniforms.uSlosh.value = s.slosh;
+    uniforms.uSlosh.value = s.slosh + s.vortex * 0.35;
     uniforms.uPlume.value = s.plume;
     uniforms.uSchlieren.value = high ? s.schlieren : 0;
     return { liquid, surfaceRadius };
@@ -564,10 +580,19 @@ export const createLiveContents = ({ innerProfile, mouthY, mouthR, meniscus = 0.
     params.flash.color = FLASH_COLORS[s.flameKind] ?? "#ffffff";
   };
 
-  const update = (visual, dt, time) => {
+  const update = (visual, dt, time, extras = null) => {
     const step = Math.min(dt, 0.1);
     const k = s.first ? 1 : ease(step, COLOR_TAU);
     const fx = visual.fx ?? {};
+
+    // Stirring: the surface dimples and spins; a stir bar shows only on a magnetic stirrer.
+    s.vortex += ((extras?.stir ?? 0) - s.vortex) * ease(step, 0.6);
+    uniforms.uVortex.value = s.vortex;
+    stirBar.visible = Boolean(extras?.stirBar) && visual.volumeMl > 0.5;
+    if (stirBar.visible) {
+      s.spin += step * 26 * s.vortex;
+      stirBar.rotation.y = s.spin;
+    }
 
     const bedMl = visual.bed?.ml ?? 0;
     s.bedTop = table.levelForMl(bedMl);

@@ -3,35 +3,47 @@
 // Colors follow the Jmol/CPK scheme. Formulas stay ASCII so parseFormula works;
 // pretty subscripts are rendered by <FormulaText>. UI text in Uzbek.
 
-// Per-element render data, keyed by chemical symbol.
+import { getElement, ELEMENT_LIST } from "@zperiod/elements";
+
+// Per-element CPK render data (colour, radius), keyed by chemical symbol. Names come from Zperiod.
 const EL = {
-  H: { color: "#eef2f7", radius: 0.3, name: "Vodorod" },
-  C: { color: "#3b3f46", radius: 0.42, name: "Uglerod" },
-  N: { color: "#3050f8", radius: 0.4, name: "Azot" },
-  O: { color: "#ef4444", radius: 0.4, name: "Kislorod" },
-  S: { color: "#e0c000", radius: 0.5, name: "Oltingugurt" },
-  Cl: { color: "#1fd01f", radius: 0.48, name: "Xlor" },
-  Na: { color: "#ab5cf2", radius: 0.55, name: "Natriy" },
-  K: { color: "#8f40d4", radius: 0.62, name: "Kaliy" },
-  Ca: { color: "#3dff00", radius: 0.58, name: "Kalsiy" },
-  Mg: { color: "#8aff00", radius: 0.5, name: "Magniy" },
-  Mn: { color: "#9c7ac7", radius: 0.5, name: "Marganets" },
-  Fe: { color: "#e06633", radius: 0.5, name: "Temir" },
-  Cu: { color: "#c88033", radius: 0.5, name: "Mis" },
-  Zn: { color: "#7d80b0", radius: 0.5, name: "Rux" },
-  P: { color: "#ff8000", radius: 0.47, name: "Fosfor" },
-  Br: { color: "#a62929", radius: 0.5, name: "Brom" },
-  I: { color: "#940094", radius: 0.55, name: "Yod" },
-  B: { color: "#ffb5b5", radius: 0.42, name: "Bor" },
-  F: { color: "#90e050", radius: 0.34, name: "Ftor" },
-  Si: { color: "#f0c8a0", radius: 0.5, name: "Kremniy" },
-  Co: { color: "#f090a0", radius: 0.5, name: "Kobalt" },
+  H: { color: "#eef2f7", radius: 0.3 },
+  C: { color: "#3b3f46", radius: 0.42 },
+  N: { color: "#3050f8", radius: 0.4 },
+  O: { color: "#ef4444", radius: 0.4 },
+  S: { color: "#e0c000", radius: 0.5 },
+  Cl: { color: "#1fd01f", radius: 0.48 },
+  Na: { color: "#ab5cf2", radius: 0.55 },
+  K: { color: "#8f40d4", radius: 0.62 },
+  Ca: { color: "#3dff00", radius: 0.58 },
+  Mg: { color: "#8aff00", radius: 0.5 },
+  Mn: { color: "#9c7ac7", radius: 0.5 },
+  Fe: { color: "#e06633", radius: 0.5 },
+  Cu: { color: "#c88033", radius: 0.5 },
+  Zn: { color: "#7d80b0", radius: 0.5 },
+  P: { color: "#ff8000", radius: 0.47 },
+  Br: { color: "#a62929", radius: 0.5 },
+  I: { color: "#940094", radius: 0.55 },
+  B: { color: "#ffb5b5", radius: 0.42 },
+  F: { color: "#90e050", radius: 0.34 },
+  Si: { color: "#f0c8a0", radius: 0.5 },
+  Co: { color: "#f090a0", radius: 0.5 },
 };
 
-export const ELEMENTS = EL;
+const FALLBACK_RENDER = { color: "#ff1493", radius: 0.45 };
 
-export const getElementMeta = (symbol) =>
-  EL[symbol] ?? { color: "#ff1493", radius: 0.45, name: symbol };
+// Zperiod element record (Uzbek name, number, mass, category…) merged with CPK render data.
+const withRender = (symbol) => {
+  const z = getElement(symbol);
+  const render = EL[symbol] ?? FALLBACK_RENDER;
+  return { ...render, ...(z ?? { symbol, name: symbol }) };
+};
+
+export const ELEMENTS = Object.fromEntries(
+  [...new Set([...Object.keys(EL), ...ELEMENT_LIST.map((e) => e.symbol)])].map((s) => [s, withRender(s)]),
+);
+
+export const getElementMeta = (symbol) => ELEMENTS[symbol] ?? withRender(symbol);
 
 // Curated dataset. Where available, atom coordinates come from PubChem 3D
 // conformers; the rest are built from standard geometries.

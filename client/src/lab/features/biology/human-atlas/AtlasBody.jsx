@@ -5,12 +5,10 @@
 // nur bilan tekshiriladi. Sahna faqat o'zgarganda chiziladi (frameloop=demand).
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { useSceneControlOptional } from "@/lab/components/sceneControl";
-import { fetchChunk } from "./api/atlas.api";
+import { decodePart, decoderReady, fetchChunk, isMeshoptAtlas } from "./api/atlas.api";
 import { createExplosionLayout } from "./explosionLayout";
 import { SYSTEMS, SYSTEM_BY_ID } from "./data/systems";
 
@@ -83,15 +81,6 @@ const AtlasBody = ({
   // Render holati: tekstura, materiallar, pickerlar, animatsiya qiymatlari.
   const rt = useRef(null);
 
-  // Studiya muhiti (RoomEnvironment) - anatomiya materiallari yumshoq yaltiraydi.
-  const envMap = useMemo(() => {
-    const pmrem = new THREE.PMREMGenerator(gl);
-    const texture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    pmrem.dispose();
-    return texture;
-  }, [gl]);
-  useEffect(() => () => envMap.dispose(), [envMap]);
-
   // Geometriyani yuklash va tizim bo'yicha birlashtirish.
   useEffect(() => {
     const group = groupRef.current;
@@ -108,15 +97,19 @@ const AtlasBody = ({
     const materials = [];
     const materialFor = (systemId) => {
       const skin = systemId === "integumentary";
-      const m = new THREE.MeshStandardMaterial({
+      // Wet-tissue finish: a little clearcoat on organs/vessels, matte bone, glassy skin.
+      const bone = systemId === "skeletal" || systemId === "connective";
+      const m = new THREE.MeshPhysicalMaterial({
         color: SYSTEM_BY_ID[systemId]?.color || "#aebbb8",
-        metalness: 0.08,
-        roughness: 0.53,
+        metalness: 0.02,
+        roughness: bone ? 0.62 : 0.48,
+        clearcoat: skin ? 0.8 : bone ? 0.05 : 0.3,
+        clearcoatRoughness: 0.35,
         side: THREE.DoubleSide,
         transparent: skin,
-        opacity: skin ? 0.12 : 1,
+        opacity: skin ? 0.14 : 1,
         depthWrite: !skin,
-        envMapIntensity: 0.7,
+        envMapIntensity: 0.6,
       });
       m.onBeforeCompile = (shader) => {
         shader.uniforms.partState = { value: stateTexture };
@@ -163,19 +156,30 @@ const AtlasBody = ({
 
     const abort = new AbortController();
     let disposed = false;
-    let loaded = 0;
+    const totalBytes = atlas.chunks.reduce((n, c) => n + (c.gzipBytes || c.bytes), 0);
+    const received = new Array(atlas.chunks.length).fill(0);
+    const report = () => {
+      const got = received.reduce((a, b) => a + b, 0);
+      cb.current.onProgress?.(Math.min(99, Math.round((got / totalBytes) * 100)));
+    };
 
     const loadChunk = async (ci) => {
-      const buffer = await fetchChunk(atlas.chunks[ci], abort.signal);
+      const buffer = await fetchChunk(atlas.chunks[ci], abort.signal, (n) => {
+        received[ci] = n;
+        report();
+      });
+      if (disposed) return;
+      if (isMeshoptAtlas(atlas)) await decoderReady();
       if (disposed) return;
       const groups = new Map();
       parts.forEach((p, i) => {
         if (p.chunk !== ci) return;
+        const data = decodePart(buffer, p, atlas);
         const g = new THREE.BufferGeometry();
-        g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(buffer, p.positions, p.vertexCount * 3), 3));
+        g.setAttribute("position", new THREE.BufferAttribute(data.position, 3));
         // Normallar 16-bitli - butun atlas xotirada ixcham turadi.
-        g.setAttribute("normal", new THREE.BufferAttribute(new Int16Array(buffer, p.normals, p.vertexCount * 3), 3, true));
-        g.setIndex(new THREE.BufferAttribute(new Uint32Array(buffer, p.indices, p.indexCount), 1));
+        g.setAttribute("normal", new THREE.BufferAttribute(data.normal, 3, true));
+        g.setIndex(new THREE.BufferAttribute(data.index, 1));
         g.setAttribute("partIndex", new THREE.BufferAttribute(new Float32Array(p.vertexCount).fill(i), 1));
         g.boundingBox = geometryInfo.bounds[i].clone();
         g.computeBoundingSphere();
@@ -196,9 +200,9 @@ const AtlasBody = ({
         group.add(mesh);
         state.meshes.push(mesh);
       });
-      loaded += 1;
+      received[ci] = atlas.chunks[ci].gzipBytes || atlas.chunks[ci].bytes;
+      report();
       state.lastKey = "";
-      cb.current.onProgress?.(Math.round((loaded / atlas.chunks.length) * 100));
       invalidate();
     };
 
@@ -216,6 +220,7 @@ const AtlasBody = ({
         );
         if (!disposed) {
           state.ready = true;
+          cb.current.onProgress?.(100);
           invalidate();
         }
       } catch (e) {
@@ -424,21 +429,24 @@ const AtlasBody = ({
 
   return (
     <group ref={groupRef} position={[0, -STAGE_OFFSET, 0]}>
-      <Environment map={envMap} />
       {/* Studiya supasi - portlatilganda yashiriladi (useFrame emas, oddiy prop). */}
       {explode < 0.5 && !isolate && (
         <group>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.019, 0]}>
             <circleGeometry args={[30, 96]} />
-            <meshStandardMaterial color="#e4e6ea" roughness={1} />
+            <meshStandardMaterial color="#0f141c" roughness={0.95} />
           </mesh>
           <mesh position={[0, -0.016, 0]}>
             <cylinderGeometry args={[0.68, 0.7, 0.028, 100]} />
-            <meshStandardMaterial color="#f1f0f4" metalness={0.12} roughness={0.67} />
+            <meshStandardMaterial color="#1a2230" metalness={0.3} roughness={0.5} />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
-            <ringGeometry args={[0.63, 0.633, 128]} />
-            <meshBasicMaterial color="#8b7bb8" transparent opacity={0.45} side={THREE.DoubleSide} />
+            <ringGeometry args={[0.63, 0.636, 128]} />
+            <meshBasicMaterial color="#34d399" transparent opacity={0.6} side={THREE.DoubleSide} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.0015, 0]}>
+            <ringGeometry args={[0.9, 0.903, 128]} />
+            <meshBasicMaterial color="#34d399" transparent opacity={0.18} side={THREE.DoubleSide} />
           </mesh>
         </group>
       )}

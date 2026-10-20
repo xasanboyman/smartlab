@@ -55,14 +55,14 @@ const getAssets = () => {
   return assets;
 };
 
-const Beaker = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
+const Beaker = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, cracked = false, ...props }) => {
   const kit = useKit();
   const { vessel, mouth, createTexture, printGeometry } = getAssets();
   const print = { geometry: printGeometry, material: kit.print("beaker-250", createTexture) };
 
   return (
     <group {...props}>
-      <GlassVessel vessel={vessel} print={print}>
+      <GlassVessel cracked={cracked} vessel={vessel} print={print}>
         <Contents simId={simId} vessel={mouth} fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }} />
       </GlassVessel>
       <BlobShadow radius={RADIUS * 1.45} opacity={0.28} />

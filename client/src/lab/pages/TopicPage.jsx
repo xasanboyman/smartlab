@@ -4,6 +4,10 @@ import { lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import NotFoundPage from "./NotFoundPage";
 
+const ZperiodPage = lazy(() =>
+  import("@/lab/features/chemistry/zperiod/ZperiodPage"),
+);
+
 const PAGES = {
   // One page for all human-anatomy systems; the active one is picked in-page.
   "biology/anatomy": lazy(() =>
@@ -20,12 +24,13 @@ const PAGES = {
   "chemistry/lab-html": lazy(() =>
     import("@/lab/features/chemistry/html-lab/HtmlLabPage"),
   ),
-  "chemistry/atoms": lazy(() =>
-    import("@/lab/features/chemistry/atoms/AtomsPage"),
-  ),
-  "chemistry/periodic-table": lazy(() =>
-    import("@/lab/features/chemistry/periodic/PeriodicTablePage"),
-  ),
+  // Zperiod sub-app (vendored at client/zperiod): one lazy component for all four sections so
+  // switching tabs keeps the framed app mounted.
+  "chemistry/periodic-table": ZperiodPage,
+  "chemistry/ions": ZperiodPage,
+  "chemistry/chem-tools": ZperiodPage,
+  "chemistry/worksheet": ZperiodPage,
+  "chemistry/chem-settings": ZperiodPage,
   "biology/cell": lazy(() => import("@/lab/features/biology/cell/CellPage")),
   "biology/cell-studio": lazy(() =>
     import("@/lab/features/biology/cell-studio/CellStudioPage"),

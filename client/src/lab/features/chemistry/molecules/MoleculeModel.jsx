@@ -7,6 +7,9 @@ import * as THREE from "three";
 import { usePausableFrame } from "@/lab/components/usePausableFrame";
 import { getElementMeta } from "@/lab/data/molecules";
 
+// Lazy: the Zperiod module (element card with the 3D atom) is only fetched on the first click.
+const openElement = (symbol) => import("@zperiod/embed").then((m) => m.openElement(symbol));
+
 const BOND_RADIUS = 0.09;
 const MULTI_BOND_SEP = 0.16;
 const TARGET_RADIUS = 2.3;
@@ -82,6 +85,10 @@ const Atom = ({ el, pos }) => {
           setHover(true);
         }}
         onPointerOut={() => setHover(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          openElement(el);
+        }}
       >
         <sphereGeometry args={[meta.radius, 32, 32]} />
         <meshStandardMaterial
@@ -95,7 +102,7 @@ const Atom = ({ el, pos }) => {
       {hover && (
         <Html center distanceFactor={8} className="pointer-events-none">
           <div className="whitespace-nowrap rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background">
-            {meta.name} ({el})
+            {meta.name} ({el}) · bosing
           </div>
         </Html>
       )}

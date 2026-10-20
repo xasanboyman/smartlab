@@ -1,12 +1,16 @@
-import { useMemo, useRef, useState } from "react";
-import { useGLTF, Html, Center } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+// Sketchfab eukaryotic cell (Draco GLB). Each mesh is mapped to an organelle id,
+// re-materialed with a wet PBR look, and exposes its centre so the page can fly the
+// camera to it and pin a label on it.
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ORGANELLES } from "@/lab/data/cell";
+import { assetUrl, preloadGLTF, useBioGLTF } from "../shared/loaders";
+import BioLabel from "../shared/BioLabel";
+import CameraFocus from "../shared/CameraFocus";
 
-const BASE = import.meta.env.BASE_URL || "/";
-const MODEL_URL = `${BASE}models/eukaryotic-cell.glb`.replace(/\/+/g, "/");
-const DRACO_URL = `${BASE}draco/`.replace(/\/+/g, "/");
+export const CELL_MODEL_URL = assetUrl("models/eukaryotic-cell.glb");
+const MODEL_SCALE = 1.8;
 
 // Map mesh name keywords to organelle IDs
 export function getOrganelleIdForName(name) {
@@ -24,225 +28,172 @@ export function getOrganelleIdForName(name) {
   return null;
 }
 
-// Preload the model with Draco decoder path
-useGLTF.preload(MODEL_URL, DRACO_URL);
+// Material recipe per mesh name: colour + surface finish (wet organelles, glassy membrane).
+const MATERIALS = [
+  ["UMesh_Nucleolous", { color: "#ec4899", roughness: 0.3, clearcoat: 0.6 }],
+  ["Nucleolus1", { color: "#8b5cf6", roughness: 0.42, clearcoat: 0.35 }],
+  ["Golgi", { color: "#f97316", roughness: 0.38, clearcoat: 0.5 }],
+  ["Rough_endoplasmic", { color: "#e11d48", roughness: 0.45, clearcoat: 0.3 }],
+  ["Smooth_endoplasmic", { color: "#06b6d4", roughness: 0.35, clearcoat: 0.5 }],
+  ["Centriole", { color: "#f59e0b", roughness: 0.3, clearcoat: 0.4, metalness: 0.15 }],
+  ["Microtubule", { color: "#38bdf8", roughness: 0.32, clearcoat: 0.3 }],
+  ["Twisted_Fibers", { color: "#0284c7", roughness: 0.35 }],
+  ["Vesicles", { color: "#a855f7", roughness: 0.22, clearcoat: 0.7 }],
+  ["Periox", { color: "#10b981", roughness: 0.32, clearcoat: 0.5 }],
+  ["Mitochondrium", { color: "#ef4444", roughness: 0.4, clearcoat: 0.45 }],
+];
 
-const EukaryoticCellModel = ({ activeId, onSelect, autoRotate = true }) => {
+const makeMaterial = (name) => {
+  const isOuter = name.includes("Plasma_membrane_outlide");
+  const isInner = name.includes("Plasma_membrane_inside");
+  if (isOuter || isInner) {
+    // Glassy membrane: faint fill + emissive rim so it reads as a soft glow, not a grey shell.
+    const m = new THREE.MeshPhysicalMaterial({
+      color: isOuter ? "#7cc4ff" : "#3b82f6",
+      transparent: true,
+      opacity: isOuter ? 0.1 : 0.16,
+      roughness: 0.18,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.15,
+      emissive: new THREE.Color("#1d4ed8"),
+      emissiveIntensity: 0.12,
+      depthWrite: false,
+      side: THREE.FrontSide,
+    });
+    m.userData.membrane = true;
+    return m;
+  }
+  const recipe = MATERIALS.find(([key]) => name.includes(key))?.[1] || { color: "#94a3b8", roughness: 0.4 };
+  return new THREE.MeshPhysicalMaterial({
+    color: recipe.color,
+    roughness: recipe.roughness,
+    metalness: recipe.metalness ?? 0.04,
+    clearcoat: recipe.clearcoat ?? 0.2,
+    clearcoatRoughness: 0.35,
+    side: THREE.DoubleSide,
+  });
+};
+
+preloadGLTF(CELL_MODEL_URL);
+
+const EukaryoticCellModel = ({ activeId, onSelect, autoRotate = true, showLabels = true, focusKey = 0 }) => {
   const groupRef = useRef();
   const [hoveredId, setHoveredId] = useState(null);
-  const [hoverPos, setHoverPos] = useState(null);
+  const [focusTarget, setFocusTarget] = useState(null);
+  const invalidate = useThree((s) => s.invalidate);
+  const { scene } = useBioGLTF(CELL_MODEL_URL);
 
-  const { scene } = useGLTF(MODEL_URL, DRACO_URL);
-
-  // Clone scene and apply smart materials per organelle
-  const clonedScene = useMemo(() => {
+  // Clone, re-material, centre at origin and collect organelle centres (local space).
+  const { model, centers } = useMemo(() => {
     const clone = scene.clone(true);
-
+    const boxes = new Map();
+    clone.updateMatrixWorld(true);
+    const tmp = new THREE.Box3();
     clone.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-
-        if (child.geometry?.attributes?.color) {
-          child.geometry.deleteAttribute("color");
-        }
-
-        const orgId = getOrganelleIdForName(child.name);
-        const name = child.name || "";
-
-        // Standardize material
-        let mat = child.material;
-        if (Array.isArray(mat)) mat = mat[0];
-
-        const isOuterMembrane = name.includes("Plasma_membrane_outlide");
-        const isInnerMembrane = name.includes("Plasma_membrane_inside");
-
-        // Create clean PBR material per mesh
-        const newMat = new THREE.MeshStandardMaterial();
-        newMat.vertexColors = false;
-
-        if (name.includes("UMesh_Nucleolous")) {
-          // Nucleolus (Yadrocha - inner core)
-          newMat.color = new THREE.Color("#ec4899");
-          newMat.roughness = 0.25;
-          newMat.metalness = 0.15;
-        } else if (name.includes("Nucleolus1")) {
-          // Nucleus envelope (Yadro qobig'i)
-          newMat.color = new THREE.Color("#8b5cf6");
-          newMat.roughness = 0.4;
-          newMat.metalness = 0.08;
-        } else if (name.includes("Golgi")) {
-          // Golgi apparatus
-          newMat.color = new THREE.Color("#f97316");
-          newMat.roughness = 0.35;
-          newMat.metalness = 0.08;
-        } else if (name.includes("Rough_endoplasmic")) {
-          // Rough ER (Donador ER)
-          newMat.color = new THREE.Color("#e11d48");
-          newMat.roughness = 0.42;
-          newMat.metalness = 0.05;
-        } else if (name.includes("Smooth_endoplasmic")) {
-          // Smooth ER (Silliq ER)
-          newMat.color = new THREE.Color("#06b6d4");
-          newMat.roughness = 0.32;
-          newMat.metalness = 0.1;
-        } else if (name.includes("Centriole")) {
-          // Centriole (Sentriola)
-          newMat.color = new THREE.Color("#f59e0b");
-          newMat.roughness = 0.25;
-          newMat.metalness = 0.2;
-        } else if (name.includes("Microtubule")) {
-          // Microtubules (Mikronaychalar)
-          newMat.color = new THREE.Color("#38bdf8");
-          newMat.roughness = 0.3;
-          newMat.metalness = 0.15;
-        } else if (name.includes("Twisted_Fibers")) {
-          // Cytoskeleton fibers
-          newMat.color = new THREE.Color("#0284c7");
-          newMat.roughness = 0.3;
-          newMat.metalness = 0.1;
-        } else if (name.includes("Vesicles")) {
-          // Vesicles (Pufakchalar)
-          newMat.color = new THREE.Color("#a855f7");
-          newMat.roughness = 0.2;
-          newMat.metalness = 0.25;
-        } else if (name.includes("Periox")) {
-          // Peroxisome (Peroksisoma)
-          newMat.color = new THREE.Color("#10b981");
-          newMat.roughness = 0.3;
-          newMat.metalness = 0.1;
-        } else if (name.includes("Mitochondrium")) {
-          // Mitochondria (Mitoxondriya)
-          newMat.color = new THREE.Color("#ef4444");
-          newMat.roughness = 0.35;
-          newMat.metalness = 0.1;
-        } else if (isOuterMembrane) {
-          // Outer plasma membrane: delicate translucent glass shell
-          newMat.color = new THREE.Color("#60a5fa");
-          newMat.transparent = true;
-          newMat.opacity = 0.08;
-          newMat.roughness = 0.15;
-          newMat.metalness = 0.05;
-          newMat.depthWrite = false;
-        } else if (isInnerMembrane) {
-          // Inner plasma membrane / cut bed
-          newMat.color = new THREE.Color("#3b82f6");
-          newMat.transparent = true;
-          newMat.opacity = 0.14;
-          newMat.roughness = 0.3;
-          newMat.metalness = 0.05;
-          newMat.depthWrite = false;
-        } else {
-          newMat.color = new THREE.Color("#94a3b8");
-          newMat.roughness = 0.4;
-          newMat.metalness = 0.1;
-        }
-
-        newMat.side = isOuterMembrane || isInnerMembrane ? THREE.FrontSide : THREE.DoubleSide;
-        child.material = newMat;
-        child.userData.organelleId = orgId;
-        child.userData.defaultColor = newMat.color.clone();
-        child.userData.defaultOpacity = newMat.opacity;
+      if (!child.isMesh) return;
+      if (child.geometry?.attributes?.color) child.geometry.deleteAttribute("color");
+      const name = child.name || "";
+      const orgId = getOrganelleIdForName(name);
+      child.material = makeMaterial(name);
+      child.userData.organelleId = orgId;
+      child.userData.defaultColor = child.material.color.clone();
+      child.userData.defaultOpacity = child.material.opacity;
+      child.userData.defaultEmissive = child.material.emissiveIntensity;
+      if (orgId && orgId !== "membrane") {
+        tmp.setFromObject(child);
+        if (!boxes.has(orgId)) boxes.set(orgId, tmp.clone());
+        else boxes.get(orgId).union(tmp);
       }
     });
-
-    return clone;
+    const whole = new THREE.Box3().setFromObject(clone);
+    const center = whole.getCenter(new THREE.Vector3());
+    clone.position.sub(center).multiplyScalar(MODEL_SCALE);
+    clone.scale.setScalar(MODEL_SCALE);
+    const centers = new Map();
+    boxes.forEach((box, id) => {
+      const c = box.getCenter(new THREE.Vector3()).sub(center).multiplyScalar(MODEL_SCALE);
+      centers.set(id, { pos: c, radius: box.getSize(new THREE.Vector3()).length() * MODEL_SCALE * 0.5 });
+    });
+    centers.set("membrane", { pos: new THREE.Vector3(0, 0, 0), radius: whole.getSize(new THREE.Vector3()).length() * MODEL_SCALE * 0.5 });
+    return { model: clone, centers };
   }, [scene]);
 
-  // Dynamic highlight based on activeId and hover
-  useFrame((state, delta) => {
-    // Gentle auto-rotation
-    if (autoRotate && groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.15;
+  // Fly to the selected organelle (world position at the moment of selection).
+  useEffect(() => {
+    const entry = centers.get(activeId);
+    if (!entry || !groupRef.current) {
+      setFocusTarget(activeId === "eukaryotic-cell" ? { pos: [0, 0, 0], dist: 7.2 } : null);
+      return;
     }
+    const world = groupRef.current.localToWorld(entry.pos.clone());
+    setFocusTarget({ pos: world.toArray(), dist: Math.max(1.6, entry.radius * 2.6) });
+  }, [activeId, centers, focusKey]);
 
+  useFrame((state, delta) => {
+    if (autoRotate && groupRef.current) {
+      groupRef.current.rotation.y += delta * 0.12;
+    }
     const t = state.clock.getElapsedTime();
-    const pulse = 0.5 + Math.sin(t * 4) * 0.5;
-
-    clonedScene.traverse((child) => {
-      if (child.isMesh && child.material) {
-        const orgId = child.userData.organelleId;
-        const isSelected = activeId && orgId === activeId;
-        const isHovered = hoveredId && orgId === hoveredId;
-
-        const isMembrane = orgId === "membrane";
-
-        if (isSelected || isHovered) {
-          // Highlight with glowing emissive matching organelle color
-          if (child.userData.defaultColor) {
-            child.material.emissive.copy(child.userData.defaultColor);
-          }
-          child.material.emissiveIntensity = 0.5 + pulse * 0.5;
-          if (isMembrane) {
-            child.material.opacity = 0.35;
-          }
-        } else if (activeId && activeId !== "eukaryotic-cell") {
-          // Dim non-selected organelles slightly so active one pops
-          child.material.emissiveIntensity = 0;
-          if (isMembrane) {
-            child.material.opacity = 0.03; // Super sheer so selected inner organelle pops clearly
-          }
-        } else {
-          // Default state (overview)
-          child.material.emissiveIntensity = 0;
-          if (isMembrane) {
-            child.material.opacity = child.userData.defaultOpacity ?? 0.08;
-          }
-        }
+    const pulse = 0.5 + Math.sin(t * 3) * 0.5;
+    const focusMode = activeId && activeId !== "eukaryotic-cell";
+    model.traverse((child) => {
+      if (!child.isMesh || !child.material) return;
+      const orgId = child.userData.organelleId;
+      const m = child.material;
+      const isSelected = orgId === activeId;
+      const isHovered = hoveredId && orgId === hoveredId;
+      if (m.userData.membrane) {
+        const target = isSelected || isHovered ? 0.3 : focusMode ? 0.035 : child.userData.defaultOpacity;
+        m.opacity += (target - m.opacity) * 0.15;
+        m.emissiveIntensity = isSelected ? 0.4 + pulse * 0.3 : child.userData.defaultEmissive;
+        return;
+      }
+      if (isSelected || isHovered) {
+        m.emissive.copy(child.userData.defaultColor);
+        m.emissiveIntensity = isSelected ? 0.35 + pulse * 0.25 : 0.25;
+      } else {
+        m.emissiveIntensity = 0;
       }
     });
   });
 
-  const handlePointerOver = (e) => {
-    e.stopPropagation();
-    const orgId = e.object.userData.organelleId;
-    if (orgId) {
-      setHoveredId(orgId);
-      setHoverPos(e.point);
-    }
-  };
-
-  const handlePointerOut = (e) => {
-    e.stopPropagation();
-    setHoveredId(null);
-    setHoverPos(null);
-  };
-
-  const handleClick = (e) => {
-    e.stopPropagation();
-    const orgId = e.object.userData.organelleId;
-    if (orgId && onSelect) {
-      onSelect(orgId);
-    }
-  };
-
-  // Find info for hovered organelle
   const hoveredInfo = hoveredId ? ORGANELLES.find((o) => o.id === hoveredId) : null;
+  const activeInfo = activeId ? ORGANELLES.find((o) => o.id === activeId) : null;
+  const activeCenter = activeInfo && centers.get(activeId);
+  const hoverCenter = hoveredInfo && hoveredId !== activeId && centers.get(hoveredId);
 
   return (
     <group ref={groupRef}>
-      <Center scale={1.8}>
-        <primitive
-          object={clonedScene}
-          onPointerOver={handlePointerOver}
-          onPointerOut={handlePointerOut}
-          onClick={handleClick}
-        />
-      </Center>
-
-      {hoveredInfo && hoverPos && (
-        <Html position={hoverPos} center distanceFactor={8} className="pointer-events-none select-none">
-          <div className="flex items-center gap-1.5 rounded-full border border-white/20 bg-black/85 px-3 py-1 shadow-xl backdrop-blur-md">
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/30"
-              style={{ backgroundColor: hoveredInfo.color }}
-            />
-            <span className="text-xs font-semibold tracking-wide text-white">
-              {hoveredInfo.name}
-            </span>
-          </div>
-        </Html>
+      <primitive
+        object={model}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          const id = e.object.userData.organelleId;
+          if (id) {
+            setHoveredId(id);
+            document.body.style.cursor = "pointer";
+          }
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          setHoveredId(null);
+          document.body.style.cursor = "default";
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          const id = e.object.userData.organelleId;
+          if (id && onSelect) onSelect(id);
+          invalidate();
+        }}
+      />
+      {showLabels && activeCenter && activeId !== "membrane" && (
+        <BioLabel position={activeCenter.pos.toArray()} text={activeInfo.name} color={activeInfo.color} active occlude={false} />
       )}
+      {showLabels && hoverCenter && (
+        <BioLabel position={hoverCenter.pos.toArray()} text={hoveredInfo.name} color={hoveredInfo.color} occlude={false} />
+      )}
+      {focusTarget && <CameraFocus target={focusTarget.pos} distance={focusTarget.dist} />}
     </group>
   );
 };

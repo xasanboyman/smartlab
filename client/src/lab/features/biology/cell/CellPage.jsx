@@ -1,129 +1,123 @@
-import { useState, Suspense } from "react";
+// "Eukariot hujayra": Draco GLB cell with clickable organelles (realistic) or a
+// schematic sphere model. Selecting an organelle flies the camera to it and shows
+// its Uzbek description in the detail card. All UI state in one object.
+import { Suspense, useMemo } from "react";
+import { Sparkles, Box, RefreshCw, Tag } from "lucide-react";
+import useObjectState from "@/shared/hooks/useObjectState";
 import Scene from "@/lab/components/Scene";
 import LabWorkspace from "@/lab/components/LabWorkspace";
-import CellModel from "./CellModel";
-import EukaryoticCellModel from "./EukaryoticCellModel";
 import { ORGANELLES, CELL_MODELS, getOrganelle, getCellModel } from "@/lab/data/cell";
-import { Sparkles, Box, RefreshCw } from "lucide-react";
+import EukaryoticCellModel from "./EukaryoticCellModel";
+import CellModel from "./CellModel";
+import BioStudio from "../shared/BioStudio";
+import { BIO_GL, BIO_SCENE_BG, BIO_WORKSPACE } from "../shared/bioTheme";
+import { BioButton, BioDetailCard, BioLoading, BioPartList, BioSceneTag, BioSection, BioSegment, BioStat } from "../shared/BioUi";
+
+const VIEW_MODES = [
+  { id: "realistic", label: "Batafsil 3D", icon: <Sparkles size={13} /> },
+  { id: "schematic", label: "Sxematik", icon: <Box size={13} /> },
+];
 
 const CellPage = () => {
-  const [activeId, setActiveId] = useState("eukaryotic-cell");
-  const [viewStyle, setViewStyle] = useState("realistic"); // "realistic" (Sketchfab GLB) or "schematic"
-  const [autoRotate, setAutoRotate] = useState(true);
+  const { activeId, viewStyle, autoRotate, showLabels, focusKey, setField, setFields } = useObjectState({
+    activeId: "eukaryotic-cell",
+    viewStyle: "realistic",
+    autoRotate: true,
+    showLabels: true,
+    focusKey: 0,
+  });
 
   const model = getCellModel(activeId);
   const organelle = getOrganelle(activeId);
+  const items = useMemo(
+    () => [
+      ...CELL_MODELS.map((m) => ({ id: m.id, name: m.name })),
+      ...ORGANELLES.map((o) => ({ id: o.id, name: o.name, color: o.color })),
+    ],
+    [],
+  );
+  const listItems = useMemo(() => ORGANELLES.map((o) => ({ id: o.id, name: o.name, color: o.color })), []);
 
-  // Picker lists the full 3D model first, then all interactive organelles
-  const items = [
-    ...CELL_MODELS.map((m) => ({ id: m.id, name: m.name })),
-    ...ORGANELLES,
-  ];
+  // Selecting an organelle stops the turntable so the camera can settle on it.
+  const select = (id) => setFields({ activeId: id, autoRotate: id === "eukaryotic-cell" ? autoRotate : false });
 
-  const currentTitle = model ? model.name : (organelle ? organelle.name : "Eukariot hujayra");
-  const currentAbout = model ? model.about : (organelle ? organelle.about : "");
+  const title = model ? model.name : organelle?.name || "Eukariot hujayra";
+  const about = model ? model.about : organelle?.about || "";
 
   return (
     <LabWorkspace
-      title="Eukariot Hujayra 3D"
-      description="Sketchfab 3D modeli asosidagi interaktiv eukariot hujayra va uning organoidlari. Organoid ustiga bosing yoki ro'yxatdan tanlang."
-      backTo="/biology"
-      backLabel="Biologiya"
+      {...BIO_WORKSPACE}
+      eyebrow="Biologiya · Sitologiya"
+      title="Eukariot hujayra 3D"
+      description="Organoid ustiga bosing yoki ro'yxatdan tanlang - kamera unga yaqinlashadi va tavsifi chiqadi."
       items={items}
       activeId={activeId}
-      onSelect={setActiveId}
+      onSelect={select}
       scene={
-        <Scene camera={[0, 1.8, 6.2]}>
-          <Suspense fallback={null}>
-            {viewStyle === "realistic" ? (
-              <EukaryoticCellModel
-                activeId={activeId}
-                onSelect={(id) => setActiveId(id)}
-                autoRotate={autoRotate}
-              />
-            ) : (
-              <CellModel activeId={activeId} onSelect={setActiveId} />
-            )}
-          </Suspense>
-        </Scene>
+        <>
+          <Scene
+            camera={[0, 1.8, 7.2]}
+            bg={BIO_SCENE_BG}
+            gl={BIO_GL}
+            lights={false}
+            loader={null}
+            controls={{ minDistance: 1.2, maxDistance: 16, enablePan: true }}
+          >
+            {/* 1M-triangle cell: no cast shadows (the contact shadow grounds it), keeps mobile GPUs smooth. */}
+            <BioStudio preset="cell" scale={5} shadow={false} contact={{ y: -3.3, opacity: 0.55, scale: 14, blur: 2.6 }} />
+            <Suspense fallback={null}>
+              {viewStyle === "realistic" ? (
+                <EukaryoticCellModel activeId={activeId} onSelect={select} autoRotate={autoRotate} showLabels={showLabels} focusKey={focusKey} />
+              ) : (
+                <CellModel activeId={activeId} onSelect={select} autoRotate={autoRotate} showLabels={showLabels} />
+              )}
+            </Suspense>
+          </Scene>
+          {viewStyle === "realistic" && <BioLoading title="Hujayra modeli yuklanmoqda" subtitle="Sketchfab · Draco siqilgan GLB (4,9 MB)" />}
+          {organelle && (
+            <BioDetailCard
+              eyebrow="Organoid"
+              title={organelle.name}
+              color={organelle.color}
+              description={organelle.about}
+              onFocus={() => setFields({ focusKey: focusKey + 1, autoRotate: false })}
+              onClose={() => select("eukaryotic-cell")}
+            />
+          )}
+          <BioSceneTag>{viewStyle === "realistic" ? "Sketchfab · Draco · 1,0 mln uchburchak" : "Sxematik model"}</BioSceneTag>
+        </>
       }
       info={
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-3">
-            <div className="flex items-center rounded-lg border border-white/10 bg-black/40 p-0.5">
-              <button
-                onClick={() => setViewStyle("realistic")}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  viewStyle === "realistic"
-                    ? "bg-emerald-500 text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                <Sparkles className="h-3 w-3" />
-                Batafsil 3D
-              </button>
-              <button
-                onClick={() => setViewStyle("schematic")}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  viewStyle === "schematic"
-                    ? "bg-emerald-500 text-black shadow-sm"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                <Box className="h-3 w-3" />
-                Sxematik
-              </button>
+        <div className="space-y-5">
+          <BioSection label="Ko'rinish">
+            <BioSegment options={VIEW_MODES} value={viewStyle} onChange={(v) => setField("viewStyle", v)} />
+            <div className="flex gap-1.5">
+              <BioButton active={autoRotate} icon={<RefreshCw size={13} className={autoRotate ? "animate-spin" : ""} />} onClick={() => setField("autoRotate", !autoRotate)}>
+                360°
+              </BioButton>
+              <BioButton active={showLabels} icon={<Tag size={13} />} onClick={() => setField("showLabels", !showLabels)}>
+                Yorliqlar
+              </BioButton>
             </div>
+          </BioSection>
 
-            <button
-              onClick={() => setAutoRotate(!autoRotate)}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
-                autoRotate
-                  ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
-                  : "border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10"
-              }`}
-              title="360° Avto-Aylantirish"
-            >
-              <RefreshCw className={`h-3 w-3 ${autoRotate ? "animate-spin text-emerald-400" : ""}`} />
-              360°
-            </button>
-          </div>
+          <BioSection label="Organoidlar" right={<span className="font-mono text-[10px] text-muted-foreground">{ORGANELLES.length} ta</span>}>
+            <BioPartList items={listItems} activeId={activeId} onSelect={select} placeholder="Organoidni qidiring…" />
+          </BioSection>
 
-          <div className="space-y-1.5">
+          <BioSection label={model ? "Model" : "Tanlangan organoid"}>
             <div className="flex items-center gap-2">
-              {organelle && (
-                <span
-                  className="h-3 w-3 rounded-full shadow-sm"
-                  style={{ backgroundColor: organelle.color }}
-                />
-              )}
-              <h2 className="text-xl font-bold tracking-tight text-white">{currentTitle}</h2>
+              {organelle && <span className="size-2.5 rounded-full" style={{ background: organelle.color }} />}
+              <h2 className="text-base font-semibold leading-tight">{title}</h2>
             </div>
-            <p className="text-sm leading-relaxed text-zinc-300">{currentAbout}</p>
-          </div>
-
-          {organelle && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-3.5 space-y-2 backdrop-blur-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                Organoid ma'lumotlari
+            <p className="text-sm leading-relaxed text-muted-foreground">{about}</p>
+            {model && (
+              <div className="grid grid-cols-2 gap-2">
+                <BioStat label="Format" value="GLB · Draco" />
+                <BioStat label="Organoidlar" value={`${ORGANELLES.length} ta`} accent />
               </div>
-              <div className="text-xs text-zinc-400">
-                Organoid ustiga bosish yoki chap tarafdagi ro'yxatdan tanlash orqali uning 3D shakli va joylashuvini yaqindan tekshirishingiz mumkin.
-              </div>
-            </div>
-          )}
-
-          {model && (
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3.5 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                <Sparkles className="h-3.5 w-3.5" />
-                3D WebGL Eukaryotic Cell
-              </div>
-              <p className="text-xs text-emerald-200/90 leading-relaxed">
-                Sketchfab 3D modeli asosida optimallashgan (Draco WebGL) eukariot hujayra. Modelni erkin aylantirish (sichqoncha / sensor), yaqinlashtirish va har bir organoidni alohida belgilash mumkin.
-              </p>
-            </div>
-          )}
+            )}
+          </BioSection>
         </div>
       }
     />

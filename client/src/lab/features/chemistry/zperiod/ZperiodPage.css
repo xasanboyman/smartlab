@@ -1,0 +1,81 @@
+/* Zperiod page — SmartLab header + section bar over the natively mounted app. Scoped under .zp-page */
+.zp-page {
+  --bg: #070a12; --panel: #0e1424; --panel-2: #121a2e; --line: #1e2942; --fg: #e8eefc; --muted: #b4c2dd; --faint: #7f91b5;
+  --accent: #2563eb; --mono: "IBM Plex Mono", ui-monospace, monospace;
+  display: flex; flex-direction: column; height: 100dvh; background: var(--bg); color: var(--fg); overflow: hidden;
+}
+.zp-page a { text-decoration: none; }
+
+.zp-bar {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 14px; flex: none;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.zp-back {
+  display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--faint); padding: 7px 10px; border-radius: 8px; white-space: nowrap;
+}
+.zp-back:hover { color: var(--fg); background: var(--panel-2); }
+
+.zp-tabs {
+  display: flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-2);
+  overflow-x: auto; scrollbar-width: none; max-width: 100%;
+}
+.zp-tabs::-webkit-scrollbar { display: none; }
+.zp-tab {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 9px; color: var(--muted);
+  font-weight: 600; font-size: 0.82rem; white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.zp-tab:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+.zp-tab.active { background: var(--accent); color: #fff; }
+.zp-tab.icon { padding: 7px 9px; }
+.zp-tab.icon span { display: none; }
+
+.zp-search { flex: 1; min-width: 140px; max-width: 360px; margin-left: auto; }
+.zp-search .element-search-wrapper { max-width: 100%; }
+
+.zp-actions { display: flex; align-items: center; gap: 6px; }
+.zp-kbd {
+  display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.08em;
+  color: var(--faint); padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; white-space: nowrap;
+}
+.zp-ic {
+  width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--muted); cursor: pointer; transition: color 0.15s, border-color 0.15s;
+}
+.zp-ic:hover { color: var(--fg); border-color: var(--accent); }
+
+.zp-host { position: relative; flex: 1; min-height: 0; }
+
+@media (max-width: 900px) {
+  .zp-bar { flex-wrap: wrap; padding: 6px 10px; }
+  .zp-kbd { display: none; }
+  .zp-tabs { order: 10; flex-basis: 100%; }
+  .zp-search { max-width: none; }
+}
+@media (max-width: 480px) {
+  .zp-tab:not(.active) span { display: none; }
+  .zp-tab { padding: 7px 9px; }
+}
+
+/* The Zperiod element search is moved into this bar (outside .zp-root), so it is styled here. */
+.zp-search .element-search-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+.zp-search .element-search-icon { position: absolute; left: 11px; color: var(--faint); pointer-events: none; }
+.zp-search .element-search-input {
+  width: 100%; height: 34px; padding: 0 12px 0 32px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--fg); font: inherit; font-size: 0.84rem; outline: none;
+}
+.zp-search .element-search-input::placeholder { color: var(--faint); }
+.zp-search .element-search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25); }
+.zp-search .element-search-results {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60; display: none; max-height: 320px; overflow-y: auto;
+  padding: 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.zp-search .element-search-results.visible { display: block; }
+.zp-search .element-search-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer; color: var(--fg); }
+.zp-search .element-search-item:hover, .zp-search .element-search-item.active { background: var(--panel-2); }
+.zp-search .element-search-item-symbol { min-width: 34px; font-weight: 700; font-size: 1rem; }
+.zp-search .element-search-item-number { font-family: var(--mono); font-size: 0.7rem; color: var(--faint); }
+.zp-search .element-search-item-info { display: flex; flex-direction: column; min-width: 0; }
+.zp-search .element-search-item-name { font-weight: 600; font-size: 0.84rem; }
+.zp-search .element-search-item-detail { font-size: 0.72rem; color: var(--faint); }
+.zp-search .element-search-empty { padding: 10px 12px; font-size: 0.82rem; color: var(--faint); }

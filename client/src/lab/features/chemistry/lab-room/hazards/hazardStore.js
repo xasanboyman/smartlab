@@ -24,7 +24,7 @@ const LEAK_PER_S = 0.015;
 const VENT_PER_S = 0.35;
 const HOOD_PER_S = 0.7;
 // Spilled liquid: how wide a millilitre spreads, how fast it dries, how long a millilitre of ethanol burns.
-const SPREAD_M2_PER_ML = 0.0022;
+const SPREAD_M2_PER_ML = 0.0012;
 const DRY_PER_S = 0.004;
 const BURN_S_PER_ML = 22;
 const SPREAD_REACH = 0.45;
@@ -265,7 +265,7 @@ export const createHazards = () => {
     // True while the jet is washing over this point, so the runtime can flood that container with CO2.
     sprayCovers: (position) => Boolean(state.spray) && inJet(state.spray, position),
 
-    step: (dt, { playerPosition, containerFires = [], heatSources = [] } = {}) => {
+    step: (dt, { playerPosition, containerFires = [], heatSources = [], goggles = false } = {}) => {
       const events = [];
       state.now += dt;
       spread(dt);
@@ -301,7 +301,8 @@ export const createHazards = () => {
           heat = Math.max(heat, Math.min(1, (fire.power * 1.6) / Math.max(0.6, d * d)));
         }
         const ease = 1 - Math.exp(-dt / 1.2);
-        state.exposure.irritant += (Math.min(1.5, irritant) - state.exposure.irritant) * ease;
+        // Goggles keep the gas off the eyes; the player still coughs, so only part of the sting goes.
+        state.exposure.irritant += (Math.min(1.5, irritant) * (goggles ? 0.4 : 1) - state.exposure.irritant) * ease;
         state.exposure.heat += (heat - state.exposure.heat) * ease;
         state.exposure.flash = Math.max(0, state.exposure.flash - dt * 2.2);
         state.exposure.ringing = Math.max(0, state.exposure.ringing - dt * 0.35);

@@ -19,21 +19,40 @@ const createBlobTexture = () => {
 };
 
 // Borosilicate lab glass (Pyrex / Duran): ultra-clear transparency, subtle edge reflection, high specular sheen.
-const createGlass = () =>
+// Thin-walled vessels stay on the premultiplied Fresnel shading so the liquid inside is still seen through them.
+const createGlass = (quality) =>
   applySpecularAlpha(
     new MeshPhysicalMaterial({
       color: "#0e1715",
-      roughness: 0.015,
+      roughness: quality === "low" ? 0.03 : 0.012,
       metalness: 0,
       ior: 1.517,
       specularIntensity: 1,
-      clearcoat: 0.95,
+      clearcoat: quality === "low" ? 0 : 1,
       clearcoatRoughness: 0.01,
       opacity: 0.055,
-      envMapIntensity: 1.45,
+      envMapIntensity: quality === "low" ? 1.2 : 1.55,
     }),
-    0.65,
+    quality === "low" ? 0.6 : 0.7,
   );
+
+// Solid glass pieces (rods, thermometer bodies, stoppers): true refraction through the thickness on High,
+// which needs the renderer's transmission pass; Low falls back to the thin-wall shading.
+const createSolidGlass = (quality) =>
+  quality === "low"
+    ? null
+    : new MeshPhysicalMaterial({
+        color: "#f4f8f7",
+        roughness: 0.035,
+        metalness: 0,
+        ior: 1.5,
+        transmission: 1,
+        thickness: 0.006,
+        attenuationColor: "#cfe6df",
+        attenuationDistance: 0.12,
+        specularIntensity: 1,
+        envMapIntensity: 1.2,
+      });
 
 // Enamel graduations and labels fired onto the glass; crisp opaque markings.
 const createPrint = (map) =>
@@ -60,13 +79,16 @@ export const createLiquidMaterial = ({ color = "#0d2230", opacity = 0.08 } = {})
 const standard = (params) => new MeshStandardMaterial(params);
 
 export const createKitMaterials = ({ printScale = 1, quality = "high", textureCap = 2048 } = {}) => {
+  const solidGlass = createSolidGlass(quality);
   const materials = {
-    glass: createGlass(),
-    porcelainGlazed: new MeshPhysicalMaterial({
+    glass: createGlass(quality),
+    glassSolid: solidGlass ?? createGlass(quality),
+      porcelainGlazed: new MeshPhysicalMaterial({
       color: "#f3f1eb",
-      roughness: 0.28,
-      clearcoat: 0.7,
-      clearcoatRoughness: 0.06,
+      roughness: 0.22,
+      clearcoat: quality === "low" ? 0 : 0.85,
+      clearcoatRoughness: 0.08,
+      envMapIntensity: 1.1,
     }),
     porcelainMatte: standard({ color: "#e6e0d4", roughness: 0.85 }),
     steel: standard({ color: "#c6c9cd", metalness: 1, roughness: 0.3 }),

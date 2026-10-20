@@ -13,8 +13,26 @@ export const SUBJECTS = [
       {
         slug: "periodic-table",
         title: "Davriy jadval",
-        short: "118 element, ionlar va tenglama/molyar massa kalkulyatorlari.",
+        short: "118 element, 3D atom modellari va 4 qatlamli ma'lumot, element qidiruvi (Zperiod).",
         icon: "Grid3x3",
+      },
+      {
+        slug: "ions",
+        title: "Ionlar",
+        short: "Kation va anionlar, murakkab ionlar: zaryad, hosil bo'lishi, suvdagi holati va sinovlar.",
+        icon: "Zap",
+      },
+      {
+        slug: "chem-tools",
+        title: "Kimyo vositalari",
+        short: "Tenglamani tenglashtirish, molyar massa, empirik/molekulyar formula va eruvchanlik jadvali.",
+        icon: "Calculator",
+      },
+      {
+        slug: "worksheet",
+        title: "Ish varaqasi",
+        short: "Reaksiya turi va qiyinligini tanlab mashq varaqasini tuzing, javoblar bilan chop eting.",
+        icon: "FileText",
       },
       {
         slug: "molecules",
@@ -27,12 +45,6 @@ export const SUBJECTS = [
         title: "Interaktiv laboratoriya",
         short: "Laboratoriya xonasida yuring, reaktivlarni aralashtirib reaksiyalarni kuzating.",
         icon: "TestTubes",
-      },
-      {
-        slug: "atoms",
-        title: "Atomlar",
-        short: "Yadro va elektron orbitalarini kuzating.",
-        icon: "Atom",
       },
       {
         slug: "ph",

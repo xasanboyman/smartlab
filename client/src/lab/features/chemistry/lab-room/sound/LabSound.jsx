@@ -114,10 +114,14 @@ const createPlayer = (engine, cues, samples) => {
     footstep: (at, running) => {
       if (!shot(pick(STEPS), at, running ? 1.12 : 0.95 + Math.random() * 0.1)) cues.footstep(at, running);
     },
-    clink: (at) => {
-      if (!shot(pick(CLINKS), at, 0.92 + Math.random() * 0.18)) cues.clink(at);
+    clink: (at, size = 1) => {
+      if (!shot(pick(CLINKS), at, (0.92 + Math.random() * 0.18) / Math.sqrt(size))) cues.clink(at, size);
     },
     thud: (at) => shot("thud", at, 0.9 + Math.random() * 0.2) || cues.thud(at),
+    clank: (at, size) => cues.clank(at, size),
+    plastic: (at) => cues.plastic(at),
+    crack: (at) => cues.crack(at),
+    splash: (at) => cues.splash(at),
     shatter: (at) => shot("shatter", at) || cues.shatter(at),
     pop: (at) => shot("pop", at, 0.9 + Math.random() * 0.25) || cues.pop(at),
     bang: (at, strength) => shot("bang", at, 0.85 + Math.random() * 0.2) || cues.bang(at, strength),
@@ -152,11 +156,19 @@ const drainQueue = (lab, camera, player) => {
   while (queue.length) {
     const sound = queue.shift();
     const at = placeAt(camera, sound.position);
+    // Impacts carry their own loudness (speed) and a size tag that lowers the pitch of big items.
+    const hit = { ...at, gain: at.gain * (sound.strength ?? 1) };
     if (sound.type === "pop") player.pop(at);
     else if (sound.type === "bang") player.bang(at, sound.strength ?? 1);
     else if (sound.type === "shatter") player.shatter(at);
     else if (sound.type === "whoosh") player.whoosh(at);
     else if (sound.type === "click") player.click(sound.soft ?? false);
+    else if (sound.type === "clink") player.clink(hit, sound.size ?? 1);
+    else if (sound.type === "thud") player.thud(hit);
+    else if (sound.type === "clank") player.clank(hit, sound.size ?? 1);
+    else if (sound.type === "plastic") player.plastic(hit);
+    else if (sound.type === "crack") player.crack(hit);
+    else if (sound.type === "pour" || sound.type === "splash") player.splash({ ...at, gain: at.gain * (sound.soft ? 0.5 : 0.9) });
   }
 };
 

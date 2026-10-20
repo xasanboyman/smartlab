@@ -22,7 +22,14 @@ const LiveContents = ({ lab, simId, vessel, fallback }) => {
   const { volumeMl, color, opacity } = fallback ?? {};
   const idle = useMemo(() => staticVisual({ volumeMl, color, opacity }), [volumeMl, color, opacity]);
 
-  useFrame((state, delta) => live.update(lab.visual(simId) ?? idle, delta, state.clock.elapsedTime), CONTENTS_PRIORITY);
+  const extras = useMemo(() => ({ stir: 0, stirBar: false }), []);
+  useFrame((state, delta) => {
+    const activity = lab.activity;
+    const magnetic = Boolean(activity.stirring?.[simId]);
+    extras.stirBar = magnetic;
+    extras.stir = magnetic ? 1 : activity.stir === simId ? 0.55 : 0;
+    live.update(lab.visual(simId) ?? idle, delta, state.clock.elapsedTime, extras);
+  }, CONTENTS_PRIORITY);
 
   return (
     <primitive object={live.group}>

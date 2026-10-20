@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS = {
   showFps: false,
   sound: 0.7,
   reduceMotion: false,
+  goggles: false,
 };
 
 // textureCap: the largest texture the tier uploads (mipmapped RGBA ≈ 1.33·w·h·4 bytes each).

@@ -4,6 +4,4 @@ export const MODAL = Object.freeze({
   USER_EDIT: "user:edit",
   USER_DELETE: "user:delete",
   ACTIVITY_LOG_DETAIL: "activityLog:detail",
-  ELEMENT_DETAIL: "element:detail",
-  ION_DETAIL: "ion:detail",
 });

@@ -174,7 +174,7 @@ const createGroundGlass = () =>
     0.2,
   );
 
-const GasJar = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, coverOn = true, ...props }) => {
+const GasJar = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, coverOn = true, cracked = false, ...props }) => {
   const kit = useKit();
   const { vessel, mouth, groundTop, plate } = getAssets();
   const ground = useMemo(() => createGroundGlass(), []);
@@ -184,7 +184,7 @@ const GasJar = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, coverOn = tru
 
   return (
     <group {...props}>
-      <GlassVessel vessel={vessel}>
+      <GlassVessel cracked={cracked} vessel={vessel}>
         <Contents simId={simId} vessel={mouth} fallback={{ volumeMl, color: liquidColor, opacity: liquidOpacity }} />
       </GlassVessel>
       <mesh geometry={groundTop} material={ground} renderOrder={3} />

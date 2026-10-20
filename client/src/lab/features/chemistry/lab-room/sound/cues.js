@@ -76,6 +76,46 @@ export const createCues = (engine) => {
         return (end) => burst.src.stop(end + 0.02);
       }, 0.14),
 
+    // Hollow steel (tongs, stand, cylinder) on the bench: a bright metallic ring with a short body.
+    clank: (at, size = 1) =>
+      shot("world", (out, t) => {
+        place(out, at);
+        const base = 1900 / Math.max(0.6, size);
+        for (const [ratio, peak, decay] of [[1, 0.2, 0.4], [1.42, 0.12, 0.3], [2.76, 0.07, 0.18], [3.9, 0.04, 0.12]]) {
+          ping(out, t, { frequency: base * ratio * rand(0.98, 1.02), duration: decay, peak, type: "triangle" });
+        }
+        const burst = noiseBurst(out, t, { duration: 0.035, type: "bandpass", frequency: 2400, Q: 0.9, peak: 0.25 });
+        return (end) => burst.src.stop(end + 0.02);
+      }, 0.45),
+
+    // Plastic bottle or jar bouncing: a dull hollow knock with no ring.
+    plastic: (at) =>
+      shot("world", (out, t) => {
+        place(out, at);
+        ping(out, t, { frequency: rand(240, 330), duration: 0.06, peak: 0.2, type: "triangle" });
+        const burst = noiseBurst(out, t, { duration: 0.05, type: "lowpass", frequency: 1400, peak: 0.18 });
+        return (end) => burst.src.stop(end + 0.02);
+      }, 0.12),
+
+    // Glass that cracks but holds: a sharp tick with a thin ring tail.
+    crack: (at) =>
+      shot("world", (out, t) => {
+        place(out, at);
+        const burst = noiseBurst(out, t, { duration: 0.06, type: "highpass", frequency: 3200, peak: 0.45, attack: 0.001 });
+        ping(out, t + 0.01, { frequency: rand(3400, 4600), duration: 0.22, peak: 0.08 });
+        ping(out, t + 0.03, { frequency: rand(5200, 6800), duration: 0.12, peak: 0.05 });
+        return (end) => burst.src.stop(end + 0.02);
+      }, 0.3),
+
+    // A gulp of liquid hitting a sink or the bench.
+    splash: (at) =>
+      shot("world", (out, t) => {
+        place(out, at);
+        const burst = noiseBurst(out, t, { duration: 0.28, type: "bandpass", frequency: 1400, Q: 0.8, peak: 0.3, attack: 0.02 });
+        burst.filter.frequency.exponentialRampToValueAtTime(700, t + 0.25);
+        return (end) => burst.src.stop(end + 0.02);
+      }, 0.32),
+
     shatter: (at) =>
       shot("world", (out, t) => {
         place(out, at);

@@ -4,12 +4,13 @@
 // material tint + click-to-detail; picking is disabled on faded outer layers
 // so clicks pass through to the organs.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bounds, Center, useGLTF } from "@react-three/drei";
+import { Bounds, Center } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { MeshBVH, acceleratedRaycast } from "three-mesh-bvh";
 import * as THREE from "three";
 import { resolveMaterial } from "@/lab/data/anatomyMaterials";
 import { SURGERY_LAYERS } from "@/lab/data/surgery";
+import { preloadGLTF, useBioGLTF } from "../shared/loaders";
 
 const HOVER_COLOR = new THREE.Color("#22d3ee");
 const NOOP_RAYCAST = () => {};
@@ -21,8 +22,27 @@ const AXIS = {
   z: new THREE.Vector3(0, 0, 1),
 };
 
+// The first preset shows skin only: warm the decoder + that layer right away,
+// the deeper layers follow once the page is idle.
+preloadGLTF(SURGERY_LAYERS[0].url);
+if (typeof window !== "undefined") {
+  const rest = () => SURGERY_LAYERS.slice(1).forEach((l) => preloadGLTF(l.url));
+  if (window.requestIdleCallback) window.requestIdleCallback(rest, { timeout: 2500 });
+  else setTimeout(rest, 800);
+}
+
+// Surface finish per layer: skin matte, muscle/vessels/organs wet (clearcoat).
+const makeMaterial = (color, flat) =>
+  new THREE.MeshPhysicalMaterial({
+    color,
+    roughness: flat ? 0.72 : 0.5,
+    metalness: 0.02,
+    clearcoat: flat ? 0.08 : 0.35,
+    clearcoatRoughness: 0.4,
+  });
+
 const SurgeryLayer = ({ url, opacity, clippingPlanes, onPick, frozen, flatColor, detail, scale = 1 }) => {
-  const { scene } = useGLTF(url);
+  const { scene } = useBioGLTF(url);
   const invalidate = useThree((s) => s.invalidate);
   const selected = useRef(null);
   const model = useMemo(() => scene.clone(true), [scene]);
@@ -40,11 +60,7 @@ const SurgeryLayer = ({ url, opacity, clippingPlanes, onPick, frozen, flatColor,
         resolved = resolveMaterial(matName);
       }
       child.userData.detail = resolved;
-      child.material = new THREE.MeshStandardMaterial({
-        color: flatColor || resolved?.color || "#cfd8dc",
-        roughness: flatColor ? 0.85 : 0.7,
-        metalness: 0.05,
-      });
+      child.material = makeMaterial(flatColor || resolved?.color || "#cfd8dc", !!flatColor);
       child.userData.baseColor = child.material.color.clone();
     });
     invalidate();
@@ -68,6 +84,7 @@ const SurgeryLayer = ({ url, opacity, clippingPlanes, onPick, frozen, flatColor,
   useEffect(() => {
     const pickable = opacity >= PICK_MIN_OPACITY;
     const clipped = clippingPlanes.length > 0;
+    model.visible = opacity > 0.005;
     model.traverse((c) => {
       if (!c.isMesh) return;
       const m = c.material;
@@ -148,6 +165,7 @@ const SurgeryModel = ({ layerOpacity, clip, onPick, frozen }) => {
   // Recompute the cut plane from axis/position/flip; mutate in place + redraw.
   useEffect(() => {
     const box = bboxRef.current;
+    if (box.isEmpty() && groupRef.current) box.setFromObject(groupRef.current);
     if (!box.isEmpty()) {
       const key = clip.axis;
       const at = box.min[key] + (box.max[key] - box.min[key]) * clip.position;

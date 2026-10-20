@@ -1,7 +1,10 @@
 import { MeshStandardMaterial, SRGBColorSpace, ShaderChunk } from "three";
 import { capTexture } from "../textureCap";
 import {
+  createBenchDetailTextures,
+  createBrushedSteelTextures,
   createDynamicTexture,
+  createFloorDetailTexture,
   createExitSignTexture,
   createPeriodicTableTexture,
   createPhenolicResinTexture,
@@ -91,9 +94,14 @@ export const prepareRoom = (root) => {
         material.metalness = 0.02;
         material.envMapIntensity = 0.85;
       } else if (material.name === "steel_brushed") {
-        material.roughness = 0.28;
-        material.metalness = 0.88;
-        material.envMapIntensity = 0.8;
+        // Satin stainless on the sink and fittings: grain in the roughness so reflections streak.
+        const steel = createBrushedSteelTextures();
+        material.roughnessMap = steel.roughness;
+        material.bumpMap = steel.bump;
+        material.bumpScale = 0.0006;
+        material.roughness = 1;
+        material.metalness = 0.92;
+        material.envMapIntensity = 0.9;
       } else if (material.name === "chrome") {
         material.roughness = 0.06;
         material.metalness = 0.98;
@@ -150,6 +158,7 @@ const clockTime = (date) =>
 // Canvas-textured surfaces (whiteboard, poster, screen, clock, exit sign). Returns tick + dispose.
 export const dressSurfaces = (room, lightmap, scale, textureCap = 2048) => {
   const created = [];
+  const extraTextures = [];
   // Printed surfaces are canvases; the clock and the monitor are repainted, so only static ones shrink.
   const swap = (name, material, texture, fixed = true) => {
     if (fixed && texture) capTexture(texture, textureCap);
@@ -164,7 +173,7 @@ export const dressSurfaces = (room, lightmap, scale, textureCap = 2048) => {
   };
 
   const whiteboard = createWhiteboardTexture();
-  swap("whiteboard_surface", litSurface({ map: whiteboard, roughness: 0.22 }, lightmap, scale), whiteboard);
+  swap("whiteboard_surface", litSurface({ map: whiteboard, roughness: 0.34 }, lightmap, scale), whiteboard);
 
   const poster = createPeriodicTableTexture();
   swap("poster_periodic_table", litSurface({ map: poster, roughness: 0.75 }, lightmap, scale), poster);
@@ -177,10 +186,21 @@ export const dressSurfaces = (room, lightmap, scale, textureCap = 2048) => {
   );
 
   const phenolic = createPhenolicResinTexture();
-  swap("static_epoxy_black", litSurface({ map: phenolic, roughness: 0.32, metalness: 0.05 }, lightmap, scale), phenolic);
+  const benchDetail = createBenchDetailTextures(Math.min(1024, textureCap));
+  capTexture(benchDetail.roughness, textureCap);
+  capTexture(benchDetail.bump, textureCap);
+  swap(
+    "static_epoxy_black",
+    litSurface({ map: phenolic, roughnessMap: benchDetail.roughness, roughness: 1, bumpMap: benchDetail.bump, bumpScale: 0.0008, metalness: 0.05 }, lightmap, scale),
+    phenolic,
+  );
+  extraTextures.push(benchDetail.roughness, benchDetail.bump);
 
   const floor = createSafetyFloorTexture();
-  swap("static_floor_vinyl", litSurface({ map: floor, roughness: 0.38, metalness: 0.02 }, lightmap, scale), floor);
+  const floorDetail = createFloorDetailTexture(Math.min(1024, textureCap));
+  capTexture(floorDetail, textureCap);
+  swap("static_floor_vinyl", litSurface({ map: floor, roughnessMap: floorDetail, roughness: 1, metalness: 0.02 }, lightmap, scale), floor);
+  extraTextures.push(floorDetail);
 
   const originalSignsMap = room.surfaces.static_signs_atlas?.original?.map;
   const signs = createSafetySignAtlasTexture(originalSignsMap?.image);
@@ -216,6 +236,7 @@ export const dressSurfaces = (room, lightmap, scale, textureCap = 2048) => {
       material.dispose();
       texture?.dispose();
     }
+    extraTextures.forEach((t) => t.dispose());
   };
 
   return { tick, dispose };

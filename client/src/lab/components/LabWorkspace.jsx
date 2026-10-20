@@ -32,7 +32,7 @@ const cleanActiveData = (item) => {
   return Object.keys(out).length ? out : undefined;
 };
 
-const LeftPanel = ({ title, description, backTo, backLabel, items, activeId, onSelect, info }) => (
+const LeftPanel = ({ title, description, backTo, backLabel, items, activeId, onSelect, info, eyebrow }) => (
   <div className="flex h-full flex-col">
     <div className="border-b border-border p-4">
       <Link
@@ -41,6 +41,9 @@ const LeftPanel = ({ title, description, backTo, backLabel, items, activeId, onS
       >
         <ArrowLeft size={14} /> {backLabel}
       </Link>
+      {eyebrow && (
+        <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">{eyebrow}</div>
+      )}
       <h1 className="text-lg font-semibold">{title}</h1>
       {description && (
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
@@ -83,6 +86,9 @@ const WorkspaceBody = ({
   info,
   aiContext,
   vrHint = DEFAULT_VR_HINT,
+  eyebrow,
+  rootClassName,
+  rootStyle,
 }) => {
   const rootRef = useRef(null);
   const { panelsHidden, vrDismissed, leftOpen, aiOpen, setField } = useObjectState({
@@ -181,7 +187,7 @@ const WorkspaceBody = ({
   }, [vrBox, exitVrBox]);
 
   return (
-    <div ref={rootRef} className="relative flex h-full w-full bg-background">
+    <div ref={rootRef} className={cn("relative flex h-full w-full bg-background", rootClassName)} style={rootStyle}>
       {!immersive && (
         <SidePanel
           side="left"
@@ -200,6 +206,7 @@ const WorkspaceBody = ({
             activeId={activeId}
             onSelect={onSelect}
             info={info}
+            eyebrow={eyebrow}
           />
         </SidePanel>
       )}

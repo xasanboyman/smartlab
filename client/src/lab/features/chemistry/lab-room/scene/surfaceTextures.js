@@ -508,16 +508,16 @@ export const createSafetySignAtlasTexture = (baseImage = null, width = 1024, hei
     ],
   );
 
-  // 2. Emergency Eyewash & Safety Shower (top center)
+  // 2. Laboratory rules (top center)
   drawSign(
     260, 10, 496, 236,
-    "#047857",
-    "FAVQULODDA DUSH & KO'Z YUVISH",
+    "#1d4ed8",
+    "LABORATORIYA XAVFSIZLIK QOIDALARI",
     [
-      "EMERGENCY EYEWASH & SAFETY SHOWER STATION",
-      "Kislota yoki kimyoviy modda sachraganda",
-      "Darhol favvorada ko'zni kamida 15 daqiqa yuving!",
-      "KEEP AREA CLEAR AT ALL TIMES",
+      "LABORATORY SAFETY RULES",
+      "Reaktivlar bilan faqat ko'zoynakda ishlang",
+      "Kislotani suvga quying, suvni kislotaga emas",
+      "To'kilgan moddani darhol tozalang",
     ],
   );
 
@@ -629,3 +629,108 @@ export const createSafetySignAtlasTexture = (baseImage = null, width = 1024, hei
   return toTexture(canvas, 8);
 };
 
+
+// ---------- Wear detail: roughness and bump maps for the bench top, floor and sink steel ----------
+
+// Linear-space grayscale canvas texture (roughness/bump maps must not be sRGB).
+const toDataTexture = (canvas, repeat, anisotropy = 8) => {
+  const texture = new CanvasTexture(canvas);
+  texture.flipY = false;
+  texture.anisotropy = anisotropy;
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
+  texture.repeat.set(repeat, repeat);
+  return texture;
+};
+
+const hash = (x, y, seed) => {
+  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ seed;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+};
+const smooth = (t) => t * t * (3 - 2 * t);
+const noise2 = (x, y, period, seed) => {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const fx = smooth(x - xi);
+  const fy = smooth(y - yi);
+  const w = (v) => ((v % period) + period) % period;
+  const v = (i, j) => hash(w(xi + i), w(yi + j), seed);
+  const top = v(0, 0) + (v(1, 0) - v(0, 0)) * fx;
+  const bottom = v(0, 1) + (v(1, 1) - v(0, 1)) * fx;
+  return top + (bottom - top) * fy;
+};
+const fbm = (u, v, base, seed, octaves = 4) => {
+  let sum = 0;
+  let norm = 0;
+  for (let o = 0; o < octaves; o += 1) {
+    const f = base * 2 ** o;
+    const w = 0.5 ** o;
+    sum += noise2(u * f, v * f, f, seed + o * 17) * w;
+    norm += w;
+  }
+  return sum / norm;
+};
+
+const paintGray = (ctx, size, sample) => {
+  const image = ctx.createImageData(size, size);
+  const data = image.data;
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const g = Math.round(Math.max(0, Math.min(1, sample(x / size, y / size, x, y))) * 255);
+      data.set([g, g, g, 255], (y * size + x) * 4);
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+};
+
+const ring = (u, v, cx, cy, r, w) => {
+  const d = Math.hypot(u - cx, v - cy);
+  return Math.exp(-((d - r) * (d - r)) / (w * w));
+};
+
+// Phenolic bench top: satin base with wiped streaks, a few dried ring stains and fine scratches.
+export const createBenchDetailTextures = (size = 1024) => {
+  const roughness = makeCanvas(size, size);
+  // Two faint dried rings per tile; the map tiles 1.5× across a bench so they never read as a pattern.
+  const rings = [[0.22, 0.31, 0.05, 0.003], [0.71, 0.76, 0.035, 0.0025]];
+  paintGray(roughness.ctx, size, (u, v) => {
+    const broad = fbm(u, v, 3, 11, 3);
+    // Wipe marks run diagonally; they leave the surface slightly glossier.
+    const streak = fbm(u * 0.35 + v * 0.65, (u - v) * 0.1, 6, 29, 2);
+    let r = 0.3 + (broad - 0.5) * 0.16 + (streak - 0.5) * 0.08;
+    for (const [cx, cy, rad, w] of rings) r += ring(u, v, cx, cy, rad, w) * 0.12;
+    return r;
+  });
+  const bump = makeCanvas(size, size);
+  paintGray(bump.ctx, size, (u, v, x, y) => {
+    let h = 0.5 + (fbm(u, v, 24, 5, 3) - 0.5) * 0.08;
+    // Sparse hairline scratches.
+    const line = Math.abs(Math.sin((u * 7.3 + v * 1.9) * Math.PI * 2 + fbm(u, v, 2, 3, 2) * 4));
+    if (line > 0.998 && hash(x >> 3, y >> 3, 9) > 0.6) h -= 0.08;
+    for (const [cx, cy, rad, w] of rings) h += ring(u, v, cx, cy, rad, w) * 0.02;
+    return h;
+  });
+  return { roughness: toDataTexture(roughness.canvas, 1.5, 16), bump: toDataTexture(bump.canvas, 1.5, 16) };
+};
+
+// Vinyl floor: matte with glossier scuffed lanes where people walk and darker grime along the seams.
+export const createFloorDetailTexture = (size = 1024) => {
+  const { canvas, ctx } = makeCanvas(size, size);
+  paintGray(ctx, size, (u, v) => {
+    const lanes = Math.exp(-((v - 0.5) * (v - 0.5)) / 0.06) * 0.5 + Math.exp(-((u - 0.5) * (u - 0.5)) / 0.08) * 0.4;
+    const scuff = fbm(u, v, 5, 41, 3);
+    const seam = Math.min(Math.abs((u * 4) % 1 - 0.5), Math.abs((v * 4) % 1 - 0.5));
+    return 0.42 - lanes * scuff * 0.22 + (seam < 0.015 ? 0.15 : 0) + (scuff - 0.5) * 0.1;
+  });
+  return toDataTexture(canvas, 6, 16);
+};
+
+// Brushed stainless: fine parallel grain in the roughness and a faint bump so highlights streak.
+export const createBrushedSteelTextures = (size = 512) => {
+  const roughness = makeCanvas(size, size);
+  paintGray(roughness.ctx, size, (u, v, x, y) => 0.28 + (hash(x, y >> 4, 3) - 0.5) * 0.18 + (fbm(u, v, 4, 7, 2) - 0.5) * 0.08);
+  const bump = makeCanvas(size, size);
+  paintGray(bump.ctx, size, (u, v, x, y) => 0.5 + (hash(x, y >> 3, 5) - 0.5) * 0.12);
+  return { roughness: toDataTexture(roughness.canvas, 3, 16), bump: toDataTexture(bump.canvas, 3, 16) };
+};

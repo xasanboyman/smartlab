@@ -1,7 +1,39 @@
 import { EQUIPMENT_BY_ID } from "../equipment/catalog";
 import { SUBSTANCE_BY_ID } from "../substances/catalog";
+import { EMPTY_MASS_G } from "../sim/containers";
 
 export const SUBSTANCE_PREFIX = "sub:";
+
+// How each material behaves when it lands: bounce, grip, the impact speed (m/s) that cracks it and that breaks
+// it, and the sound it makes. Glass let go over the bench (~3.2 m/s) cracks; over the floor (~5 m/s) it shatters.
+export const PHYSICS_MATERIALS = {
+  glass: { restitution: 0.14, friction: 0.42, crack: 2.0, shatter: 3.5, sound: "clink" },
+  "thin-glass": { restitution: 0.12, friction: 0.42, crack: 1.6, shatter: 2.7, sound: "clink" },
+  porcelain: { restitution: 0.1, friction: 0.55, crack: 2.6, shatter: 3.9, sound: "clink" },
+  plastic: { restitution: 0.38, friction: 0.5, crack: Infinity, shatter: Infinity, sound: "plastic" },
+  metal: { restitution: 0.22, friction: 0.4, crack: Infinity, shatter: Infinity, sound: "clank" },
+  wood: { restitution: 0.28, friction: 0.6, crack: Infinity, shatter: Infinity, sound: "thud" },
+  paper: { restitution: 0.05, friction: 0.7, crack: Infinity, shatter: Infinity, sound: "thud" },
+};
+
+const EQUIPMENT_MATERIAL = {
+  "test-tube": "thin-glass",
+  "stirring-rod": "thin-glass",
+  thermometer: "thin-glass",
+  dropper: "thin-glass",
+  spatula: "metal",
+  "crucible-tongs": "metal",
+  "bunsen-burner": "metal",
+  "retort-stand": "metal",
+  "wire-gauze": "metal",
+  "digital-scale": "plastic",
+  "ph-paper": "paper",
+  "hot-plate": "plastic",
+  "test-tube-rack": "wood",
+};
+
+// Mass in kg for the rigid body; contents are added by the world when it drops.
+const MASS_KG = { "hot-plate": 2.8, "retort-stand": 1.6, "digital-scale": 0.9, "bunsen-burner": 0.45, "test-tube-rack": 0.25, "spirit-lamp": 0.18, extinguisher: 5 };
 
 // Physical proxies in model space (origin at the base). Cylinders stand on y = 0; boxes give size + center.
 const EQUIPMENT_BODIES = {
@@ -66,6 +98,26 @@ export const FIXTURES = {
   extinguisher: { name: "O't o'chirgich", body: { shape: "cylinder", radius: 0.078, height: 0.53, heavy: true } },
 };
 
+const materialOf = (typeId, body, substance = null) => {
+  if (substance) {
+    if (substance.state === "gas") return "metal";
+    if (body.breaks === "glass") return "glass";
+    return "plastic";
+  }
+  if (EQUIPMENT_MATERIAL[typeId]) return EQUIPMENT_MATERIAL[typeId];
+  if (body.breaks === "porcelain") return "porcelain";
+  return body.breaks === "glass" ? "glass" : "plastic";
+};
+
+const massOf = (typeId, substance = null) => {
+  if (substance) {
+    if (substance.state === "gas") return 2.4;
+    if (substance.state === "liquid") return 0.16 + (substance.container.fillMl ?? 200) / 1000;
+    return substance.state === "solid" ? 0.26 : 0.17;
+  }
+  return MASS_KG[typeId] ?? (EMPTY_MASS_G[typeId] ?? 100) / 1000;
+};
+
 const cache = new Map();
 
 export const objectType = (typeId) => {
@@ -73,14 +125,25 @@ export const objectType = (typeId) => {
   let type = null;
   if (typeId.startsWith(SUBSTANCE_PREFIX)) {
     const substance = SUBSTANCE_BY_ID[typeId.slice(SUBSTANCE_PREFIX.length)];
-    if (substance) type = { kind: "substance", name: substance.name, substance, body: substanceBody(substance) };
+    if (substance) {
+      const body = substanceBody(substance);
+      type = { kind: "substance", name: substance.name, substance, body, material: materialOf(typeId, body, substance), mass: massOf(typeId, substance) };
+    }
   } else if (EQUIPMENT_BY_ID[typeId]) {
-    type = { kind: "equipment", name: EQUIPMENT_BY_ID[typeId].name, body: EQUIPMENT_BODIES[typeId] };
+    const body = EQUIPMENT_BODIES[typeId];
+    type = { kind: "equipment", name: EQUIPMENT_BY_ID[typeId].name, body, material: materialOf(typeId, body), mass: massOf(typeId) };
   } else if (FIXTURES[typeId]) {
-    type = { kind: "fixture", name: FIXTURES[typeId].name, body: FIXTURES[typeId].body };
+    type = { kind: "fixture", name: FIXTURES[typeId].name, body: FIXTURES[typeId].body, material: "metal", mass: massOf(typeId) };
   }
   cache.set(typeId, type);
   return type;
+};
+
+// Rigid-body tuning for a type: material response plus its mass.
+export const physicsOf = (typeId) => {
+  const type = objectType(typeId);
+  const material = PHYSICS_MATERIALS[type?.material] ?? PHYSICS_MATERIALS.plastic;
+  return { ...material, material: type?.material ?? "plastic", mass: type?.mass ?? 0.1, breaks: type?.body.breaks ?? null };
 };
 
 // Half extents of the body's bounding box in model space, plus its center.

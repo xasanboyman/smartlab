@@ -1,5 +1,20 @@
 // Safety pop-ups for `warning` events (doc 15 § 3.5). danger: past | o'rta | yuqori
 export const WARNING_INFO = {
+  "no-goggles": {
+    title: "Ko'zoynaksiz ishlayapsiz!",
+    text: "Kislota, ishqor va qizdirish bilan ishlashdan oldin himoya ko'zoynagini taqing (Q tugmasi). Sachragan tomchi ko'zni kuydiradi.",
+    danger: "o'rta",
+  },
+  "cracked-glass": {
+    title: "Shisha darz ketdi",
+    text: "Idish urilib darz ketdi va endi oqadi. Darz ketgan shisha idishni qizdirmang va ishlatmang — uni almashtiring (E shkafdan yangisini oling).",
+    danger: "o'rta",
+  },
+  "glass-broken": {
+    title: "Shisha sindi",
+    text: "Siniqlarni qo'l bilan yig'mang: cho'tka va xokandoz bilan yig'ib, alohida idishga tashlang. To'kilgan moddani artib tozalang.",
+    danger: "o'rta",
+  },
   "water-into-acid": {
     title: "Suvni kislotaga quymang!",
     text: "Suv kislota ustida qoladi va chegarada bir zumda qaynaydi — kislota sachraydi, idish yorilishi mumkin. Qoida: kislotani suvga, ingichka oqim bilan va aralashtirib quying.",

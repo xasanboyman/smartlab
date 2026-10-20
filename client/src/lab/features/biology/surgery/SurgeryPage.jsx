@@ -1,13 +1,15 @@
 // "Jarrohlik" - virtual dissection. Preset pills set the peel depth; the left
 // panel adds per-layer opacity + a scalpel (clipping plane). Clicking a part
-// opens its Uzbek detail in the shared corner modal. All UI state in one object.
+// opens its Uzbek detail in the corner card. All UI state in one object.
 import useObjectState from "@/shared/hooks/useObjectState";
 import Scene from "@/lab/components/Scene";
 import LabWorkspace from "@/lab/components/LabWorkspace";
 import SurgeryModel from "./SurgeryModel";
 import SurgeryControls from "./SurgeryControls";
-import AnatomyDetailModal from "../anatomy/AnatomyDetailModal";
-import { SURGERY_PRESETS, DEFAULT_PRESET, getPreset } from "@/lab/data/surgery";
+import { SURGERY_PRESETS, SURGERY_LAYERS, DEFAULT_PRESET, getPreset } from "@/lab/data/surgery";
+import BioStudio from "../shared/BioStudio";
+import { BIO_GL, BIO_SCENE_BG, BIO_WORKSPACE } from "../shared/bioTheme";
+import { BioDetailCard, BioLoading, BioSceneTag } from "../shared/BioUi";
 
 const SurgeryPage = () => {
   const { preset, layers, clip, selectedPart, setField, setFields } = useObjectState({
@@ -24,21 +26,26 @@ const SurgeryPage = () => {
     setFields({ preset: null, layers: { ...layers, [slug]: value } });
   const setClip = (patch) => setField("clip", { ...clip, ...patch });
 
+  const visibleLayers = SURGERY_LAYERS.filter((l) => (layers[l.slug] ?? 0) > 0.02).map((l) => l.title);
+
   return (
     <LabWorkspace
+      {...BIO_WORKSPACE}
+      eyebrow="Biologiya · Anatomiya"
       title="Jarrohlik"
       description="Qatlamlarni shaffoflashtiring yoki skalpel bilan kesib, ichki a'zolarni ko'ring. A'zoni bossangiz tafsiloti chiqadi."
-      backTo="/biology"
-      backLabel="Biologiya"
       items={SURGERY_PRESETS.map((p) => ({ id: p.id, name: p.name }))}
       activeId={preset}
       onSelect={applyPreset}
+      aiContext={{ korinayotgan_qatlamlar: visibleLayers.join(", "), skalpel: clip.enabled ? `${clip.axis} o'qi, ${Math.round(clip.position * 100)}%` : "o'chiq" }}
       scene={
         <>
           <Scene
             camera={[0, 1, 6]}
             frameloop="demand"
-            gl={{ localClippingEnabled: true }}
+            bg={BIO_SCENE_BG}
+            gl={{ ...BIO_GL, localClippingEnabled: true }}
+            lights={false}
             controls={{
               minDistance: 0.5,
               maxDistance: 30,
@@ -47,9 +54,8 @@ const SurgeryPage = () => {
               zoomSpeed: 1.1,
             }}
           >
-            <hemisphereLight args={["#ffffff", "#9ca3af", 0.9]} />
-            <directionalLight position={[4, 6, 5]} intensity={0.8} />
-            <directionalLight position={[-5, 2, -4]} intensity={0.4} />
+            {/* Millions of triangles: no cast shadows, a static contact shadow grounds the body instead. */}
+            <BioStudio preset="organ" scale={4} shadow={false} contact={{ y: -1.9, opacity: 0.5, scale: 6, blur: 2 }} />
             <SurgeryModel
               layerOpacity={layers}
               clip={clip}
@@ -57,10 +63,17 @@ const SurgeryPage = () => {
               onPick={(part) => setField("selectedPart", part)}
             />
           </Scene>
-          <AnatomyDetailModal
-            part={selectedPart}
-            onClose={() => setField("selectedPart", null)}
-          />
+          <BioLoading title="Anatomik qatlamlar yuklanmoqda" subtitle="Teri · mushaklar · qon-tomir · ichki a'zolar (Draco)" />
+          {selectedPart && (
+            <BioDetailCard
+              eyebrow="Tanlangan tuzilma"
+              title={selectedPart.label}
+              color={selectedPart.color}
+              description={selectedPart.desc}
+              onClose={() => setField("selectedPart", null)}
+            />
+          )}
+          <BioSceneTag>{clip.enabled ? `Skalpel · ${Math.round(clip.position * 100)}%` : visibleLayers.join(" · ") || "Qatlamlar yashirilgan"}</BioSceneTag>
         </>
       }
       info={<SurgeryControls layers={layers} onLayer={setLayer} clip={clip} onClip={setClip} />}

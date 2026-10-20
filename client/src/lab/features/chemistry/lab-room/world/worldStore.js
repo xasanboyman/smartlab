@@ -2,6 +2,7 @@ import { createSnapStore } from "@/shared/utils/snapStore";
 import { objectType } from "./objectTypes";
 
 export const SLOT_COUNT = 5;
+const MAX_BURSTS = 6;
 
 const snapshotOf = (state) => ({
   objects: [...state.objects.values()],
@@ -109,16 +110,37 @@ export const createWorld = (layout) => {
       const object = state.objects.get(id);
       if (!object || object.state !== "held") return { ok: false };
       state.hotbar = state.hotbar.map((slotId) => (slotId === id ? null : slotId));
-      Object.assign(object, pose, { state: "placed", supportId, rev: object.rev + 1 });
+      // placedAt lets the renderer play the short settle when the item meets the surface.
+      Object.assign(object, pose, { state: "placed", supportId, placedAt: performance.now(), rev: object.rev + 1 });
       commit();
       return { ok: true };
     },
 
-    dropHeld: (id, pose, velocity) => {
+    // A placed item hit by something falling: it becomes a free body and can tip, roll and spill.
+    wake: (id, velocity, angular = null) => {
+      const object = state.objects.get(id);
+      if (!object || object.state !== "placed" || objectType(object.typeId)?.body.heavy) return { ok: false };
+      for (const child of children(id)) detach(child.id);
+      Object.assign(object, { state: "dynamic", supportId: null, velocity, angular, rev: object.rev + 1 });
+      commit();
+      return { ok: true };
+    },
+
+    // Glass that survived an impact keeps a crack (and leaks); shown on the model through props.
+    markCracked: (id) => {
+      const object = state.objects.get(id);
+      if (!object || object.props?.cracked) return false;
+      // No rev bump: the model re-renders with the crack while the falling body keeps its motion.
+      object.props = { ...object.props, cracked: true };
+      commit();
+      return true;
+    },
+
+    dropHeld: (id, pose, velocity, angular = null) => {
       const object = state.objects.get(id);
       if (!object || object.state !== "held") return { ok: false };
       state.hotbar = state.hotbar.map((slotId) => (slotId === id ? null : slotId));
-      Object.assign(object, pose, { state: "dynamic", velocity, supportId: null, rev: object.rev + 1 });
+      Object.assign(object, pose, { state: "dynamic", velocity, angular, supportId: null, placedAt: null, rev: object.rev + 1 });
       commit();
       return { ok: true };
     },
@@ -153,6 +175,8 @@ export const createWorld = (layout) => {
       state.objects.delete(id);
       state.bursts.push({ id: `b${state.nextBurst}`, typeId: object.typeId, position, rotation, velocity });
       state.nextBurst += 1;
+      // Old piles of shards go away so the floor never fills with sleeping bodies.
+      if (state.bursts.length > MAX_BURSTS) state.bursts.splice(0, state.bursts.length - MAX_BURSTS);
       commit();
     },
 
@@ -172,6 +196,7 @@ export const createWorld = (layout) => {
           state: "dynamic",
           supportId: null,
           velocity: [(dx / flat) * push * 0.6, 1.2 * strength, (dz / flat) * push * 0.6],
+          angular: [(dz / flat) * push * 4, 0, -(dx / flat) * push * 4],
           rev: object.rev + 1,
         });
         moved = true;

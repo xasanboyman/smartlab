@@ -75,7 +75,7 @@ const stopcockMaterial = new MeshStandardMaterial({
   metalness: 0.1,
 });
 
-const Burette = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) => {
+const Burette = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, cracked = false, ...props }) => {
   const kit = useKit();
   const { vessel, mouth, createTexture, printGeometry } = useMemo(() => getAssets(), []);
   const print = useMemo(() => ({
@@ -85,7 +85,7 @@ const Burette = ({ simId, volumeMl = 0, liquidColor, liquidOpacity, ...props }) 
 
   return (
     <group {...props}>
-      <GlassVessel vessel={vessel} print={print}>
+      <GlassVessel cracked={cracked} vessel={vessel} print={print}>
         <Contents
           simId={simId}
           vessel={mouth}

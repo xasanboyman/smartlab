@@ -20,6 +20,7 @@ const COMPACT_CONTROLS = [
   { keys: ["Bosib turing"], label: "Quyish / qizdirish" },
   { keys: ["G"], label: "Qo'ldagini tashlash" },
   { keys: ["E"], label: "Moddalar shkafi" },
+  { keys: ["Q"], label: "Himoya ko'zoynagi" },
 ];
 
 const LoadingProgress = ({ ready }) => {

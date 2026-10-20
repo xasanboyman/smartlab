@@ -1,0 +1,78 @@
+/* Embedded mode (?embed=1): SmartLab frames the app and supplies its own navbar/tabs,
+   so the Zperiod brand, page pills, about button and marketing modals are hidden.
+   The element search stays. */
+html.embed .nav-brand-section,
+html.embed .nav-center-group,
+html.embed .floating-about-btn,
+html.embed .copyright-notice,
+html.embed #welcome-modal,
+html.embed #changelog-modal,
+html.embed #zperiod-onboarding-overlay {
+  display: none !important;
+}
+
+html.embed .global-nav {
+  top: 8px;
+  height: 44px;
+  width: calc(100% - 16px);
+  padding: 0 10px;
+  justify-content: center;
+  border-radius: 22px;
+}
+
+html.embed .nav-right-section {
+  justify-content: center;
+}
+
+html.embed .element-search-wrapper {
+  max-width: 420px;
+}
+
+html.embed #main-container {
+  padding-top: 62px;
+}
+
+html.embed .blank-page {
+  padding-top: 52px;
+}
+
+/* Settings page in embed: the Help/About card opens the hidden welcome modal, so drop it. */
+html.embed #settings-open-welcome {
+  display: none !important;
+}
+
+/* Phones: let the whole app scroll instead of clipping the 1280px-wide table. */
+@media (max-width: 1024px) {
+  html.embed,
+  html.embed body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Five tool cards (the empirical-formula card is restored): 3 columns on wide screens. */
+.chem-tools-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1024px) {
+  html.embed .blank-page {
+    overflow-y: auto;
+  }
+  html.embed .chemistry-tools-page,
+  html.embed .worksheet-generator-page {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+  html.embed .chem-tools-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+  html.embed .worksheet-container {
+    grid-template-columns: 1fr;
+  }
+  html.embed .worksheet-preview {
+    min-height: 60vh;
+  }
+}

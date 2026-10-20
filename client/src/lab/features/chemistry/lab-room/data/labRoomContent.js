@@ -14,6 +14,7 @@ export const CONTROLS = [
   { keys: ["G"], label: "Qo'ldagini tashlash" },
   { keys: ["1–5"], label: "Qo'ldagi narsani tanlash" },
   { keys: ["E"], label: "Moddalar shkafi" },
+  { keys: ["Q"], label: "Himoya ko'zoynagi" },
   { keys: ["Esc"], label: "Menyu" },
 ];
 

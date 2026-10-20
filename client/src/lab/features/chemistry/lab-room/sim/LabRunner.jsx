@@ -22,6 +22,8 @@ const HOT_PLATE_LEVELS = [22, 50, 100, 200, 300];
 // A 5 kg CO₂ extinguisher empties in about a quarter of a minute.
 const EXTINGUISHER_S = 14;
 const SPILL_NOTICE_ML = 3;
+// A cracked vessel loses this share of its contents per second onto the surface below.
+const LEAK_PER_S = 0.1;
 
 const DEVICE_DEFAULTS = {
   "spirit-lamp": () => ({ lit: false, capOn: true, fuelMl: 60, boost: 0, dousing: 0 }),
@@ -70,6 +72,16 @@ const syncEntities = (world, lab, known) => {
     known.delete(id);
     lab.removeContainer(id);
     lab.removeDevice(id);
+  }
+};
+
+// Cracked glass weeps its contents into a puddle at its base.
+const leakCracked = (world, lab, dt) => {
+  for (const object of world.store.get().objects) {
+    if (!object.props?.cracked || object.state === "held") continue;
+    const mixture = lab.mixture(object.id);
+    if (!mixture || mixture.volumeMl <= 0.1) continue;
+    spillMixture(lab, object.id, object.position, { fraction: Math.min(1, LEAK_PER_S * dt) });
   }
 };
 
@@ -163,6 +175,11 @@ const tubeBubbles = (lab) => {
 };
 
 const updateDevices = (world, lab, dt) => {
+  const stirring = {};
+  for (const object of world.store.get().objects) {
+    if (object.supportId && lab.device(object.supportId)?.stir && world.get(object.supportId)?.typeId === "hot-plate") stirring[object.id] = true;
+  }
+  lab.activity.stirring = stirring;
   for (const object of world.store.get().objects) {
     const device = lab.device(object.id);
     if (!device) continue;
@@ -350,7 +367,7 @@ const stepHazards = (world, lab, dt) => {
       heatSources.push({ position: [position[0], position[1] + topY, position[2]], hot: true });
     }
   }
-  const events = lab.hazards.step(dt, { playerPosition: lab.activity.cameraPosition, containerFires: fires, heatSources });
+  const events = lab.hazards.step(dt, { playerPosition: lab.activity.cameraPosition, containerFires: fires, heatSources, goggles: Boolean(lab.prefs?.goggles) });
   if (lab.hazards.puddles.some((p) => p.ml > SPILL_NOTICE_ML)) warnOnce(lab, "spill", 60);
   for (const event of events) {
     if (event.type === "alarm") pushFeed(lab, { kind: "warning", id: event.reason === "fire" ? "fire-alarm" : "gas-alarm" });
@@ -373,6 +390,7 @@ const advanceFrame = (world, lab, meta, runner, delta) => {
     consumeJarGas(lab, STEP);
     tubeBubbles(lab);
     handleEvents(world, lab, events, meta, runner.notices);
+    leakCracked(world, lab, STEP);
     stepHazards(world, lab, STEP);
   }
 };

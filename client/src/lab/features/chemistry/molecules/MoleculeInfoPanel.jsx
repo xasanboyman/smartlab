@@ -3,6 +3,9 @@ import { useMemo } from "react";
 import { ExternalLink } from "lucide-react";
 import FormulaText from "@/lab/components/FormulaText";
 import { getElementMeta } from "@/lab/data/molecules";
+import { molarMass } from "@zperiod/chem";
+
+const openElement = (symbol) => import("@zperiod/embed").then((m) => m.openElement(symbol));
 
 const STATE_LABEL = { gaz: "Gaz", suyuq: "Suyuq", qattiq: "Qattiq" };
 
@@ -55,7 +58,7 @@ const MoleculeInfoPanel = ({ molecule }) => {
       )}
 
       <div className="mt-5 grid grid-cols-2 gap-2">
-        <Stat label="Molekulyar massa" value={`${molecule.weight} g/mol`} />
+        <Stat label="Molyar massa" value={`${molarMass(molecule.formula) ?? molecule.weight} g/mol`} />
         <Stat label="PubChem CID" value={molecule.cid} />
         <Stat label="Atomlar" value={molecule.atoms.length} />
         <Stat label="Bog'lar" value={molecule.bonds.length} />
@@ -67,16 +70,20 @@ const MoleculeInfoPanel = ({ molecule }) => {
         </h3>
         <ul className="mt-2 flex flex-wrap gap-2">
           {legend.map((el) => (
-            <li
-              key={el.sym}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-2 py-1 text-xs"
-            >
+            <li key={el.sym}>
+              <button
+                type="button"
+                onClick={() => openElement(el.sym)}
+                title={`${el.name} — element kartasini ochish`}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-2 py-1 text-xs transition-colors hover:border-primary/50 hover:bg-primary/10"
+              >
               <span
                 className="h-3 w-3 rounded-full ring-1 ring-black/10"
                 style={{ backgroundColor: el.color }}
               />
               <span className="font-medium">{el.sym}</span>
               <span className="text-muted-foreground">{el.name}</span>
+              </button>
             </li>
           ))}
         </ul>

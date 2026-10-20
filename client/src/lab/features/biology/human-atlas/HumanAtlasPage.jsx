@@ -2,7 +2,7 @@
 // Tizimlarni yoqib-o'chirish, qidiruv, portlatish (inventar) va ajratib
 // ko'rsatish. Butun UI holati bitta useObjectState'da.
 import { useCallback, useMemo } from "react";
-import { Activity, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
 import Scene from "@/lab/components/Scene";
 import LabWorkspace from "@/lab/components/LabWorkspace";
@@ -11,6 +11,9 @@ import AtlasBody from "./AtlasBody";
 import AtlasControls from "./AtlasControls";
 import AtlasDetailCard from "./AtlasDetailCard";
 import { SYSTEMS, SYSTEM_BY_ID, DEFAULT_VISIBLE, PRESETS, translateName } from "./data/systems";
+import BioStudio from "../shared/BioStudio";
+import { BIO_GL, BIO_SCENE_BG, BIO_WORKSPACE } from "../shared/bioTheme";
+import { BioLoading } from "../shared/BioUi";
 
 const INITIAL = {
   preset: "all",
@@ -25,7 +28,7 @@ const INITIAL = {
 };
 
 const HumanAtlasPage = () => {
-  const { data: atlas, isError: manifestFailed } = useAtlasQuery();
+  const { data: atlas, isError: manifestFailed, isLoading: manifestLoading } = useAtlasQuery();
   const state = useObjectState(INITIAL);
   const { preset, visible, selected, chosen, isolate, explode, query, progress, error, setField, setFields } = state;
 
@@ -85,15 +88,22 @@ const HumanAtlasPage = () => {
     [atlas, visible, explode, isolate, chosen, selectedParts, selected.length],
   );
 
-  const loading = atlas && progress < 100 && !error;
   const failure = error || (manifestFailed ? "Anatomiya katalogi yuklanmadi. Sahifani yangilang." : "");
+  const loadProgress = failure ? 100 : manifestLoading || !atlas ? 2 : progress;
+  const sceneTag = isolate
+    ? translateName(chosen?.name)
+    : explode > 0.95
+      ? "Anatomik inventar"
+      : explode > 0.05
+        ? "Ajratilgan tuzilmalar"
+        : "Katta yoshli odam · erkak";
 
   return (
     <LabWorkspace
+      {...BIO_WORKSPACE}
+      eyebrow="Biologiya · BodyParts3D"
       title="Inson atlasi"
       description="2234 ta qism, 15 tizim. Aylantiring, yaqinlashtiring; qismni bossangiz tafsiloti chiqadi."
-      backTo="/biology"
-      backLabel="Biologiya"
       items={PRESETS.map((p) => ({ id: p.id, name: p.name }))}
       activeId={preset}
       onSelect={applyPreset}
@@ -103,7 +113,9 @@ const HumanAtlasPage = () => {
           <Scene
             camera={[1.0, 0.18, 2.85]}
             frameloop="demand"
-            bg="#f3f2f7"
+            bg={BIO_SCENE_BG}
+            gl={BIO_GL}
+            lights={false}
             controls={{
               minDistance: 0.05,
               maxDistance: 30,
@@ -113,9 +125,8 @@ const HumanAtlasPage = () => {
               maxPolarAngle: Math.PI * 0.96,
             }}
           >
-            <hemisphereLight args={["#ffffff", "#a7acb2", 0.9]} />
-            <directionalLight position={[-2, 4, 3]} intensity={1.8} color="#fffaf4" />
-            <directionalLight position={[2, 2, -3]} intensity={1.2} color="#e9f0ff" />
+            {/* 1.8 m body: light distances in metres; the custom shader displaces parts, so no cast shadows. */}
+            <BioStudio preset="organ" scale={2.2} shadow={false} />
             {atlas && (
               <AtlasBody
                 atlas={atlas}
@@ -141,42 +152,24 @@ const HumanAtlasPage = () => {
 
           {/* Sahna sarlavhasi + tiklash (pastki chapda, toolbar'ga xalaqit bermaydi). */}
           <div className="pointer-events-none absolute bottom-5 left-4 z-20 hidden items-center gap-2 lg:flex">
-            <span className="rounded-full border border-border bg-background/85 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground backdrop-blur">
-              {isolate ? translateName(chosen?.name) : explode > 0.95 ? "Anatomik inventar" : explode > 0.05 ? "Ajratilgan tuzilmalar" : "Katta yoshli odam · erkak"}
+            <span className="rounded-full border border-border bg-background/80 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
+              {sceneTag}
             </span>
             <button
               onClick={resetAll}
-              className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-border bg-background/85 px-3 py-1 text-[11px] font-medium text-muted-foreground backdrop-blur hover:text-foreground"
+              className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-border bg-background/80 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur hover:text-primary"
             >
-              <RotateCcw size={12} /> Tiklash
+              <RotateCcw size={11} /> Tiklash
             </button>
           </div>
 
-          {(loading || !atlas) && !failure && (
-            <div role="status" className="absolute inset-x-0 top-4 z-30 flex justify-center px-4">
-              <div className="flex w-full max-w-xs items-center gap-3 rounded-2xl border border-border bg-background/90 p-3 shadow-lg backdrop-blur">
-                <Activity size={18} className="shrink-0 animate-pulse text-primary" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">Anatomiya tayyorlanmoqda</div>
-                  <div className="text-xs text-muted-foreground">{progress}% · {atlas?.parts.length.toLocaleString("uz") ?? "2 234"} ta qism</div>
-                  <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-secondary">
-                    <i className="block h-full rounded-full bg-primary transition-[width]" style={{ width: `${progress}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {failure && (
-            <div role="alert" className="absolute inset-x-0 top-4 z-30 flex justify-center px-4">
-              <div className="flex w-full max-w-sm items-center gap-3 rounded-2xl border border-destructive/40 bg-background/95 p-3 text-sm shadow-lg">
-                <p className="flex-1 text-destructive">{failure}</p>
-                <button onClick={() => location.reload()} className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-secondary/70">
-                  Yangilash
-                </button>
-              </div>
-            </div>
-          )}
+          <BioLoading
+            title="Anatomiya tayyorlanmoqda"
+            subtitle={`${atlas?.parts.length.toLocaleString("uz") ?? "2 234"} ta qism · 15 tizim · meshopt siqilgan`}
+            progress={loadProgress}
+            error={failure}
+            onRetry={() => location.reload()}
+          />
         </>
       }
       info={

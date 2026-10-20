@@ -72,7 +72,7 @@ const StirringRod = ({ ...props }) => {
   return (
     <group {...props}>
       <mesh geometry={core} material={coreMaterial} renderOrder={2} />
-      <mesh geometry={rod} material={kit.glass} renderOrder={3} />
+      <mesh geometry={rod} material={kit.glassSolid} renderOrder={3} castShadow />
     </group>
   );
 };

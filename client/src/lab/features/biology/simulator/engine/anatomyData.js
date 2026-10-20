@@ -1,40 +1,5 @@
-import skinUrl from "@/shared/assets/models/skin.glb?url";
-import myologyUrl from "@/shared/assets/models/myology.glb?url";
-import heartUrl from "@/shared/assets/models/human_heart_3d_model.glb?url";
-import lungsUrl from "@/shared/assets/models/realistic_human_lungs.glb?url";
-import angiologyUrl from "@/shared/assets/models/angiology.glb?url";
-import neurologyUrl from "@/shared/assets/models/neurology.glb?url";
-import splanchnologyUrl from "@/shared/assets/models/splanchnology.glb?url";
-import digestiveSystemUrl from "@/shared/assets/models/digestive_system.glb?url";
-import liverUrl from "@/shared/assets/models/human_liver_and_gallbladder.glb?url";
-import kidneyUrl from "@/shared/assets/models/human_kidney.glb?url";
-import skullUrl from "@/shared/assets/models/skull.glb?url";
-import orbitEyeUrl from "@/shared/assets/models/muscles_of_the_orbit_eye.glb?url";
-import skeletonUrl from "@/shared/assets/models/skeleton.glb?url";
-import diaphragmUrl from "@/shared/assets/models/human_diaphragm.glb?url";
-
-export const MODEL_URLS = {
-  skin: skinUrl,
-  muscles: myologyUrl,
-  myology: myologyUrl,
-  heart: heartUrl,
-  lungs: lungsUrl,
-  angiology: angiologyUrl,
-  circulatory: angiologyUrl,
-  neurology: neurologyUrl,
-  brain: neurologyUrl,
-  splanchnology: splanchnologyUrl,
-  digestive: digestiveSystemUrl,
-  stomach: digestiveSystemUrl,
-  intestines: digestiveSystemUrl,
-  liver: liverUrl,
-  kidneys: kidneyUrl,
-  kidney: kidneyUrl,
-  skull: skullUrl,
-  eye: orbitEyeUrl,
-  skeleton: skeletonUrl,
-  diaphragm: diaphragmUrl,
-};
+// Topic/system catalogue for the anatomy simulator. The 3D body itself is
+// public/models/human_anatomy.glb (NativeAnatomyCanvas); no per-topic GLBs.
 
 export const SYSTEMS = {
   skin: { name: "Teri qoplami (Tana yuzasi)", short: "Teri", color: "#e8b89b", defaultVisible: true, defaultOpacity: 0.45 },
@@ -45,11 +10,11 @@ export const SYSTEMS = {
 };
 
 export const BODY_LAYERS = [
-  { id: "skin", name: "Teri qoplami", short: "Teri", icon: "🧍", url: skinUrl, color: "#e8b89b", defaultOpacity: 0.45, explodeX: -2.0 },
-  { id: "organs", name: "Ichki a'zolar", short: "A'zolar", icon: "🫁", url: splanchnologyUrl, color: "#f43f5e", defaultOpacity: 1.0, explodeX: -1.0 },
-  { id: "skeleton", name: "Skelet (Suyaklar)", short: "Skelet", icon: "💀", url: skeletonUrl, color: "#f1f5f9", defaultOpacity: 1.0, explodeX: 0 },
-  { id: "vessels", name: "Qon-tomir tizimi", short: "Qon-tomir", icon: "🩸", url: angiologyUrl, color: "#3b82f6", defaultOpacity: 0.95, explodeX: 1.0 },
-  { id: "muscles", name: "Mushaklar tizimi", short: "Mushaklar", icon: "💪", url: myologyUrl, color: "#dc2626", defaultOpacity: 0.9, explodeX: 2.0 },
+  { id: "skin", name: "Teri qoplami", short: "Teri", icon: "🧍", color: "#e8b89b", defaultOpacity: 0.45, explodeX: -2.0 },
+  { id: "organs", name: "Ichki a'zolar", short: "A'zolar", icon: "🫁", color: "#f43f5e", defaultOpacity: 1.0, explodeX: -1.0 },
+  { id: "skeleton", name: "Skelet (Suyaklar)", short: "Skelet", icon: "💀", color: "#f1f5f9", defaultOpacity: 1.0, explodeX: 0 },
+  { id: "vessels", name: "Qon-tomir tizimi", short: "Qon-tomir", icon: "🩸", color: "#3b82f6", defaultOpacity: 0.95, explodeX: 1.0 },
+  { id: "muscles", name: "Mushaklar tizimi", short: "Mushaklar", icon: "💪", color: "#dc2626", defaultOpacity: 0.9, explodeX: 2.0 },
 ];
 
 export const THREE_STAGES = [
@@ -144,7 +109,6 @@ export const ORGAN_INFO = {
     shortName: "Yurak",
     system: "Qon-tomir tizimi",
     color: "#e11d48",
-    url: heartUrl,
     hasAnimation: true,
     animatedType: "heartbeat",
     desc: "To'rt kamerali kuchli mushak nasosi. Kislorodga to'yingan qonni butun tanaga haydab, metabolizm chiqindilari va karbonat angidridni qaytarib tozalashga yo'naltiradi.",
@@ -157,7 +121,6 @@ export const ORGAN_INFO = {
     shortName: "O'pka",
     system: "Nafas olish tizimi",
     color: "#f43f5e",
-    url: lungsUrl,
     hasAnimation: true,
     animatedType: "breathing",
     desc: "Nafas olish tizimining markaziy juft a'zosi. Havodagi kislorodni qonga o'tkazib, qondagi karbonat angidrid gazini tashqariga chiqarish vazifasini bajaradi.",
@@ -170,7 +133,6 @@ export const ORGAN_INFO = {
     shortName: "Bosh miya",
     system: "Asab tizimi",
     color: "#a855f7",
-    url: neurologyUrl,
     desc: "Tananing oliy boshqaruv va axborot markazi. Sezgi, fikrlash, ixtiyoriy va avtomatik tana harakatlari hamda barcha hayotiy a'zolar faoliyatini muvofiqlashtiradi.",
     summary: "Barcha sezgi, harakat, xotira va hayotiy jarayonlarni muvofiqlashtiruvchi markaziy a'zo.",
     fact: "Bosh miyada taxminan 86 milliard neyron mavjud bo'lib, u tananing umumiy energiyasining 20% ini iste'mol qiladi.",
@@ -181,7 +143,6 @@ export const ORGAN_INFO = {
     shortName: "Jigar",
     system: "Hazm qilish tizimi",
     color: "#b91c1c",
-    url: liverUrl,
     desc: "Organizmning eng katta kimyoviy laboratoriyasi. Oziq moddalarni qayta ishlaydi, qonni toksinlardan tozalaydi, yog'larni parchalash uchun o't suyuqligi (safro) ishlab chiqaradi.",
     summary: "Toksinlarni tozalovchi, o't suyuqligi ishlab chiqaruvchi va moddalar almashinuvini boshqaruvchi a'zo.",
     fact: "Jigar o'z to'qimasining 75% qismi olib tashlansa ham bir necha oy ichida dastlabki hajmiga to'liq qayta o'sib yetisha oladi.",
@@ -192,7 +153,6 @@ export const ORGAN_INFO = {
     shortName: "Oshqozon",
     system: "Hazm qilish tizimi",
     color: "#ea580c",
-    url: digestiveSystemUrl,
     desc: "Qizilo'ngach, oshqozon, ingichka va yo'g'on ichaklardan iborat yaxlit ovqat hazm qilish tizimi. Ozuqa moddalarini parchalaydi va qonga so'radi.",
     summary: "Ovqatni kislota va fermentlar yordamida hazm qiluvchi va oziq moddalarni so'ruvchi tizim.",
     fact: "Oshqozon shirasi tarkibidagi xlorid kislotasi shu darajada kuchliki, oshqozon o'z-o'zini hazm qilib yubormasligi uchun har 3-4 kunda ichki shilliq qavatini yangilab turadi.",
@@ -203,7 +163,6 @@ export const ORGAN_INFO = {
     shortName: "Buyraklar",
     system: "Ayirish tizimi",
     color: "#be123c",
-    url: kidneyUrl,
     desc: "Loviya shaklidagi juft a'zo. Qonni uzluksiz filtrlaydi, toksinlar va ortiqcha suyuqlikni siydik orqali chiqaradi, arterial qon bosimini nazorat qiladi.",
     summary: "Qonni tinimsiz tozalovchi va tana suyuqliklari muvozanatini saqlovchi filtrlash a'zosi.",
     fact: "Har bir buyrakda taxminan 1 millionta mikroskopik nefronlar joylashgan bo'lib, ular kuniga 180 litr qon plazmasini filtrlaydi.",
@@ -214,7 +173,6 @@ export const ORGAN_INFO = {
     shortName: "Ichaklar",
     system: "Hazm qilish tizimi",
     color: "#d97706",
-    url: digestiveSystemUrl,
     desc: "Ingichka ichak aminokislotalar, glyukoza va yog'larni so'radi; yo'g'on ichak esa suvni qayta shimib najas hosil qiladi.",
     summary: "Oziq moddalar va suvning so'rilishini amalga oshiruvchi ichak trakti.",
     fact: "Katta yoshli odamning ingichka ichagi uzunligi taxminan 6 metr, yo'g'on ichagi esa 1.5 metrga yetadi.",
@@ -225,7 +183,6 @@ export const ORGAN_INFO = {
     shortName: "Skelet",
     system: "Tayanch-harakat tizimi",
     color: "#e2e8f0",
-    url: skeletonUrl,
     desc: "206 ta suyakdan iborat anatomik tayanch karkasi. Miya, yurak, o'pkani himoyalaydi, mushaklar birikadigan richaglarni hosil qiladi va ilikda qon hujayralarini yaratadi.",
     summary: "Tananing 206 ta suyakdan iborat mustahkam tayanch va himoya tizimi.",
     fact: "Inson son suyagi (femur) tanadagi eng uzun va eng baquvvat suyak bo'lib, beton kabi katta yuklanishga bardosh beradi.",
@@ -236,7 +193,6 @@ export const ORGAN_INFO = {
     shortName: "Mushaklar",
     system: "Tayanch-harakat tizimi",
     color: "#dc2626",
-    url: myologyUrl,
     desc: "600 dan ortiq skelet mushaklaridan iborat majmua. Qisqarish orqali barcha tana harakatlarini ta'minlaydi, qomatni saqlaydi va issiqlik ishlab chiqaradi.",
     summary: "Tananing harakati, qomati va tana harorati barqarorligini ta'minlovchi mushaklar.",
     fact: "Chaynov mushagi (masseter) tana yuzasi nisbatida eng kuchli mushak hisoblanib, jag'da 90 kg dan ortiq bosim kuchi hosil qila oladi.",
@@ -247,7 +203,6 @@ export const ORGAN_INFO = {
     shortName: "Qon-tomir",
     system: "Qon-tomir tizimi",
     color: "#3b82f6",
-    url: angiologyUrl,
     desc: "Arteriyalar, venalar va kapillyarlardan iborat yaxlit transport tarmog'i. Kislorod, ozuqa, gormon va immunitet hujayralarini butun tanaga yetkazadi.",
     summary: "Arteriyalar, venalar va kapillyarlardan iborat butun tana qon transport tizimi.",
     fact: "Odam tanasidagi barcha qon tomirlarining umumiy uzunligi taxminan 100 000 km bo'lib, Yer ekvatorini 2.5 marta aylanishga yetadi.",
@@ -258,7 +213,6 @@ export const ORGAN_INFO = {
     shortName: "Bosh suyagi",
     system: "Skelet tizimi",
     color: "#cbd5e1",
-    url: skullUrl,
     desc: "Miya qutisi va yuz skeletini tashkil etuvchi 22 ta suyak birikmasi. Bosh miya va sezgi a'zolarini mustahkam himoya qiladi.",
     summary: "Bosh miya va yuz tuzilmalarini himoya qiluvchi mustahkam suyak majmuasi.",
     fact: "Kalla suyagida pastki jag'dan tashqari barcha suyaklar harakatsiz choklar orqali mahkam birlashgan.",
@@ -269,7 +223,6 @@ export const ORGAN_INFO = {
     shortName: "Ko'z mushaklari",
     system: "Sezgi a'zolari",
     color: "#06b6d4",
-    url: orbitEyeUrl,
     desc: "Ko'z soqqasi va uni turli yo'nalishlarda chaqqon harakatlantiruvchi 6 ta asosiy ko'z mushagi (to'g'ri va qiyshiq mushaklar).",
     summary: "Ko'rish a'zosi va uning 6 ta nozik harakatlanuvchi mushak apparati.",
     fact: "Ko'z mushaklari inson tanasidagi eng chaqqon mushaklar bo'lib, bir kunda 100 000 dan ortiq mikrog'imirlash harakatlarini bajaradi.",
@@ -280,7 +233,6 @@ export const ORGAN_INFO = {
     shortName: "Diafragma",
     system: "Nafas olish tizimi",
     color: "#fb7185",
-    url: diaphragmUrl,
     desc: "Ko'krak va qorin bo'shlig'i chegarasidagi gumbazsimon asosiy nafas mushagi. Har bir nafasda pastga tushib o'pka hajmini kengaytiradi.",
     summary: "Nafas olishning asosiy harakatlantiruvchi gumbazsimon mushagi.",
     fact: "Diafragma asabining (n. phrenicus) qisqa tutqanoqsimon qo'zg'alishi natijasida hammamizga tanish bo'lgan hiqichoq (singultus) paydo bo'ladi.",

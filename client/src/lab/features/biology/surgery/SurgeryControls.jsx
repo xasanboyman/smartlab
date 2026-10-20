@@ -1,6 +1,8 @@
 // Left-panel controls for the dissection page: per-layer opacity sliders
 // (peel away skin/muscle) + a scalpel section that drives the clipping plane.
+import { FlipHorizontal2 } from "lucide-react";
 import { SURGERY_LAYERS } from "@/lab/data/surgery";
+import { BioButton, BioRange, BioSection, BioSegment, BioToggle } from "../shared/BioUi";
 
 const AXES = [
   { id: "x", label: "Ko'ndalang" },
@@ -10,102 +12,31 @@ const AXES = [
 
 const SurgeryControls = ({ layers, onLayer, clip, onClip }) => (
   <div className="space-y-6">
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold">Qatlamlar</h2>
-      {SURGERY_LAYERS.map((l) => {
-        const pct = Math.round((layers[l.slug] ?? 0) * 100);
-        return (
-          <div key={l.slug} className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="flex items-center gap-1.5">
-                <span
-                  className="size-2.5 rounded-full ring-1 ring-black/10"
-                  style={{ backgroundColor: l.color }}
-                />
-                {l.title}
-              </span>
-              <span className="text-muted-foreground">{pct}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={pct}
-              onChange={(e) => onLayer(l.slug, Number(e.target.value) / 100)}
-              className="w-full accent-primary"
-            />
-          </div>
-        );
-      })}
-      <p className="text-xs text-muted-foreground">
-        Tashqi qatlamni 0% ga tushirsangiz, ichkarisi ko'rinadi.
-      </p>
-    </section>
-
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Skalpel (kesish)</h2>
-        <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            checked={clip.enabled}
-            onChange={(e) => onClip({ enabled: e.target.checked })}
-            className="accent-primary"
+    <BioSection label="Qatlamlar" right={<span className="font-mono text-[10px] text-muted-foreground">tashqi → ichki</span>}>
+      <div className="space-y-3">
+        {SURGERY_LAYERS.map((l) => (
+          <BioRange
+            key={l.slug}
+            label={l.title}
+            color={l.color}
+            value={Math.round((layers[l.slug] ?? 0) * 100)}
+            onChange={(v) => onLayer(l.slug, v / 100)}
           />
-          Yoqish
-        </label>
+        ))}
       </div>
+      <p className="text-[11px] text-muted-foreground">Tashqi qatlamni 0% ga tushirsangiz, ichkarisi ko'rinadi.</p>
+    </BioSection>
 
-      <div
-        className={
-          clip.enabled ? "space-y-3" : "pointer-events-none space-y-3 opacity-40"
-        }
-      >
-        <div className="flex gap-1.5">
-          {AXES.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => onClip({ axis: a.id })}
-              className={`flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
-                clip.axis === a.id
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border hover:bg-secondary"
-              }`}
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span>Kesish joyi</span>
-            <span className="text-muted-foreground">
-              {Math.round(clip.position * 100)}%
-            </span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={Math.round(clip.position * 100)}
-            onChange={(e) => onClip({ position: Number(e.target.value) / 100 })}
-            className="w-full accent-primary"
-          />
-        </div>
-
-        <button
-          onClick={() => onClip({ flip: !clip.flip })}
-          className="w-full rounded-lg border border-border px-2 py-1.5 text-xs hover:bg-secondary"
-        >
+    <BioSection label="Skalpel (kesish)">
+      <BioToggle label="Kesimni yoqish" hint="Yumshoq to'qimani kesadi, a'zolar butun qoladi" checked={clip.enabled} onChange={(v) => onClip({ enabled: v })} />
+      <div className={clip.enabled ? "space-y-3" : "pointer-events-none space-y-3 opacity-40"}>
+        <BioSegment options={AXES} value={clip.axis} onChange={(axis) => onClip({ axis })} />
+        <BioRange label="Kesish joyi" value={Math.round(clip.position * 100)} onChange={(v) => onClip({ position: v / 100 })} />
+        <BioButton className="w-full" active={clip.flip} icon={<FlipHorizontal2 size={13} />} onClick={() => onClip({ flip: !clip.flip })}>
           Yo'nalishni almashtirish
-        </button>
+        </BioButton>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        Skalpel faqat yumshoq to'qimani (mushak, tomir) kesadi; a'zolar butun qoladi.
-      </p>
-    </section>
+    </BioSection>
   </div>
 );
 

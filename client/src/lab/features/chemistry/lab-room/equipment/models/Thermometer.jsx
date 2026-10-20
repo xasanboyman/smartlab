@@ -172,7 +172,7 @@ const Thermometer = ({ simId, temperatureC = 22, ...props }) => {
         position={[axial(COLUMN.from), R * MM, 0]}
         scale-x={columnLength(temperatureC)}
       />
-      <mesh geometry={body} material={kit.glass} renderOrder={3} />
+      <mesh geometry={body} material={kit.glassSolid} renderOrder={3} castShadow />
       <mesh geometry={ring} material={kit.glass} renderOrder={3} />
     </group>
   );

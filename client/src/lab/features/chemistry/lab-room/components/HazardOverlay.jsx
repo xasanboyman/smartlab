@@ -46,6 +46,7 @@ const paint = (root, lab) => {
   setLayer(root.querySelector("[data-layer='flash']"), calm ? Math.min(0.45, exposure.flash * 0.5) : exposure.flash);
   setLayer(root.querySelector("[data-layer='ring']"), Math.min(0.75, exposure.ringing));
   setLayer(root.querySelector("[data-layer='alarm']"), alarm.active ? 1 : 0);
+  setLayer(root.querySelector("[data-layer='goggles']"), lab.prefs.goggles ? 1 : 0);
 
   const banner = root.querySelector("[data-layer='banner']");
   const label = root.querySelector("[data-text='banner']");
@@ -83,6 +84,21 @@ const HazardOverlay = ({ lab }) => {
         style={{ background: "radial-gradient(ellipse at center, transparent 30%, rgba(8,10,14,0.92) 100%)" }}
       />
       <div data-layer="flash" className="absolute inset-0 bg-white opacity-0" />
+      {/* Safety goggles: a soft frame around two lens openings and a faint blue tint; the periphery only dims a little. */}
+      <div data-layer="goggles" className="absolute inset-0 opacity-0 transition-opacity duration-300">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 40% 50% at 29% 50%, transparent 0 88%, rgba(20,24,30,0.42) 100%), radial-gradient(ellipse 40% 50% at 71% 50%, transparent 0 88%, rgba(20,24,30,0.42) 100%)",
+            mixBlendMode: "multiply",
+          }}
+        />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(150,200,255,0.06), rgba(150,200,255,0.02))" }} />
+        <div className="absolute right-5 top-14 rounded-full border border-emerald-400/50 bg-emerald-500/20 px-3 py-1 text-[11px] font-semibold text-emerald-200">
+          Himoya ko'zoynagi taqilgan
+        </div>
+      </div>
       {/* The pulse lives on an inner element: a CSS animation would override the opacity written above. */}
       <div data-layer="alarm" className="absolute inset-0 opacity-0 transition-opacity duration-300">
         <div className="absolute inset-0 animate-pulse" style={{ boxShadow: "inset 0 0 90px 10px rgba(220,38,38,0.4)" }} />

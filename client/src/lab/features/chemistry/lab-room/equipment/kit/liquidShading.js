@@ -25,6 +25,7 @@ export const createFluidUniforms = (table) => ({
   uRipple: { value: 0 },
   uBoil: { value: 0 },
   uSlosh: { value: 0 },
+  uVortex: { value: 0 },
   uTime: { value: 0 },
   uPlume: { value: 0 },
   uPlumeSource: { value: new Vector3(0, table.floor, 0) },
@@ -57,6 +58,7 @@ uniform vec3 uPlumeSource;
 uniform float uSchlieren;
 uniform float uWisps;
 uniform float uSlosh;
+uniform float uVortex;
 varying vec3 vFluidLocal;
 varying vec3 vFluidCamera;
 varying float vFluidPart;
@@ -361,6 +363,15 @@ if ( fp.surface >= 0.0 ) {
     nLocal = normalize( nLocal + wavePerturb );
   }
   #endif
+  if ( uVortex > 0.001 ) {
+    // Magnetic stirring: a dimple at the axis and spiral ripples running round it.
+    float rr = qr / max( fluidRadius( q.y ), 1e-4 );
+    vec3 tangent = vec3( - radial.y, 0.0, radial.x );
+    float spiral = sin( qr * 420.0 - atan( q.z, q.x ) * 3.0 - uTime * 14.0 );
+    vec3 swirl = ( tangent * 0.3 * spiral + rPlane * ( 0.55 * exp( - rr * rr * 9.0 ) + 0.12 * spiral ) ) * uVortex;
+    swirl -= uUp * dot( swirl, uUp );
+    nLocal = normalize( nLocal + swirl );
+  }
   vec3 nView = normalize( vFluidNormalMatrix * nLocal );
   if ( fp.fromAbove < 0.5 ) nView = - nView;
   float dotNV = clamp( dot( nView, geometryViewDir ), 0.0, 1.0 );

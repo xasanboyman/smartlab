@@ -14,7 +14,7 @@ export const cells = [
     comparison: "animal",
     clinicalContext:
       "Nega bemor to'qimalarida hujayra devori va xloroplast bo'lmasligini tushuntirish uchun qulay noinsoniy namuna.",
-    renderImage: { url: "/cell-renders-transparent/plant.png", aspect: "square" },
+    renderImage: { url: "cell-thumbs/plant.webp", aspect: "square" },
     occurrence: {
       title: "Barg, poya, ildiz",
       body: "O'simlik hujayralari energiya to'playdigan, suvni yuritadigan va quyosh nurini shakarga aylantiradigan to'qimalarni hosil qiladi.",
@@ -92,7 +92,7 @@ export const cells = [
     comparison: "epithelial",
     clinicalContext:
       "Immun hujayra morfologiyasi asosiy hujayra biologiyasini infeksiya, yallig'lanish va qon surtmalarini talqin qilish bilan bog'laydi.",
-    renderImage: { url: "/cell-renders-transparent/white-blood.png", aspect: "square" },
+    renderImage: { url: "cell-thumbs/white-blood.webp", aspect: "square" },
     occurrence: {
       title: "Qon, limfa, to'qimalar",
       body: "Oq qon tanachalari qon va to'qimalar orasida harakatlanib tahdidlarni aniqlaydi va immun himoyani muvofiqlashtiradi.",
@@ -157,10 +157,10 @@ export const cells = [
     comparison: "muscle",
     clinicalContext:
       "Neyron shakli o'quvchilarga hujayra tuzilishini neyroanatomiya, reflekslar, sezgi va harakat signallari bilan bog'lashga yordam beradi.",
-    renderImage: { url: "/cell-renders-transparent/neuron.png", aspect: "wide" },
+    renderImage: { url: "cell-thumbs/neuron.webp", aspect: "wide" },
     modelAsset: {
-      url: "/models/neuron-nih.glb",
-      previewUrl: "/nih-previews/neuron-nih.png",
+      url: "models/neuron-nih-draco.glb",
+      previewUrl: "cell-thumbs/nih-neuron-nih.webp",
       sourceLabel: "NIH 3D Neuron",
       sourceUrl: "https://3d.nih.gov/entries/3DPX-015796/2",
       scale: 3.15,
@@ -232,7 +232,7 @@ export const cells = [
     comparison: "animal",
     clinicalContext:
       "Epiteliy qutbliligi va zich birikmalari uni to'siqlar, so'rilish va patologiya preparatlarini talqin qilishda markaziy qiladi.",
-    renderImage: { url: "/cell-renders-transparent/epithelial.png", aspect: "square" },
+    renderImage: { url: "cell-thumbs/epithelial.webp", aspect: "square" },
     occurrence: {
       title: "Teri, ichak, nafas yo'llari",
       body: "Epiteliy hujayralari tana bo'ylab himoya qatlamlari va so'rilish yuzalarini hosil qiladi.",
@@ -297,10 +297,10 @@ export const cells = [
     comparison: "animal",
     clinicalContext:
       "Hujayra devori tuzilishi mikroskopiya va Gram bo'yashdan antimikrob mexanizmlariga o'tishda klinik ahamiyatga ega.",
-    renderImage: { url: "/cell-renders-transparent/bacteria.png", aspect: "landscape" },
+    renderImage: { url: "cell-thumbs/bacteria.webp", aspect: "landscape" },
     modelAsset: {
-      url: "/models/bacteria-wall-nih.glb",
-      previewUrl: "/nih-previews/bacteria-wall-nih.png",
+      url: "models/bacteria-wall-nih-draco.glb",
+      previewUrl: "cell-thumbs/nih-bacteria-wall-nih.webp",
       sourceLabel: "NIH 3D Gram Positive Cell Wall",
       sourceUrl: "https://3d.nih.gov/entries/3DPX-010752/2",
       scale: 0.00185,
@@ -372,10 +372,10 @@ export const cells = [
     comparison: "plant",
     clinicalContext:
       "Ushbu umumiy eukariot namuna o'quvchilarga organoid vazifalarini inson to'qimalari va kasallik mexanizmlariga qo'llashdan oldin mustahkamlashga yordam beradi.",
-    renderImage: { url: "/cell-renders-transparent/animal.png", aspect: "square" },
+    renderImage: { url: "cell-thumbs/animal.webp", aspect: "square" },
     modelAsset: {
-      url: "/models/eukaryotic-cell.glb",
-      previewUrl: "/cell-renders-transparent/animal.png",
+      url: "models/eukaryotic-cell.glb",
+      previewUrl: "cell-thumbs/animal.webp",
       sourceLabel: "Sketchfab 3D Eukaryotic Cell",
       sourceUrl: "local:/home/xasanboy/Downloads/Eukaryotic_Cell.fbx",
       scale: 1.85,
@@ -448,10 +448,10 @@ export const cells = [
     comparison: "neuron",
     clinicalContext:
       "Mushak tolasi tuzilishi mikroskopik tuzilmani qisqarish, charchash, reabilitatsiya va neyromushak kasalliklari bilan bog'laydi.",
-    renderImage: { url: "/cell-renders-transparent/muscle.png", aspect: "wide" },
+    renderImage: { url: "cell-thumbs/muscle.webp", aspect: "wide" },
     modelAsset: {
-      url: "/models/skeletal-muscle.glb",
-      previewUrl: "/cell-renders-transparent/muscle.png",
+      url: "models/skeletal-muscle.glb",
+      previewUrl: "cell-thumbs/muscle.webp",
       sourceLabel: "Skeletal Muscle Structure (Actin & Myosin)",
       scale: 1.0,
       rotation: [0, 0, 0],

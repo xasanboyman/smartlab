@@ -34,10 +34,16 @@ import {
   Landmark,
   ScanSearch,
   Map as MapIcon,
+  Zap,
+  Calculator,
+  FileText,
 } from "lucide-react";
 
 const ICONS = {
   FlaskConical,
+  Zap,
+  Calculator,
+  FileText,
   Dna,
   Telescope,
   CircuitBoard,

@@ -40,8 +40,8 @@ test("every warning id the rules can emit has a text", () => {
     "hot-glass",
     "open-flame",
   ];
-  // Raised by the room itself (doc 16), not by a reaction rule.
-  const roomIds = ["fire-alarm", "gas-alarm", "spill", "metal-fire"];
+  // Raised by the room itself (doc 16) and by handling glassware, not by a reaction rule.
+  const roomIds = ["fire-alarm", "gas-alarm", "spill", "metal-fire", "no-goggles", "cracked-glass", "glass-broken"];
   for (const id of [...ids, ...roomIds]) {
     const entry = WARNING_INFO[id];
     assert.ok(entry, `missing warningInfo entry: ${id}`);
