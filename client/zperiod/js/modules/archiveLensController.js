@@ -14,10 +14,12 @@ let isDetailOpen = false;
 export function resolveArchiveImageUrl(rawPath, width = 640) {
   if (!rawPath || typeof rawPath !== "string") return "";
   if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) return rawPath;
+  const baseUrl = (typeof import.meta !== "undefined" && import.meta.env?.BASE_URL) || "/";
+  const cleanBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   const prefix = "images/elements/";
   if (rawPath.startsWith(prefix)) {
     const rel = rawPath.slice(prefix.length);
-    return `/images/archive/${width}/${rel}.webp`;
+    return `${cleanBase}images/archive/${width}/${rel}.webp`;
   }
   return rawPath;
 }

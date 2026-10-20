@@ -1764,6 +1764,11 @@ function populateSimplifiedView(element) {
         const imgUrl = resolveArchiveImageUrl(primarySample.image, 640);
         specimenImg.src = imgUrl;
         specimenImg.alt = primarySample.title || `${element.name} sample`;
+        specimenImg.onerror = () => {
+          if (!specimenImg.src.includes("zperiod.app") && primarySample.image) {
+            specimenImg.src = `https://zperiod.app/images/archive/640/${primarySample.image.replace(/^images\/elements\//, '')}.webp`;
+          }
+        };
         if (specimenTitle) specimenTitle.textContent = primarySample.title || `${localizeElementName(element)} specimen`;
         specimenCard.style.display = "flex";
         specimenCard.onclick = () => {
