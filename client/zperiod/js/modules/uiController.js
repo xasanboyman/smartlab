@@ -15,7 +15,14 @@ import {
   cleanup3D,
   clearCurrentAtom,
   renderScene,
+  toggleOrbitViewMode,
 } from "./threeRenderer.js";
+import { createAtomicDensityRenderer } from "./atomicDensityRenderer.js";
+import {
+  initArchiveLensController,
+  renderArchiveLens,
+  closeArchiveDetail,
+} from "./archiveLensController.js";
 import { initCardSlider } from "./cardSliderController.js";
 import { createEITController } from "./ui/eitController.js";
 import { initElementTutorial } from "./tutorialController.js";
@@ -2776,6 +2783,12 @@ export function showModal(element) {
       }
     });
   }
+  const visualConfigText = document.getElementById("atom-visual-config-text");
+  if (visualConfigText) {
+    const rawCfg = (finallyElementData.level3_properties?.electronic?.configuration || element.electronConfig || "").trim();
+    visualConfigText.innerHTML = rawCfg ? formatElectronConfigMarkup(rawCfg) : "1s¹";
+  }
+
   if (element.number <= 118) {
     atomContainer.classList.add("visible");
     cleanup3D();
@@ -2806,6 +2819,13 @@ export function showModal(element) {
         requestAnimationFrame(() => {
           atomContainer.style.opacity = "1";
         });
+
+        // Re-apply current mode if in Orbitals or Archive
+        if (currentModalMode !== "2d") {
+          switchModalVisualizationMode(currentModalMode);
+        } else {
+          switchModalVisualizationMode("2d");
+        }
       } catch (e) {
         console.error("Three.js error:", e);
       }
@@ -2966,6 +2986,262 @@ function initSwipeSlider() {
 
 }
 
+// ===== 3D Quantum Orbitals & Archive Lens State =====
+let currentModalMode = "2d";
+let activeOrbitalRenderer = null;
+let isOrbitalRendering = false;
+let orbitalAnimationId = null;
+
+const SUPERSCRIPTS = { "⁰": 0, "¹": 1, "²": 2, "³": 3, "⁴": 4, "⁵": 5, "⁶": 6, "⁷": 7, "⁸": 8, "⁹": 9 };
+const NOBLE_EXPANSIONS = {
+  He: "1s²",
+  Ne: "1s² 2s² 2p⁶",
+  Ar: "1s² 2s² 2p⁶ 3s² 3p⁶",
+  Kr: "1s² 2s² 2p⁶ 3s² 3p⁶ 3d¹⁰ 4s² 4p⁶",
+  Xe: "1s² 2s² 2p⁶ 3s² 3p⁶ 3d¹⁰ 4s² 4p⁶ 4d¹⁰ 5s² 5p⁶",
+  Rn: "1s² 2s² 2p⁶ 3s² 3p⁶ 3d¹⁰ 4s² 4p⁶ 4d¹⁰ 4f¹⁴ 5s² 5p⁶ 5d¹⁰ 6s² 6p⁶",
+};
+const SHELL_NAMES = { 1: "K", 2: "L", 3: "M", 4: "N", 5: "O", 6: "P", 7: "Q" };
+
+function formatElectronConfigMarkup(cfg) {
+  if (!cfg) return "";
+  return cfg.replace(/(\d[spdf])([⁰¹²³⁴⁵⁶⁷⁸⁹]+|\d+)/g, (_, base, pwr) => {
+    let clean = "";
+    for (const ch of pwr) {
+      clean += SUPERSCRIPTS[ch] !== undefined ? SUPERSCRIPTS[ch] : ch;
+    }
+    return `${base}<sup>${clean}</sup>`;
+  });
+}
+
+function getShellPopulationData(element) {
+  const finallyEl = finallyData[element.number] || {};
+  let cfg = (finallyEl.level3_properties?.electronic?.configuration || element.electronConfig || "").trim();
+  const nobleMatch = cfg.match(/\[([A-Za-z]+)\]/);
+  if (nobleMatch && NOBLE_EXPANSIONS[nobleMatch[1]]) {
+    cfg = `${NOBLE_EXPANSIONS[nobleMatch[1]]} ${cfg.replace(/\[[A-Za-z]+\]\s*/, "")}`.trim();
+  }
+  const shellCounts = new Map();
+  const regex = /(\d)([spdf])([⁰¹²³⁴⁵⁶⁷⁸⁹]+|\d+)/g;
+  let match;
+  while ((match = regex.exec(cfg)) !== null) {
+    const n = Number(match[1]);
+    let count = 0;
+    for (const ch of match[3]) {
+      count = count * 10 + (SUPERSCRIPTS[ch] !== undefined ? SUPERSCRIPTS[ch] : (ch >= "0" && ch <= "9" ? Number(ch) : 0));
+    }
+    shellCounts.set(n, (shellCounts.get(n) || 0) + count);
+  }
+  const shells = [...shellCounts.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([n, count]) => ({
+      shell: n,
+      name: SHELL_NAMES[n] || `S${n}`,
+      count,
+      capacity: 2 * n * n,
+    }));
+  const totalElectrons = shells.reduce((acc, s) => acc + s.count, 0) || element.number;
+  return { shells, totalElectrons, config: cfg };
+}
+
+function updateShellPopulationUI(element, orbitalState = null) {
+  const totalEl = document.getElementById("atom-3d-sheet-total");
+  const popEl = document.getElementById("atom-3d-shell-population");
+  const data = getShellPopulationData(element);
+  if (totalEl) totalEl.textContent = `${data.totalElectrons} e⁻`;
+  if (!popEl) return;
+  popEl.innerHTML = "";
+  data.shells.forEach((s) => {
+    const row = document.createElement("div");
+    row.className = "atom-3d-shell-population-row";
+    row.dataset.shell = s.name;
+    if (orbitalState?.shellsActive && orbitalState.shellsActive[s.name] === false) {
+      row.classList.add("is-inactive");
+    }
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "atom-3d-shell-population-name";
+    nameSpan.textContent = s.name;
+
+    const trackSpan = document.createElement("span");
+    trackSpan.className = "atom-3d-shell-population-track";
+    const fillSpan = document.createElement("span");
+    fillSpan.className = "atom-3d-shell-population-fill";
+    const pct = Math.min(100, Math.round((s.count / s.capacity) * 100));
+    fillSpan.style.setProperty("--shell-fill", `${pct}%`);
+    trackSpan.appendChild(fillSpan);
+
+    const countSpan = document.createElement("span");
+    countSpan.className = "atom-3d-shell-population-count";
+    countSpan.textContent = `${s.count}/${s.capacity}`;
+
+    row.append(nameSpan, trackSpan, countSpan);
+    popEl.appendChild(row);
+  });
+}
+
+async function mountOrbitalDensityRenderer(element) {
+  const container = document.getElementById("fe-orbital-container");
+  const canvas = document.getElementById("fe-orbital-embed-canvas");
+  if (!container || !canvas) return;
+
+  container.style.display = "block";
+  container.classList.add("active");
+  container.setAttribute("aria-hidden", "false");
+
+  if (!activeOrbitalRenderer) {
+    const isLightMode = !document.documentElement.classList.contains("dark-theme");
+    try {
+      activeOrbitalRenderer = await createAtomicDensityRenderer({ canvas, isLightMode });
+    } catch (err) {
+      console.error("Failed to initialize atomic density renderer:", err);
+      return;
+    }
+  }
+
+  activeOrbitalRenderer.setElement(element);
+  activeOrbitalRenderer.resize();
+  updateShellPopulationUI(element, activeOrbitalRenderer.getRendererState?.());
+
+  // Setup shell button toggling (K, L, M, N...)
+  const shellButtons = document.querySelectorAll("#atom-3d-shells .atom-3d-shell");
+  shellButtons.forEach((btn) => {
+    btn.onclick = () => {
+      const shell = btn.dataset.shell;
+      const state = activeOrbitalRenderer?.getRendererState?.();
+      const isActive = state?.shellsActive?.[shell] ?? true;
+      activeOrbitalRenderer?.setShellActive?.(shell, !isActive);
+      btn.classList.toggle("is-inactive", isActive);
+      updateShellPopulationUI(element, activeOrbitalRenderer?.getRendererState?.());
+    };
+  });
+
+  if (!isOrbitalRendering) {
+    isOrbitalRendering = true;
+    const loop = () => {
+      if (!isOrbitalRendering) return;
+      activeOrbitalRenderer?.tick?.();
+      orbitalAnimationId = requestAnimationFrame(loop);
+    };
+    loop();
+  }
+}
+
+function stopOrbitalDensityRenderer() {
+  isOrbitalRendering = false;
+  if (orbitalAnimationId) {
+    cancelAnimationFrame(orbitalAnimationId);
+    orbitalAnimationId = null;
+  }
+  const container = document.getElementById("fe-orbital-container");
+  if (container) {
+    container.style.display = "none";
+    container.classList.remove("active");
+    container.setAttribute("aria-hidden", "true");
+  }
+  if (activeOrbitalRenderer) {
+    try {
+      activeOrbitalRenderer.dispose?.();
+    } catch (_) {}
+    activeOrbitalRenderer = null;
+  }
+}
+
+function updateModePillIndicator() {
+  const toggle = document.getElementById("atom-2d3d-toggle");
+  if (!toggle) return;
+  const activeOpt = toggle.querySelector(".atom-2d3d-opt.active");
+  if (activeOpt) {
+    toggle.style.setProperty("--indicator-x", `${activeOpt.offsetLeft}px`);
+    toggle.style.setProperty("--indicator-w", `${activeOpt.offsetWidth}px`);
+  }
+}
+
+export function switchModalVisualizationMode(mode) {
+  if (mode !== "2d" && mode !== "3d" && mode !== "img") return;
+  currentModalMode = mode;
+
+  const visualPane = document.querySelector(".modal-visual-pane");
+  if (visualPane) visualPane.setAttribute("data-active-mode", mode);
+
+  const modalContent = document.getElementById("modal-content-primary");
+  const atomContainerEl = document.getElementById("atom-container");
+  const imageContainer = document.getElementById("atom-image-container");
+  const orbitToggleBtn = document.getElementById("atom-orbit-toggle-btn");
+  const visualConfig = document.getElementById("atom-visual-config-container");
+  const atom3dCard = document.getElementById("atom-3d-card-slide");
+  const togglePill = document.getElementById("atom-2d3d-toggle");
+
+  if (togglePill) {
+    togglePill.querySelectorAll(".atom-2d3d-opt").forEach((opt) => {
+      const isActive = opt.dataset.mode === mode;
+      opt.classList.toggle("active", isActive);
+      opt.setAttribute("aria-selected", isActive ? "true" : "false");
+    });
+    updateModePillIndicator();
+  }
+
+  const element = window.currentAtomElement;
+
+  if (mode === "3d") {
+    // 3D Quantum Orbitals Mode
+    if (modalContent) modalContent.classList.remove("archive-lens-active");
+    if (atomContainerEl) {
+      atomContainerEl.classList.add("hidden-by-3d");
+      atomContainerEl.style.visibility = "hidden";
+    }
+    if (imageContainer) {
+      imageContainer.style.display = "none";
+      imageContainer.classList.remove("active");
+      imageContainer.setAttribute("aria-hidden", "true");
+    }
+    if (orbitToggleBtn) orbitToggleBtn.style.display = "none";
+    if (visualConfig) visualConfig.style.display = "none";
+    if (atom3dCard) atom3dCard.style.display = "block";
+
+    const slider = document.querySelector(".cards-slider");
+    if (slider) slider.scrollTo({ left: 0, behavior: "smooth" });
+
+    if (element) mountOrbitalDensityRenderer(element);
+  } else if (mode === "img") {
+    // Photographic Sample Archive Mode
+    stopOrbitalDensityRenderer();
+    if (atom3dCard) atom3dCard.style.display = "none";
+    if (atomContainerEl) {
+      atomContainerEl.classList.add("hidden-by-3d");
+      atomContainerEl.style.visibility = "hidden";
+    }
+    if (orbitToggleBtn) orbitToggleBtn.style.display = "none";
+    if (visualConfig) visualConfig.style.display = "none";
+
+    if (modalContent) modalContent.classList.add("archive-lens-active");
+    if (imageContainer) {
+      imageContainer.style.display = "flex";
+      imageContainer.classList.add("active");
+      imageContainer.setAttribute("aria-hidden", "false");
+    }
+
+    if (element) renderArchiveLens(element);
+  } else {
+    // 2D/3D Bohr Atom Structure Mode
+    stopOrbitalDensityRenderer();
+    closeArchiveDetail();
+
+    if (modalContent) modalContent.classList.remove("archive-lens-active");
+    if (imageContainer) {
+      imageContainer.style.display = "none";
+      imageContainer.classList.remove("active");
+      imageContainer.setAttribute("aria-hidden", "true");
+    }
+    if (atom3dCard) atom3dCard.style.display = "none";
+    if (atomContainerEl) {
+      atomContainerEl.classList.remove("hidden-by-3d");
+      atomContainerEl.style.visibility = "";
+    }
+    if (orbitToggleBtn) orbitToggleBtn.style.display = "flex";
+    if (visualConfig) visualConfig.style.display = "flex";
+  }
+}
+
 // ===== Initialize Modal UI (call on DOMContentLoaded) =====
 export function initModalUI() {
   modal = document.getElementById("element-modal");
@@ -3029,6 +3305,9 @@ export function initModalUI() {
     document.title = "Zperiod";
     clearHeadlineResizeHandler();
     cleanup3D(true);
+    stopOrbitalDensityRenderer();
+    closeArchiveDetail();
+    switchModalVisualizationMode("2d");
     atomContainer.classList.remove("visible");
     resetModalUI();
   }
@@ -3036,6 +3315,62 @@ export function initModalUI() {
   modalClose.addEventListener("click", () => {
     closeElementModal();
   });
+
+  initArchiveLensController();
+
+  const prevBtn = document.getElementById("elem-nav-prev");
+  const nextBtn = document.getElementById("elem-nav-next");
+  if (prevBtn) {
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (!window.currentAtomElement) return;
+      const prevZ = window.currentAtomElement.number <= 1 ? 118 : window.currentAtomElement.number - 1;
+      const prevElem = elements.find((el) => el.number === prevZ);
+      if (prevElem) showModal(prevElem);
+    };
+  }
+  if (nextBtn) {
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (!window.currentAtomElement) return;
+      const nextZ = window.currentAtomElement.number >= 118 ? 1 : window.currentAtomElement.number + 1;
+      const nextElem = elements.find((el) => el.number === nextZ);
+      if (nextElem) showModal(nextElem);
+    };
+  }
+
+  const togglePill = document.getElementById("atom-2d3d-toggle");
+  if (togglePill) {
+    togglePill.style.display = "inline-flex";
+    togglePill.querySelectorAll(".atom-2d3d-opt").forEach((opt) => {
+      opt.onclick = (e) => {
+        e.stopPropagation();
+        switchModalVisualizationMode(opt.dataset.mode);
+      };
+    });
+  }
+
+  const pauseBtn = document.getElementById("atom-play-pause-btn");
+  if (pauseBtn) {
+    pauseBtn.onclick = (e) => {
+      e.stopPropagation();
+      window._zperiodAnimPaused = !window._zperiodAnimPaused;
+      const iconPlay = pauseBtn.querySelector(".icon-play");
+      const iconPause = pauseBtn.querySelector(".icon-pause");
+      if (iconPlay && iconPause) {
+        iconPlay.style.display = window._zperiodAnimPaused ? "block" : "none";
+        iconPause.style.display = window._zperiodAnimPaused ? "none" : "block";
+      }
+    };
+  }
+
+  const orbitToggleBtn = document.getElementById("atom-orbit-toggle-btn");
+  if (orbitToggleBtn) {
+    orbitToggleBtn.onclick = (e) => {
+      e.stopPropagation();
+      toggleOrbitViewMode();
+    };
+  }
 
 
   const tutorialBtn = document.getElementById("element-tutorial-btn");

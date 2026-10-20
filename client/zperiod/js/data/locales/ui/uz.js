@@ -218,7 +218,15 @@ export const uzUI = {
     "stable": "Barqaror",
     "radioactive": "Radioaktiv",
     "pauling": "Poling shkalasi",
-    "noIsotopeData": "Asosiy izotoplar haqida ma'lumot yo'q."
+    "noIsotopeData": "Asosiy izotoplar haqida ma'lumot yo'q.",
+    "tabStructure": "Tuzilishi",
+    "tabOrbitals": "Orbitallar",
+    "tabArchive": "Arxiv",
+    "shells": "Qobiqlar",
+    "shellPopulation": "Qobiq toʻldirilishi",
+    "discoveredBy": "Kashf etgan",
+    "discoveryYear": "Kashfiyot yili",
+    "namedBy": "Nom bergan"
   },
   "toolModal": {
     "loading": "Vosita yuklanmoqda...",

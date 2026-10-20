@@ -542,6 +542,20 @@ export function onWindowResize() {
 }
 
 // ===== Reset Camera View =====
+export function toggleOrbitViewMode() {
+  isTopViewMode = !isTopViewMode;
+  if (atomGroup) {
+    if (isTopViewMode) {
+      atomGroup.rotation.x = Math.PI / 2.2;
+      atomGroup.rotation.y = 0;
+    } else {
+      atomGroup.rotation.x = 0;
+      atomGroup.rotation.y = 0;
+    }
+  }
+  return isTopViewMode;
+}
+
 export function reset3DView() {
   if (!atomGroup) return;
   introStartTime = Date.now();

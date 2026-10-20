@@ -217,7 +217,15 @@ export const enUI = {
     "stable": "Stable",
     "radioactive": "Radioactive",
     "pauling": "Pauling Scale",
-    "noIsotopeData": "No key isotope data available."
+    "noIsotopeData": "No key isotope data available.",
+    "tabStructure": "Structure",
+    "tabOrbitals": "Orbitals",
+    "tabArchive": "Archive",
+    "shells": "Shells",
+    "shellPopulation": "Shell population",
+    "discoveredBy": "Discovered By",
+    "discoveryYear": "Discovery Year",
+    "namedBy": "Named By"
   },
   "toolModal": {
     "loading": "Loading tool...",

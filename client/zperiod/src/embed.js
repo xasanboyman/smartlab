@@ -10,6 +10,7 @@ import appHtml from "./app.html?raw";
 import "../css/base.css";
 import "../css/grid.css";
 import "../css/modal.css";
+import "../css/orbitals-archive.css";
 import "../css/tools.css";
 import "../css/ions.css";
 import "../css/worksheet-styles.css";

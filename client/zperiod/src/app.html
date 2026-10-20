@@ -559,7 +559,22 @@
     </div>
 
     <div id="element-modal" class="modal-overlay">
-        <div class="modal-content" id="modal-content-primary">
+        <div class="modal-content" id="modal-content-primary" style="position: relative;">
+            <!-- Left / Right Navigation Hit Zones -->
+            <button class="elem-nav-btn elem-nav-prev" id="elem-nav-prev" aria-label="Previous element">
+                <div class="elem-nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </div>
+            </button>
+            <button class="elem-nav-btn elem-nav-next" id="elem-nav-next" aria-label="Next element">
+                <div class="elem-nav-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </button>
             <div class="modal-top-buttons">
                 <button class="modal-close" id="modal-close" aria-label="Close element dialog" data-i18n-aria-label="aria.closeElementDialog">&times;</button>
             </div>
@@ -580,6 +595,35 @@
                 <div class="simplified-element-box" style="display: none;">
                     <div class="cards-slider-wrapper">
                         <div class="cards-slider">
+                            <!-- 3D Atom View (Shells & Population) -->
+                            <div class="card-slide atom-3d-card-slide" id="atom-3d-card-slide" style="display: none;">
+                                <div class="sand-rectangle texture-matte atom-3d-rectangle">
+                                    <div class="atom-3d-control-card">
+                                        <div class="atom-3d-control-row">
+                                            <span class="info-label atom-3d-row-label" data-i18n="elementModal.shells">Shells</span>
+                                            <div class="atom-3d-shells" id="atom-3d-shells">
+                                                <button type="button" class="atom-3d-shell" data-shell="K">K</button>
+                                                <button type="button" class="atom-3d-shell" data-shell="L">L</button>
+                                                <button type="button" class="atom-3d-shell" data-shell="M">M</button>
+                                                <button type="button" class="atom-3d-shell" data-shell="N">N</button>
+                                                <button type="button" class="atom-3d-shell" data-shell="O">O</button>
+                                                <button type="button" class="atom-3d-shell" data-shell="P">P</button>
+                                                <button type="button" class="atom-3d-shell" data-shell="Q">Q</button>
+                                            </div>
+                                        </div>
+                                        <div class="atom-3d-sheet-summary" id="atom-3d-sheet-summary" aria-live="polite">
+                                            <div class="atom-3d-sheet-section">
+                                                <div class="atom-3d-sheet-section-head">
+                                                    <span class="atom-3d-sheet-label" data-i18n="elementModal.shellPopulation">Shell population</span>
+                                                    <span class="atom-3d-sheet-total" id="atom-3d-sheet-total">—</span>
+                                                </div>
+                                                <div class="atom-3d-shell-population" id="atom-3d-shell-population"></div>
+                                            </div>
+                                            <p class="atom-3d-sheet-model-note">Configuration-averaged density · screened hydrogenic model</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="card-slide">
                                 <div class="green-rectangle texture-matte">
                                     <div class="card-info-container">
@@ -1032,9 +1076,127 @@
                 </div>
                 <div class="scroll-spacer" style="height: 150px; width: 100%; flex-shrink: 0;"></div>
             </div>
-            <div class="modal-visual-pane">
+            <div class="modal-visual-pane" data-active-mode="2d">
                 <div id="modal-watermark">H</div>
+                <div id="atom-visual-config-container" style="position: absolute; top: 20px; left: 20px; display: flex; gap: 8px; font-family: 'Courier New', monospace; font-size: 1.12rem; font-weight: 600; white-space: nowrap; z-index: 200; cursor: default; pointer-events: none; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease; transform-origin: left center;">
+                    <div id="atom-visual-config" style="background: rgba(0, 0, 0, 0.04); color: #4f5d75; height: 40px; padding: 0 14px; border-radius: 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); backdrop-filter: blur(4px); transition: transform 0.2s ease;"><span id="atom-visual-config-text" style="display: block; transform: translateY(1px); line-height: 1;">1s¹</span></div>
+                </div>
                 <div id="atom-container"></div>
+
+                <!-- 3D Atomic Density model (right side of every element page) -->
+                <div id="fe-orbital-container" class="fe-orbital-embed" aria-hidden="true" style="display: none;">
+                    <canvas id="fe-orbital-embed-canvas" class="fe-orbital-embed-canvas"></canvas>
+                </div>
+
+                <!-- Element Photographic Sample (right side of every element page) -->
+                <div id="atom-image-container" class="atom-image-container" aria-hidden="true" style="display: none;">
+                    <button type="button" class="archive-suggest-launch" id="archive-overview-suggest-source">
+                        <span aria-hidden="true">+</span>
+                        Suggest a source
+                    </button>
+                    <div class="archive-lens" id="archive-lens">
+                        <svg class="archive-goo-defs" aria-hidden="true" focusable="false" width="0" height="0">
+                            <defs>
+                                <filter id="archive-liquid-goo" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+                                    <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur"></feGaussianBlur>
+                                    <feColorMatrix in="blur" mode="matrix" values="
+                                        1 0 0 0 0
+                                        0 1 0 0 0
+                                        0 0 1 0 0
+                                        0 0 0 22 -11" result="goo"></feColorMatrix>
+                                    <feComposite in="SourceGraphic" in2="goo" operator="atop"></feComposite>
+                                </filter>
+                            </defs>
+                        </svg>
+                        <div class="archive-lens-constellation" id="archive-lens-constellation">
+                            <button type="button" class="archive-orb archive-orb-main is-active" id="archive-main-orb" data-archive-index="0">
+                                <span class="archive-orb-media">
+                                    <img id="atom-image-element" class="atom-image-element" src="" alt="" loading="lazy">
+                                </span>
+                                <span class="archive-orb-caption" id="archive-main-caption">Element sample</span>
+                            </button>
+                            <div class="archive-orbit-items" id="archive-orbit-items"></div>
+                        </div>
+                        <div class="archive-focus-card" id="archive-focus-card" aria-hidden="true">
+                            <img id="archive-focus-image" class="archive-focus-image" src="" alt="" loading="lazy">
+                            <div class="archive-focus-fallback" id="archive-focus-fallback"></div>
+                        </div>
+                        <section class="archive-portrait-stage" id="archive-portrait-stage" aria-hidden="true" aria-live="polite">
+                            <img id="archive-portrait-image" class="archive-portrait-image" src="" alt="" loading="lazy">
+                            <button type="button" class="modal-back archive-portrait-back" id="archive-portrait-back" aria-label="Back to archive" title="Back to archive">
+                                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                                    <polyline points="12 19 5 12 12 5"></polyline>
+                                </svg>
+                            </button>
+                            <div class="archive-portrait-copy">
+                                <div class="archive-portrait-kicker" id="archive-portrait-kicker">Portrait · Verified</div>
+                                <h3 class="archive-portrait-title" id="archive-portrait-title">Titanium</h3>
+                                <p class="archive-portrait-text" id="archive-portrait-text"></p>
+                                <a class="archive-portrait-source" id="archive-portrait-source" target="_blank" rel="noopener noreferrer">View source</a>
+                            </div>
+                        </section>
+                        <section class="archive-lens-detail" id="archive-lens-detail" aria-live="polite">
+                            <header class="archive-detail-header">
+                                <button type="button" class="modal-back archive-detail-close" id="archive-detail-close" aria-label="Close detail" title="Close detail">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                                <div class="archive-detail-heading">
+                                    <span class="archive-detail-kicker" id="archive-detail-kicker">Archive</span>
+                                    <h3 class="archive-element-title" id="archive-element-title">Sample</h3>
+                                </div>
+                            </header>
+                            <p class="archive-context-text" id="archive-context-text"></p>
+                            <div id="archive-extra-panel" class="archive-extra-panel"></div>
+                            <div class="archive-meta-grid">
+                                <div class="archive-meta-item">
+                                    <span class="archive-meta-label" data-i18n="elementModal.discoveredBy">Discovered By</span>
+                                    <span class="archive-meta-value" id="archive-discovered-by">—</span>
+                                </div>
+                                <div class="archive-meta-item">
+                                    <span class="archive-meta-label" data-i18n="elementModal.discoveryYear">Discovery Year</span>
+                                    <span class="archive-meta-value" id="archive-discovery-year">—</span>
+                                </div>
+                                <div class="archive-meta-item">
+                                    <span class="archive-meta-label" data-i18n="elementModal.namedBy">Named By</span>
+                                    <span class="archive-meta-value" id="archive-named-by">—</span>
+                                </div>
+                            </div>
+                            <div class="archive-detail-tags" id="archive-detail-tags"></div>
+                        </section>
+                    </div>
+                </div>
+
+                <!-- Centered bottom action group: pause + 2D/3D/Archive segmented pill toggle -->
+                <div id="atom-bottom-controls" class="atom-bottom-controls">
+                    <button id="atom-play-pause-btn" class="atom-bottom-pause" aria-label="Toggle Animation">
+                        <svg class="icon-play" style="display: none;" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <svg class="icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="9" y1="5" x2="9" y2="19"></line>
+                            <line x1="15" y1="5" x2="15" y2="19"></line>
+                        </svg>
+                    </button>
+                    <span class="atom-bottom-divider" aria-hidden="true"></span>
+                    <div id="atom-2d3d-toggle" class="atom-2d3d-toggle" role="tablist" aria-label="Atom view mode">
+                        <button type="button" class="atom-2d3d-opt active" data-mode="2d" role="tab" aria-selected="true" data-i18n="elementModal.tabStructure">Structure</button>
+                        <button type="button" class="atom-2d3d-opt" data-mode="3d" role="tab" aria-selected="false" data-i18n="elementModal.tabOrbitals">Orbitals</button>
+                        <button type="button" class="atom-2d3d-opt" data-mode="img" role="tab" aria-selected="false" data-i18n="elementModal.tabArchive">Archive</button>
+                    </div>
+                </div>
+
+                <!-- Tilted / Flat 2D/3D orbit toggle button on bottom left -->
+                <button class="modal-close modal-play-btn" id="atom-orbit-toggle-btn" aria-label="Toggle Configuration" style="left: 20px;" title="Tilted/Flat Orbits">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </button>
             </div>
         </div>
     </div>

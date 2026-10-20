@@ -20,5 +20,6 @@
   "dependencies": {
     "driver.js": "^1.4.0",
     "marked": "^17.0.4"
-  }
+  },
+  "type": "module"
 }
