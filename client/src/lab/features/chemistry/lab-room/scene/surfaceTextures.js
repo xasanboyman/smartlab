@@ -208,7 +208,7 @@ export const drawMonitor = (ctx, width, height, time) => {
   ctx.textAlign = "center";
   ctx.fillStyle = "#ffffff";
   ctx.font = `800 76px ${UI_FONT}`;
-  ctx.fillText("Smart Lab", width / 2, height / 2 - 40);
+  ctx.fillText("SimuLink", width / 2, height / 2 - 40);
   ctx.fillStyle = "#c9c3ff";
   ctx.font = `600 38px ${UI_FONT}`;
   ctx.fillText("Kimyo laboratoriyasi", width / 2, height / 2 + 20);

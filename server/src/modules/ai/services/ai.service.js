@@ -269,7 +269,7 @@ export const fallbackStreamChat = async (
 
     if (isGreeting && !activeItem && Object.keys(activeData).length === 0) {
       textResponse =
-        "Assalomu alaykum! Men Mira — SmartLab laboratoriyasining sun'iy intellekt yordamchisiman. 😊 " +
+        "Assalomu alaykum! Men Mira — SimuLink laboratoriyasining sun'iy intellekt yordamchisiman. 😊 " +
         "Kimyo, biologiya va fizika 3D modellarini birgalikda o'rganamiz. Sahnani kattalashtirish, " +
         "harakatni to'xtatish yoki biror model haqida ma'lumot olish uchun menga buyruq bering!";
     } else if (Object.keys(activeData).length > 0 || activeItem) {
@@ -301,7 +301,7 @@ export const fallbackStreamChat = async (
           "to'lqinlar interferensiyasi va Quyosh tizimi sayyoralarining harakatini jonli kuzatishingiz mumkin. ⚙️";
       } else {
         textResponse =
-          "SmartLab 3D virtual laboratoriyasida sizga yordam berishdan mamnunman! " +
+          "SimuLink 3D virtual laboratoriyasida sizga yordam berishdan mamnunman! " +
           "3D sahnadagi har qanday modelni tanlang yoki savol bering. ✨";
       }
     }

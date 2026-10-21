@@ -86,7 +86,7 @@ input[type="range"].hover::-webkit-slider-thumb { transform: scale(1.25); }
 const HTML = `
 <div id="htc-root">
   <header class="topbar">
-    <span class="name"><span class="diamond">◆</span>SmartLab</span>
+    <span class="name"><span class="diamond">◆</span>SimuLink</span>
     <span class="est">KIMYO JURNALI · 2026</span>
   </header>
   <div class="main">

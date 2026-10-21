@@ -1,5 +1,5 @@
 {
-  "name": "smartlab-server",
+  "name": "simulink-server",
   "version": "1.0.0",
   "type": "module",
   "main": "src/index.js",

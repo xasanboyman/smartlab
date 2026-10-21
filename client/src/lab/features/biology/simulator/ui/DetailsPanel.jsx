@@ -171,7 +171,7 @@ const DetailsPanel = ({ topic, topicId, tab, onTab, query, onQuery, onSelectTopi
       <div className="flex items-center justify-between border-t border-border bg-secondary/30 p-3 text-[10px] text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="size-3.5 text-primary" />
-          <span>SmartLab 3D WebGL Engine</span>
+          <span>SimuLink 3D WebGL Engine</span>
         </div>
         <span className="font-mono">v3.1</span>
       </div>

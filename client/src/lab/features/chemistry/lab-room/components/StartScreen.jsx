@@ -74,7 +74,7 @@ const StartScreen = ({
           <div className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-400">
-              SmartLab 3D
+              SimuLink 3D
             </span>
           </div>
 

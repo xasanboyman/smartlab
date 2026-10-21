@@ -1,6 +1,6 @@
-# SmartLab - 3D virtual laboratoriya
+# SimuLink - 3D virtual laboratoriya
 
-SmartLab - o'quvchilar uchun **interaktiv 3D virtual laboratoriya**. Kimyo, biologiya va
+SimuLink - o'quvchilar uchun **interaktiv 3D virtual laboratoriya**. Kimyo, biologiya va
 fizika mavzularini brauzerda aylantirib, yaqindan ko'rib o'rganish mumkin. Loyihaga
 **Mira AI** yordamchisi va **Cardboard (gyroskop) VR** rejimi ham qo'shilgan.
 

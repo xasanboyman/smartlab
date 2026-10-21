@@ -428,7 +428,7 @@ const LabRoomPage = () => {
             <div className="h-3 w-px bg-zinc-800" />
             <div className="flex items-center gap-1.5 px-2 text-xs font-bold text-zinc-100">
               <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>SmartLab 3D</span>
+              <span>SimuLink 3D</span>
             </div>
           </div>
 

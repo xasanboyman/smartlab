@@ -291,7 +291,7 @@ const LandingPage = () => {
           <div className="wrap rail-in">
             <a className="brand" href="#top">
               <span className="mark" aria-hidden="true"><FlaskConical size={18} /></span>
-              <span className="name">Smart<b>Lab</b> 3D</span>
+              <span className="name">Simu<b>Link</b> 3D</span>
             </a>
             <nav>
               <a href="#stations">Fanlar</a>
@@ -414,7 +414,7 @@ const LandingPage = () => {
 
         <footer>
           <div className="wrap foot-in">
-            <span>SmartLab 3D — o'quvchilar uchun interaktiv virtual laboratoriya.</span>
+            <span>SimuLink 3D — o'quvchilar uchun interaktiv virtual laboratoriya.</span>
             <span className="mono">ABDULKHAYEV HASANBOY · xn--dr8haa.uz</span>
           </div>
         </footer>

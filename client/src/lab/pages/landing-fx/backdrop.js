@@ -4,7 +4,7 @@ export const backdropHtml = `
 <div style="position:absolute;inset:0;background:#050810;color:#9fe7dc;font-family:ui-monospace,'DejaVu Sans Mono',Menlo,monospace;overflow:hidden;
   background-image:linear-gradient(rgba(56,224,200,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(56,224,200,.08) 1px,transparent 1px);background-size:40px 40px;">
   <div style="position:absolute;inset:0;background:radial-gradient(900px 500px at 70% 20%,rgba(91,140,255,.18),transparent 60%),radial-gradient(700px 500px at 10% 80%,rgba(56,224,200,.14),transparent 55%);"></div>
-  <div style="position:absolute;left:6%;top:10%;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:rgba(159,231,220,.6);">smartlab // render pipeline</div>
+  <div style="position:absolute;left:6%;top:10%;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:rgba(159,231,220,.6);">simulink // render pipeline</div>
   <div style="position:absolute;left:6%;top:14%;font-size:clamp(28px,5vw,64px);font-weight:800;letter-spacing:-.03em;color:#e8eefc;line-height:1;">DOM → paint → <span style="color:#38e0c8">texElementImage2D</span> → WebGL</div>
   <div style="position:absolute;left:6%;top:30%;display:grid;grid-template-columns:repeat(4,minmax(140px,200px));gap:18px;">
     ${["<b>1 · layoutsubtree</b><span>canvas o'z farzandlarini joylashtiradi</span>", "<b>2 · paint</b><span>har kadrda snapshot olinadi</span>", "<b>3 · HTMLSource</b><span>PixiJS tekstura manbai</span>", "<b>4 · chunk sprites</b><span>22px bo'laklar, lazer kesadi</span>"]

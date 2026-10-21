@@ -166,12 +166,12 @@ export const LabRoomClothBanner = ({
 
     ctx.font = "bold 22px 'JetBrains Mono', 'Segoe UI', monospace, sans-serif";
     ctx.fillStyle = "#38bdf8";
-    ctx.fillText("🧪 SMARTLAB 3D // KIMYO YO'RIQNOMA VA FORMULALAR KIOSKI", 35, 53);
+    ctx.fillText("🧪 SIMULINK 3D // KIMYO YO'RIQNOMA VA FORMULALAR KIOSKI", 35, 53);
 
     ctx.font = "13px 'JetBrains Mono', monospace";
     ctx.fillStyle = "#94a3b8";
     ctx.textAlign = "right";
-    ctx.fillText("SMARTLAB ENGINE v2.4", w - 35, 53);
+    ctx.fillText("SIMULINK ENGINE v2.4", w - 35, 53);
     ctx.textAlign = "left";
 
     // Navigation Tabs
@@ -430,7 +430,7 @@ export const LabRoomClothBanner = ({
     ctx.font = "12px 'JetBrains Mono', monospace";
     ctx.fillStyle = "#64748b";
     ctx.textAlign = "right";
-    ctx.fillText("SmartLab Interactive Display", w - 30, h - 20);
+    ctx.fillText("SimuLink Interactive Display", w - 30, h - 20);
     ctx.textAlign = "left";
 
     if (textureRef.current) {

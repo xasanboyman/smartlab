@@ -1,7 +1,7 @@
 {
-  "name": "smartlab",
+  "name": "simulink",
   "version": "1.0.0",
-  "description": "SmartLab - o'quvchilar uchun interaktiv 3D virtual laboratoriya (Kimyo, Biologiya, Fizika, Elektronika, Tarix). React 19 + Three.js + Mira AI + Cardboard VR.",
+  "description": "SimuLink - o'quvchilar uchun interaktiv 3D virtual laboratoriya (Kimyo, Biologiya, Fizika, Elektronika, Tarix). React 19 + Three.js + Mira AI + Cardboard VR.",
   "private": true,
   "workspaces": [
     "client",

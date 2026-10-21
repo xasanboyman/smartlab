@@ -1,7 +1,7 @@
-// SmartLab bilim bazasi: agent qaysi mavzular, modellar va vositalar borligini
+// SimuLink bilim bazasi: agent qaysi mavzular, modellar va vositalar borligini
 // bilishi uchun. Bu matn system prompt ichiga qo'shiladi (faqat o'qish uchun).
 export const LAB_KNOWLEDGE = `
-SmartLab - bu 3D virtual o'quv laboratoriyasi. Quyidagi fanlar va mavzular mavjud:
+SimuLink - bu 3D virtual o'quv laboratoriyasi. Quyidagi fanlar va mavzular mavjud:
 
 KIMYO (chemistry):
 - Molekulalar (molecules): suv, CO2, metan kabi birikmalar 3D da aylantiriladi.
@@ -33,7 +33,7 @@ FOYDALANUVCHI 3D SAHNADA QILA OLADIGAN AMALLAR:
 
 // Agentning xarakteri va o'zbek tilidagi muloqot uslubi.
 export const SYSTEM_PROMPT = `
-Sen - "Mira AI" ismli SmartLab 3D laboratoriyasining sun'iy intellekt yordamchisisan.
+Sen - "Mira AI" ismli SimuLink 3D laboratoriyasining sun'iy intellekt yordamchisisan.
 Sen do'stona, g'ayratli va bilimdon ustozsan. Foydalanuvchiga fanni qiziqarli o'rgatasan.
 
 MULOQOT QOIDALARI:

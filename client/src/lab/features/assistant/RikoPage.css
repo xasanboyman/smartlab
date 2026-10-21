@@ -51,17 +51,24 @@
 .rk-ic:hover { color: var(--fg); border-color: var(--accent); }
 
 .rk-stage { position: relative; flex: 1; min-height: 0; background: #05080f; }
-.rk-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #05080f; opacity: 0; transition: opacity 0.6s ease; }
-.rk.ready .rk-frame { opacity: 1; }
+.rk-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #05080f; opacity: 0; transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+.rk.ready .rk-frame,
+.rk-loader.dissolving ~ .rk-frame { opacity: 1; }
 
 /* interactive loader */
 .rk-loader {
   position: absolute; inset: 0; z-index: 2; display: grid; grid-template-rows: 1fr auto; overflow: hidden;
   background: radial-gradient(900px 600px at 50% 30%, rgba(91, 140, 255, 0.12), transparent 60%), var(--bg);
   animation: rk-in 0.4s ease;
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rk-loader.dissolving {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
 }
 @keyframes rk-in { from { opacity: 0; } to { opacity: 1; } }
-.rk-orb { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+.rk-orb { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
 .rk-loader-ui {
   position: relative; z-index: 1; grid-row: 2; text-align: center; padding: 0 20px clamp(28px, 6vh, 64px); pointer-events: none;
   display: flex; flex-direction: column; align-items: center; gap: 8px;

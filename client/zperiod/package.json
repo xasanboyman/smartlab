@@ -1,8 +1,8 @@
 {
-  "name": "zperiod-smartlab",
+  "name": "zperiod-simulink",
   "private": true,
-  "version": "2.0.0-smartlab.1",
-  "description": "Zperiod (MIT, github.com/Zhilips/Zperiod) vendored as the SmartLab 3D chemistry sub-app",
+  "version": "2.0.0-simulink.1",
+  "description": "Zperiod (MIT, github.com/Zhilips/Zperiod) vendored as the SimuLink 3D chemistry sub-app",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
