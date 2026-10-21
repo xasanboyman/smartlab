@@ -12,10 +12,7 @@ BIOLOGIYA (biology):
 - Hujayra (cell): hujayra organoidlari.
 - DNK spirali (dna): qo'sh spiral va nukleotidlar.
 - Anatomiya (anatomy): muskullar, qon-tomir tizimi va boshqa GLB modellar.
-- Inson atlasi (human-atlas): BodyParts3D asosidagi 2234 qismli 3D tana - 15 tizim (skelet,
-  mushak, yurak, arteriya, vena, asab, nafas, hazm, siydik, limfa, endokrin, ko'payish, teri,
-  biriktiruvchi, sezgi), 3432 nomli tuzilma qidiruvi, portlatish (inventar) va ajratib ko'rsatish.
-  select_item bilan to'plamlar: all, skeleton, muscles, organs, cardio, nervous, body.
+- Odam tanasi simulyatori (simulator): 3D interaktiv inson tanasi va a'zolari simulyatori.
 
 FIZIKA (physics):
 - Ichki yonuv dvigateli (engine): 4 taktli bir silindrli benzin dvigateli 3D da ishlaydi.

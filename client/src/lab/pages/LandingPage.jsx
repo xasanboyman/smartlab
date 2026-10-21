@@ -34,7 +34,7 @@ const STATS = [
   { n: SUBJECTS.length, l: "Fan yo'nalishi" },
   { n: TOTAL_TOPICS, l: "Interaktiv mavzu" },
   { n: 118, l: "Kimyoviy element" },
-  { n: 2234, l: "Anatomik qism" },
+  { n: 240, l: "3D Molekula" },
 ];
 
 /* ── mini lab: pick reagents, watch the flask react ───── */

@@ -92,24 +92,6 @@ export const SUBJECTS = [
         icon: "PersonStanding",
       },
       {
-        slug: "human-atlas",
-        title: "Inson atlasi",
-        short: "2234 ta qism, 15 tizim: qidiring, tizimlarni yoqing, portlating va ajratib ko'ring.",
-        icon: "ScanSearch",
-      },
-      {
-        slug: "surgery",
-        title: "Jarrohlik",
-        short: "Qatlamlarni yeching yoki skalpel bilan kesib ichki a'zolarni ko'ring.",
-        icon: "Scissors",
-      },
-      {
-        slug: "genetics",
-        title: "Genetika (Punnett)",
-        short: "Ota-ona allellarini tanlab, avlod nisbatlarini Punnett jadvalida ko'ring.",
-        icon: "GitFork",
-      },
-      {
         slug: "simulator",
         title: "Odam Tanasi Simulyatori",
         short: "Inson tanasi tizimlarini interaktiv 3D simulyatorda o'rganing.",

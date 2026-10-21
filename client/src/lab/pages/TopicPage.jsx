@@ -36,12 +36,6 @@ const PAGES = {
     import("@/lab/features/biology/cell-studio/CellStudioPage"),
   ),
   "biology/dna": lazy(() => import("@/lab/features/biology/dna/DnaPage")),
-  "biology/human-atlas": lazy(() =>
-    import("@/lab/features/biology/human-atlas/HumanAtlasPage"),
-  ),
-  "biology/surgery": lazy(() =>
-    import("@/lab/features/biology/surgery/SurgeryPage"),
-  ),
   "biology/simulator": lazy(() =>
     import("@/lab/features/biology/simulator/SimulatorPage"),
   ),
@@ -54,9 +48,6 @@ const PAGES = {
   "chemistry/ph": lazy(() => import("@/lab/features/chemistry/ph/PhPage")),
   "chemistry/gas-laws": lazy(() =>
     import("@/lab/features/chemistry/gas-laws/GasLawsPage"),
-  ),
-  "biology/genetics": lazy(() =>
-    import("@/lab/features/biology/genetics/GeneticsPage"),
   ),
   "history/registan": lazy(() =>
     import("@/lab/features/history/registan/RegistanGuidePage"),
