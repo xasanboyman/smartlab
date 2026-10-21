@@ -10,6 +10,85 @@
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
   min-height: 100dvh; color: var(--fg); font-family: var(--body); line-height: 1.6; background: var(--bg);
   -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing {
+  --bg: #f8fafc;
+  --bg-2: #f1f5f9;
+  --panel: #ffffff;
+  --panel-2: #f8fafc;
+  --line: #e2e8f0;
+  --line-soft: #cbd5e1;
+  --fg: #0f172a;
+  --muted: #334155;
+  --faint: #64748b;
+  --accent: #059669;
+  --accent-2: #2563eb;
+  --riko: #9333ea;
+  --riko-2: #db2777;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .rail {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.88)) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .btn-primary {
+  color: #ffffff !important;
+  background: linear-gradient(100deg, #059669, #0284c7) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .btn-riko {
+  color: #ffffff !important;
+  background: linear-gradient(100deg, #9333ea, #db2777) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .mini {
+  background: #ffffff !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08) !important;
+}
+
+.sl-landing .rail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sl-landing .rail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fg);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.sl-landing .rail-btn:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.sl-landing .rail-btn.active {
+  border-color: #38e0c8;
+  background: rgba(56, 224, 200, 0.15);
+  color: #38e0c8;
+  box-shadow: 0 0 12px -2px rgba(56, 224, 200, 0.3);
+}
+
+.sl-landing .cat-btn.active {
+  border-color: #f472b6 !important;
+  background: rgba(244, 114, 182, 0.15) !important;
+  color: #f472b6 !important;
+  box-shadow: 0 0 12px -2px rgba(244, 114, 182, 0.3) !important;
 }
 .sl-landing *, .sl-landing *::before, .sl-landing *::after { box-sizing: border-box; }
 .sl-landing a { color: inherit; text-decoration: none; }

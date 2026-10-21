@@ -21,7 +21,42 @@ const ELEMENT_LOCALE_LOADERS = {
   // Uzbek names over the Russian essays: the 118 descriptions are not translated yet.
   uz: async () => {
     const [ru, uz] = await Promise.all([import("../data/locales/ru.js"), import("../data/locales/uz.js")]);
-    return deepMerge(deepMerge({}, ru.ru_elements), uz.uz_elements);
+    const merged = deepMerge(deepMerge({}, ru.ru_elements), uz.uz_elements);
+    for (const key of Object.keys(merged)) {
+      const el = merged[key];
+      if (el.ions) {
+        if (/нет общих ионов|нет распространенных ионов/i.test(el.ions)) {
+          el.ions = "Keng tarqalgan ionlari yo'q";
+        } else {
+          el.ions = el.ions
+            .replace(/Нет общих ионов/gi, "Keng tarqalgan ionlari yo'q")
+            .replace(/ионы водорода/gi, "vodorod ionlari")
+            .replace(/гидрид/gi, "gidrid");
+        }
+      }
+      if (el.history?.discoveryYear) {
+        el.history.discoveryYear = String(el.history.discoveryYear)
+          .replace(/\s*г\.\s*/gi, "-yil")
+          .replace(/\s*год\s*/gi, "-yil")
+          .replace(/до н\.?\s*э\.?/gi, "m.av.");
+      }
+      if (Array.isArray(el.hazards)) {
+        el.hazards = el.hazards.map((h) =>
+          h.replace(/Радиоактивный/gi, "Radioaktiv")
+           .replace(/Высокорадиоактивный/gi, "Yuqori radioaktiv")
+           .replace(/Токсичный/gi, "Zaharli")
+           .replace(/Горючий/gi, "Yonuvchan")
+           .replace(/Окислитель/gi, "Oksidlovchi")
+           .replace(/Взрывоопасный/gi, "Portlash xavfi bor")
+        );
+      }
+      if (Array.isArray(el.uses)) {
+        el.uses = el.uses.map((u) =>
+          u.replace(/Только исследования/gi, "Faqat ilmiy tadqiqotlar")
+        );
+      }
+    }
+    return merged;
   },
   zh: async () => {
     const module = await import("../data/locales/zh.js");

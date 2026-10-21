@@ -58,7 +58,7 @@ const SubjectPage = () => {
   }, [subject.topics, searchQuery]);
 
   return (
-    <div className="relative isolate min-h-screen pb-20 bg-[#090b12] text-zinc-100">
+    <div className="relative isolate min-h-screen pb-20 bg-slate-50 dark:bg-[#090b12] text-slate-900 dark:text-zinc-100 transition-colors duration-200">
       {/* Background ambient lighting */}
       <div
         className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] rounded-full blur-3xl opacity-20"
@@ -69,14 +69,14 @@ const SubjectPage = () => {
         {/* Navigation Breadcrumb */}
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-400 transition-colors hover:text-white mb-6 group"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 transition-colors hover:text-slate-900 dark:hover:text-white mb-6 group"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           <span>Bosh sahifaga qaytish</span>
         </Link>
 
         {/* Subject Header */}
-        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 sm:p-8 rounded-3xl bg-zinc-950/80 border border-zinc-800/80 shadow-2xl backdrop-blur-xl">
+        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-800/80 shadow-2xl backdrop-blur-xl">
           <div className="flex items-center gap-5">
             <div
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center shrink-0 border-2 shadow-2xl"
@@ -101,16 +101,16 @@ const SubjectPage = () => {
                 >
                   {subject.title} Ta'lim Yo'nalishi
                 </span>
-                <span className="text-xs text-zinc-400 font-mono">
+                <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono font-semibold">
                   {subject.topics.length} ta interaktiv mavzu
                 </span>
               </div>
               <DecryptHeader
                 text={subject.title}
                 color={subject.color || "#10b981"}
-                className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight"
+                className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight"
               />
-              <p className="mt-1 text-sm text-zinc-400 max-w-xl">
+              <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300 font-medium max-w-xl">
                 {subject.short}
               </p>
             </div>
@@ -230,9 +230,9 @@ const SubjectPage = () => {
           {/* Controls Bar: Title, Search, View Mode */}
           <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>Darslik & Mavzular</span>
-                <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-bold">
+                <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-bold">
                   {filteredTopics.length}
                 </span>
               </h3>
@@ -241,18 +241,18 @@ const SubjectPage = () => {
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               {/* Search Bar */}
               <div className="relative flex-1 sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-zinc-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Mavzulardan qidirish..."
-                  className="w-full pl-9 pr-7 py-1.5 rounded-xl bg-zinc-900/90 border border-zinc-800 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  className="w-full pl-9 pr-7 py-1.5 rounded-xl bg-white dark:bg-zinc-900/90 border border-slate-300 dark:border-zinc-800 text-xs text-slate-900 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-emerald-500/50 transition-colors shadow-sm"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -260,13 +260,13 @@ const SubjectPage = () => {
               </div>
 
               {/* View Switcher: Cards vs Path */}
-              <div className="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-xl border border-zinc-800 shrink-0">
+              <div className="flex items-center gap-1 bg-slate-200/80 dark:bg-zinc-900/90 p-1 rounded-xl border border-slate-300 dark:border-zinc-800 shrink-0">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     viewMode === "grid"
-                      ? "bg-zinc-800 text-white font-bold shadow-sm"
-                      : "text-zinc-400 hover:text-white"
+                      ? "bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-bold shadow-sm"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                   title="Kartalar ko'rinishi"
                 >
@@ -277,8 +277,8 @@ const SubjectPage = () => {
                   onClick={() => setViewMode("path")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     viewMode === "path"
-                      ? "bg-zinc-800 text-white font-bold shadow-sm"
-                      : "text-zinc-400 hover:text-white"
+                      ? "bg-white dark:bg-zinc-800 text-slate-900 dark:text-white font-bold shadow-sm"
+                      : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
                   title="Bosqichli o'quv yo'li"
                 >
@@ -297,7 +297,7 @@ const SubjectPage = () => {
                   <Link
                     key={topic.slug}
                     to={`/${subject.slug}/${topic.slug}`}
-                    className="group p-5 rounded-3xl bg-zinc-950/70 hover:bg-zinc-900/90 border border-zinc-800/80 hover:border-zinc-700/80 shadow-lg hover:shadow-2xl transition-all duration-200 flex flex-col justify-between relative overflow-hidden"
+                    className="group p-5 rounded-3xl bg-white/90 dark:bg-zinc-950/70 hover:bg-slate-50 dark:hover:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800/80 hover:border-slate-300 dark:hover:border-zinc-700/80 shadow-md hover:shadow-2xl transition-all duration-200 flex flex-col justify-between relative overflow-hidden"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-3.5">
@@ -311,22 +311,22 @@ const SubjectPage = () => {
                         >
                           <Icon name={topic.icon} size={22} />
                         </div>
-                        <span className="font-mono text-xs font-bold text-zinc-500">
+                        <span className="font-mono text-xs font-bold text-slate-400 dark:text-zinc-500">
                           #{String(idx + 1).padStart(2, "0")}
                         </span>
                       </div>
 
-                      <h4 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+                      <h4 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
                         {topic.title}
                       </h4>
-                      <p className="mt-2 text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                      <p className="mt-2 text-xs text-slate-600 dark:text-zinc-300 font-medium leading-relaxed line-clamp-2">
                         {topic.short}
                       </p>
                     </div>
 
-                    <div className="mt-5 pt-3.5 border-t border-zinc-800/60 flex items-center justify-between text-xs font-semibold text-zinc-400 group-hover:text-white">
-                      <span className="text-[11px] font-mono text-zinc-500">3D Interaktiv</span>
-                      <span className="flex items-center gap-1 text-emerald-400 group-hover:translate-x-1 transition-transform">
+                    <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-zinc-800/60 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-zinc-400 group-hover:text-slate-900 dark:group-hover:text-white">
+                      <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500">3D Interaktiv</span>
+                      <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold group-hover:translate-x-1 transition-transform">
                         <span>O'rganish</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </span>

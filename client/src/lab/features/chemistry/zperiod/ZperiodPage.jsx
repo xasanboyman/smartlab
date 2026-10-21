@@ -25,6 +25,7 @@ import {
   Landmark,
 } from "lucide-react";
 import NexusLogo from "@/shared/components/ui/NexusLogo";
+import { useAppTheme } from "@/shared/hooks/useAppTheme";
 import { mountZperiod, unmountZperiod, showPage } from "@zperiod/embed";
 import "./ZperiodPage.css";
 
@@ -53,30 +54,10 @@ const ZperiodPage = () => {
   const topicRef = useRef(topic);
   const [full, setFull] = useState(false);
   const [subjectMenuOpen, setSubjectMenuOpen] = useState(false);
-
-  // Dynamic Dark / Light theme state
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("smartlab_theme") || "dark";
-  });
+  const { theme, isDark, toggleTheme } = useAppTheme();
 
   const section = ZPERIOD_SECTIONS.find((s) => s.topic === topic) || ZPERIOD_SECTIONS[0];
   topicRef.current = topic;
-
-  // Apply theme to document and body
-  useEffect(() => {
-    const isDark = theme === "dark";
-    document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.classList.toggle("dark-theme", isDark);
-    document.documentElement.classList.toggle("dark", isDark);
-    document.body.classList.toggle("dark-theme", isDark);
-    document.body.classList.toggle("light-theme", !isDark);
-    localStorage.setItem("smartlab_theme", theme);
-    localStorage.setItem("zperiod_theme", theme);
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  }, []);
 
   useEffect(() => {
     mountZperiod(hostRef.current, {

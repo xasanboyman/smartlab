@@ -469,12 +469,6 @@ const SimulatorPage = () => {
             </BendCard>
           </div>
         )}
-
-        <div className="pointer-events-none absolute bottom-3 right-4 z-10 hidden select-none items-center gap-2 font-mono text-[10px] tracking-wider text-muted-foreground lg:flex">
-          <span>SimuLink 3D Studio</span>
-          <span>•</span>
-          <span>Muallif: Abdulkhayev Hasanboy (@xasanboyman)</span>
-        </div>
       </main>
     </div>
   );

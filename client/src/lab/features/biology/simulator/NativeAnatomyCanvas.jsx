@@ -185,7 +185,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     getCamera: () => cameraRef.current,
     getContainer: () => containerRef.current,
     recenter: () => {
-      glideCameraTo([-195, 8, 195], [0, 0, 0]);
+      glideCameraTo([0, 2, 260], [0, 2, 0]);
     },
     zoomIn: (scale = 0.82) => {
       if (!cameraRef.current || !controlsRef.current) return;
@@ -261,7 +261,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     },
     focusTopic: (topic) => {
       if (!topic || topic.id === "all") {
-        glideCameraTo([-195, 8, 195], [0, 0, 0]);
+        glideCameraTo([0, 2, 260], [0, 2, 0]);
         return;
       }
       const box = new THREE.Box3();
@@ -280,7 +280,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z);
         const dist = Math.max(maxDim * 1.5, 16);
-        const dir = new THREE.Vector3(-1.0, 0.15, 1.0).normalize();
+        const dir = new THREE.Vector3(0, 0.1, 1.0).normalize();
         const endPos = center.clone().addScaledVector(dir, dist);
         glideCameraTo([endPos.x, endPos.y, endPos.z], [center.x, center.y, center.z]);
       }
@@ -303,7 +303,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
 
     // Camera — positioned to frame the entire human body head to toe centered at (0, 0, 0)
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
-    camera.position.set(-195, 8, 195);
+    camera.position.set(0, 2, 260);
     cameraRef.current = camera;
     window.__anatomyCamera = camera;
 
@@ -406,7 +406,7 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
     controls.rotateSpeed = 0.75;
     controls.zoomSpeed = 0.85;
     controls.panSpeed = 0.85;
-    controls.target.set(0, 0, 0);
+    controls.target.set(0, 2, 0);
     controls.minDistance = 14;
     controls.maxDistance = 450;
     controls.minPolarAngle = 0.08;
@@ -743,11 +743,30 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         // Group and center
         const group = new THREE.Group();
         group.name = "HumanAnatomy";
+        group.visible = false; // Strictly hidden until textures are fully loaded and applied
 
-        // Center offset from our earlier bounding box calculation
-        // Total center: [-20.9, -23.9, -392.5]
-        gltf.scene.position.set(20.9, 23.9, 392.5);
-        group.add(gltf.scene);
+        // Fix Sketchfab export diagonal orientation (-56.3 deg Z) and forward tilt (-84.7 deg X):
+        // Set node0 to pure orthogonal orientation (-90 deg X so FBX Up maps to Three.js Up, 0 Y, 0 Z so model faces forward directly)
+        const gltfScene = gltf.scene;
+        const node0 = gltfScene.children[0];
+        if (node0) {
+          node0.rotation.set(-Math.PI / 2, 0, 0);
+          node0.position.set(0, 0, 0);
+        }
+        gltfScene.position.set(0, 0, 0);
+        group.add(gltfScene);
+
+        // Dynamically compute natural bounds and center
+        group.updateMatrixWorld(true);
+        const tempBox = new THREE.Box3().setFromObject(group);
+        const tempCenter = new THREE.Vector3();
+        tempBox.getCenter(tempCenter);
+
+        // Center on X and Z, and place lowest point of feet (tempBox.min.y) exactly at pedestal floor y = -86.3
+        const targetPosY = -86.3 - tempBox.min.y;
+        gltfScene.position.set(-tempCenter.x, targetPosY, -tempCenter.z);
+        group.updateMatrixWorld(true);
+
         scene.add(group);
         modelGroupRef.current = group;
 
@@ -759,17 +778,18 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         const textureCache = new Map();
         const maxAniso = Math.min(8, rendererRef.current?.capabilities?.getMaxAnisotropy() || 8);
         let texPending = 0;
+        const onTexLoaded = () => {
+          texPending -= 1;
+          if (texPending <= 0) {
+            setTexturesReady(true);
+            if (modelGroupRef.current) modelGroupRef.current.visible = true;
+          }
+        };
         const getTex = (filename, isColor = true) => {
           if (!filename) return null;
           if (!textureCache.has(filename)) {
             texPending += 1;
-            const t = texLoader.load(TEXTURE_DIR + filename, () => {
-              texPending -= 1;
-              if (texPending === 0) setTexturesReady(true);
-            }, undefined, () => {
-              texPending -= 1;
-              if (texPending === 0) setTexturesReady(true);
-            });
+            const t = texLoader.load(TEXTURE_DIR + filename, onTexLoaded, undefined, onTexLoaded);
             t.colorSpace = isColor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
             // Trilinear + anisotropic: no shimmer at a distance, sharp up close.
             t.anisotropy = maxAniso;
@@ -850,7 +870,10 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         window.__anatomyBounds = box;
 
         draco.dispose();
-        if (texPending === 0) setTexturesReady(true);
+        if (texPending <= 0) {
+          setTexturesReady(true);
+          group.visible = true;
+        }
         setLoading(false);
         setModelLoaded(true);
       },
@@ -920,6 +943,13 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
       mesh.renderOrder = meshName === "Shorts_2" ? 6 : (LAYER_RENDER_ORDER[layerName] || 2);
     });
   }, [layerOpacities, layerVisibilities, activeTopic, sliceConfig?.enabled, modelLoaded]);
+
+  // Ensure model visibility matches texturesReady state (hidden while loading/untextured)
+  useEffect(() => {
+    if (modelGroupRef.current) {
+      modelGroupRef.current.visible = texturesReady;
+    }
+  }, [texturesReady]);
 
   // 4. Update Slicing Plane Tool with Angle, Direction, and Multi-region Scaling
   useEffect(() => {
@@ -1122,28 +1152,39 @@ const NativeAnatomyCanvas = forwardRef(function NativeAnatomyCanvas(
         style={{ touchAction: "none" }}
       />
 
-      {/* Loading Overlay: GLB (2 MB) first, then the WebP texture set streams in behind it */}
+      {/* Loading Overlay: High-contrast backdrop completely hides untextured model until ready */}
       {(loading || !texturesReady) && !loadError && (
-        <div role="status" className="pointer-events-none absolute inset-0 z-30 grid place-items-center p-6">
+        <div
+          role="status"
+          className={`absolute inset-0 z-30 flex flex-col items-center justify-center p-6 transition-opacity duration-300 ${
+            isDay ? "bg-slate-100/95 text-slate-900" : "bg-[#070b14]/95 text-white"
+          } backdrop-blur-md`}
+        >
           <div
-            className={`w-full max-w-xs rounded-xl border p-4 shadow-2xl backdrop-blur ${
-              isDay ? "border-slate-200 bg-white/90 text-slate-900" : "border-zinc-800 bg-zinc-950/90 text-white"
+            className={`w-full max-w-sm rounded-2xl border p-6 shadow-2xl ${
+              isDay ? "border-slate-200/90 bg-white text-slate-900" : "border-zinc-800/90 bg-zinc-900/95 text-white"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-5 w-5 shrink-0 animate-spin text-emerald-500" />
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium">{loading ? "Anatomiya modeli yuklanmoqda" : "Teksturalar yuklanmoqda"}</div>
-                <div className={`truncate text-xs ${isDay ? "text-slate-500" : "text-zinc-400"}`}>
-                  {loading ? "23 ta a'zo · Draco siqilgan GLB" : "61 ta WebP tekstura (teri, mushak, suyak, a'zolar)"}
+                <div className="text-sm font-semibold tracking-tight">
+                  {loading ? "3D Anatomiya modeli yuklanmoqda" : "Teksturalar yuklanmoqda"}
+                </div>
+                <div className={`truncate text-xs mt-0.5 ${isDay ? "text-slate-500 font-medium" : "text-zinc-400"}`}>
+                  {loading ? "Draco siqilgan 3D geometriya" : "Teri, mushak, suyak va ichki a'zolar"}
                 </div>
               </div>
-              <span className="font-mono text-xs tabular-nums text-emerald-500">{loading ? `${loadProgress}%` : ""}</span>
+              <span className="font-mono text-xs font-bold tabular-nums text-emerald-500">
+                {loading ? `${loadProgress}%` : "Tayyorlanmoqda"}
+              </span>
             </div>
-            <div className={`mt-3 h-1 overflow-hidden rounded-full ${isDay ? "bg-slate-200" : "bg-zinc-800"}`}>
+            <div className={`mt-4 h-1.5 overflow-hidden rounded-full ${isDay ? "bg-slate-200" : "bg-zinc-800"}`}>
               <div
-                className={`h-full rounded-full bg-emerald-500 transition-all duration-200 ${loading ? "" : "animate-pulse"}`}
-                style={{ width: loading ? `${Math.max(4, loadProgress)}%` : "100%" }}
+                className={`h-full rounded-full bg-emerald-500 transition-all duration-300 ${loading ? "" : "animate-pulse"}`}
+                style={{ width: loading ? `${Math.max(6, loadProgress)}%` : "100%" }}
               />
             </div>
           </div>

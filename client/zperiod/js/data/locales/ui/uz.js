@@ -222,6 +222,7 @@ export const uzUI = {
     "tabStructure": "Tuzilishi",
     "tabOrbitals": "Orbitallar",
     "tabArchive": "Arxiv",
+    "viewArchive": "Arxivda ko'rish →",
     "shells": "Qobiqlar",
     "shellPopulation": "Qobiq toʻldirilishi",
     "discoveredBy": "Kashf etgan",

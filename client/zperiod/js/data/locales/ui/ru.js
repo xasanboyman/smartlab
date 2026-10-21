@@ -215,6 +215,7 @@ export const ruUI = {
     "stable": "Стабильный",
     "radioactive": "Радиоактивный",
     "pauling": "Полинг",
+    "viewArchive": "Смотреть в архиве →",
     "noIsotopeData": "Нет данных по ключевым изотопам."
   },
   "toolModal": {

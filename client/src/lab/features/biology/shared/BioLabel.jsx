@@ -13,7 +13,7 @@ const BioLabel = ({ position, text, color = "#34d399", active = false, muted = f
         occlude={occlude}
         onOcclude={setHidden}
         zIndexRange={[40, 0]}
-        style={{ pointerEvents: onClick ? "auto" : "none", transition: "opacity 160ms", opacity: hidden ? 0.15 : muted ? 0.45 : 1 }}
+        style={{ pointerEvents: onClick ? "auto" : "none", transition: "opacity 160ms", opacity: hidden ? 0.25 : muted ? 0.7 : 1 }}
       >
         <button
           type="button"
@@ -21,11 +21,11 @@ const BioLabel = ({ position, text, color = "#34d399", active = false, muted = f
             e.stopPropagation();
             onClick?.();
           }}
-          className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider shadow-lg backdrop-blur-sm ${
-            active ? "border-emerald-400/70 bg-emerald-500/20 text-emerald-100" : "border-white/15 bg-slate-950/80 text-slate-100"
+          className={`flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider shadow-xl backdrop-blur-md transition-all ${
+            active ? "border-emerald-400 bg-emerald-500/30 text-emerald-200 ring-2 ring-emerald-400/40 scale-105" : "border-white/30 bg-slate-950/90 text-white hover:border-emerald-400/60"
           }`}
         >
-          <span className="size-1.5 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
+          <span className="size-2 rounded-full ring-1 ring-white/60" style={{ background: color, boxShadow: `0 0 8px ${color}` }} />
           {text}
         </button>
       </Html>

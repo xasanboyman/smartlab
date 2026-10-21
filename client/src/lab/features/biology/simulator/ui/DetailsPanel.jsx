@@ -27,8 +27,8 @@ const DetailsPanel = ({ topic, topicId, tab, onTab, query, onQuery, onSelectTopi
             <Icon className="size-5 text-primary" />
           </div>
           <div className="min-w-0">
-            <h2 className="truncate text-sm font-bold" title={topic.title}>{topic.title}</h2>
-            <div className="truncate text-[11px] italic text-muted-foreground">{topic.latin}</div>
+            <h2 className="truncate text-sm font-bold text-foreground" title={topic.title}>{topic.title}</h2>
+            <div className="truncate text-[11px] font-semibold text-emerald-400">{topic.latin}</div>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -85,15 +85,15 @@ const DetailsPanel = ({ topic, topicId, tab, onTab, query, onQuery, onSelectTopi
         <div className="hidden-scrollbar flex-1 space-y-4 overflow-y-auto p-4">
           <div className="space-y-1.5">
             <div className={MONO_LABEL}>Ilmiy tavsif va vazifasi</div>
-            <p className="rounded-2xl border border-border bg-secondary/40 p-3.5 text-xs leading-relaxed">{topic.desc}</p>
+            <p className="rounded-2xl border border-border bg-secondary/50 p-3.5 text-xs font-medium leading-relaxed text-foreground">{topic.desc}</p>
           </div>
           {topic.stats?.length > 0 && (
             <div className="space-y-1.5">
               <div className={MONO_LABEL}>Asosiy ko'rsatkichlar</div>
               <div className="grid grid-cols-2 gap-2">
                 {topic.stats.map((st, i) => (
-                  <div key={i} className="rounded-xl border border-border bg-secondary/40 p-2.5">
-                    <div className="truncate text-[10px] text-muted-foreground">{st.label}</div>
+                  <div key={i} className="rounded-xl border border-border bg-secondary/50 p-2.5">
+                    <div className="truncate text-[11px] font-semibold text-zinc-300 dark:text-zinc-200">{st.label}</div>
                     <div className="mt-0.5 truncate text-xs font-bold text-primary">{st.value}</div>
                   </div>
                 ))}
@@ -106,7 +106,7 @@ const DetailsPanel = ({ topic, topicId, tab, onTab, query, onQuery, onSelectTopi
                 <Sparkles className="size-3.5 shrink-0" />
                 Qiziqarli tibbiy fakt
               </div>
-              <p className="text-xs leading-relaxed">{topic.funFact}</p>
+              <p className="text-xs font-medium leading-relaxed text-foreground">{topic.funFact}</p>
             </div>
           )}
         </div>

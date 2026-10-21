@@ -221,6 +221,7 @@ export const enUI = {
     "tabStructure": "Structure",
     "tabOrbitals": "Orbitals",
     "tabArchive": "Archive",
+    "viewArchive": "View in Archive →",
     "shells": "Shells",
     "shellPopulation": "Shell population",
     "discoveredBy": "Discovered By",

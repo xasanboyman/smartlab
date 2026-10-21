@@ -25,7 +25,7 @@
 .atom-3d-type[data-sub=f].active{background:#10b981;color:#fff;box-shadow:0 4px 14px #10b98159}
 .atom-3d-type:disabled,.atom-3d-type.disabled{opacity:.32;pointer-events:none;filter:grayscale(1)}
 .atom-3d-orientations{gap:8px;padding:14px 14px 16px;background:#ffffff47;border-radius:18px}
-.atom-3d-orientations>.info-label{text-align:center;margin-bottom:4px;opacity:.45}
+.atom-3d-orientations>.info-label{text-align:center;margin-bottom:4px;opacity:.9;font-weight:700}
 .atom-3d-orient-row{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}
 .atom-3d-ori{appearance:none;border:none;height:26px;padding:0 10px;border-radius:8px;font:700 .72rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;background:#fff;color:#0f172a99;cursor:pointer;transition:background .18s ease,color .18s ease,transform .1s ease,box-shadow .18s ease;-webkit-user-select:none;user-select:none;box-shadow:0 1px 2px #0f172a14}
 .atom-3d-ori:hover{background:#fff;color:#0f172ae6}

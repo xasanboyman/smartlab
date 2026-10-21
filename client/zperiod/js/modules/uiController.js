@@ -311,7 +311,7 @@ function localizeSimpleStatusText(value, fallback = "—") {
   const normalized = String(value ?? "").trim();
   if (!normalized) return fallback;
   if (/^unknown$/i.test(normalized)) return t("elementL1.unknown");
-  if (/^no common ions$/i.test(normalized)) return t("elementL1.noCommonIons");
+  if (/^no common ions$|^нет общих ионов$|^нет распространенных ионов$|^yo'q$|^keng tarqalgan ionlari yo'q$/i.test(normalized)) return t("elementL1.noCommonIons");
   
   // Phase handling with proper short-circuit fallback
   const phaseMap = { Solid: 1, Liquid: 1, Gas: 1 };
@@ -1796,7 +1796,7 @@ function populateSimplifiedView(element) {
       const normalizedCommonIonsText = String(commonIonsText || "").trim();
       const hasNoIons =
         !normalizedCommonIonsText ||
-        /none|\/a|inert|unknown|does not form|no common ions/i.test(normalizedCommonIonsText);
+        /none|\/a|inert|unknown|does not form|no common ions|нет общих ионов|нет распространенных ионов|yo'q|keng tarqalgan ionlari yo'q|mavjud emas/i.test(normalizedCommonIonsText);
       const createIonItem = (symbol, name, detailMarkup = "") => {
         if (detailMarkup) {
           return createExpandablePill({
@@ -1815,7 +1815,7 @@ function populateSimplifiedView(element) {
         return item;
       };
       if (hasNoIons) {
-        const noIonsLabel = /unknown/i.test(normalizedCommonIonsText)
+        const noIonsLabel = /unknown|noma'lum|неизвестно/i.test(normalizedCommonIonsText)
           ? t("elementL1.unknown")
           : t("elementL1.noCommonIons");
         const noIonsDetailMarkup = normalizedCommonIonsText

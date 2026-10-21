@@ -686,7 +686,7 @@ const createChunkSystem = (frontLayer, particles) => {
 
 /* ── scene ───────────────────────────────────────────── */
 
-export const mountLaserScene = async ({ canvas, host, page, mode, assetBase }) => {
+export const mountLaserScene = async ({ canvas, host, page, mode, assetBase, catEnabled = false }) => {
   const app = new Application();
   await app.init({
     canvas,
@@ -717,9 +717,15 @@ export const mountLaserScene = async ({ canvas, host, page, mode, assetBase }) =
   const particles = new Container();
   const laserLayer = new Graphics();
   const vignette = new Graphics();
+  let isCatActive = !!catEnabled;
   const cat = new Cat({ scale: 2, power: 0.9, skid: 0.99, tex });
   cat.view.filters = [new DropShadowFilter({ offset: { x: 6, y: 10 }, blur: 2, quality: 4, alpha: 0.55, color: SHADOW })];
   cat.setPosition(-160, app.screen.height * 0.82);
+  cat.view.visible = isCatActive;
+  cat.shadowView.visible = isCatActive;
+  cat.tailView.visible = isCatActive;
+  laserLayer.visible = isCatActive;
+  particles.visible = isCatActive;
   laserLayer.filterArea = new Rectangle(0, 0, app.screen.width, app.screen.height);
   if (!lowPower) {
     laserLayer.filters = [
@@ -845,6 +851,12 @@ export const mountLaserScene = async ({ canvas, host, page, mode, assetBase }) =
   await nextDoubleFrame();
 
   app.ticker.add((ticker) => {
+    if (!isCatActive) {
+      laserLayer.clear();
+      laserLayer.visible = false;
+      return;
+    }
+    laserLayer.visible = true;
     const step = ticker.deltaTime;
     // Overlay mode: the laser follows the cursor and wanders when it goes idle.
     if (!sliceable) config.laserMouse = performance.now() - lastPointer < 2600;
@@ -868,6 +880,20 @@ export const mountLaserScene = async ({ canvas, host, page, mode, assetBase }) =
 
   return {
     app,
+    setCatEnabled(enabled) {
+      isCatActive = !!enabled;
+      cat.view.visible = isCatActive;
+      cat.shadowView.visible = isCatActive;
+      cat.tailView.visible = isCatActive;
+      laserLayer.visible = isCatActive;
+      particles.visible = isCatActive;
+      if (!isCatActive) {
+        cat.setPosition(-200, app.screen.height * 0.82);
+        laserLayer.clear();
+        trail.length = 0;
+        sparks.length = 0;
+      }
+    },
     destroy() {
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("orientationchange", scheduleRelayout);

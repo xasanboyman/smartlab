@@ -9,7 +9,7 @@ export const BioSection = ({ label, right, children, className }) => (
   <section className={cn("space-y-2", className)}>
     {(label || right) && (
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</span>
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-300 dark:text-zinc-200">{label}</span>
         {right}
       </div>
     )}
@@ -18,9 +18,9 @@ export const BioSection = ({ label, right, children, className }) => (
 );
 
 export const BioStat = ({ label, value, accent }) => (
-  <div className="rounded-lg border border-border bg-secondary/50 px-2.5 py-2">
-    <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
-    <div className={cn("mt-0.5 truncate text-sm font-semibold tabular-nums", accent && "text-primary")}>{value}</div>
+  <div className="rounded-lg border border-border bg-secondary/70 px-2.5 py-2 shadow-sm">
+    <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-zinc-300 dark:text-zinc-300">{label}</div>
+    <div className={cn("mt-0.5 truncate text-sm font-bold tabular-nums text-foreground", accent && "text-emerald-400 font-extrabold")}>{value}</div>
   </div>
 );
 
@@ -186,26 +186,26 @@ export const BioPartList = ({ items, activeId, onSelect, searchable = true, plac
  */
 export const BioDetailCard = ({ title, subtitle, eyebrow, color, description, stats, actions, onClose, onFocus, children, className }) => (
   <div className={cn("pointer-events-none absolute right-3 top-3 z-30 w-80 max-w-[calc(100%-1.5rem)]", className)}>
-    <div className="pointer-events-auto animate-in fade-in slide-in-from-right-4 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur duration-200 dark">
+    <div className="pointer-events-auto animate-in fade-in slide-in-from-right-4 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-xl border border-zinc-700/80 bg-zinc-900/95 p-4 shadow-2xl backdrop-blur duration-200 text-zinc-100">
       <div className="flex items-start gap-2.5">
-        {color && <span className="mt-1 size-3 shrink-0 rounded-full ring-2 ring-white/10" style={{ background: color, boxShadow: `0 0 10px ${color}66` }} />}
+        {color && <span className="mt-1 size-3 shrink-0 rounded-full ring-2 ring-white/20" style={{ background: color, boxShadow: `0 0 10px ${color}` }} />}
         <div className="min-w-0 flex-1">
-          {eyebrow && <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary">{eyebrow}</div>}
-          <h3 className="text-base font-semibold leading-tight">{title}</h3>
-          {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+          {eyebrow && <div className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-400">{eyebrow}</div>}
+          <h3 className="text-base font-bold leading-tight text-white">{title}</h3>
+          {subtitle && <div className="text-xs text-zinc-300 font-medium">{subtitle}</div>}
         </div>
         {onFocus && (
-          <button type="button" onClick={onFocus} aria-label="Fokus" title="Kameraga olish" className="grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-primary">
+          <button type="button" onClick={onFocus} aria-label="Fokus" title="Kameraga olish" className="grid size-7 shrink-0 place-items-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-emerald-400">
             <Focus size={15} />
           </button>
         )}
         {onClose && (
-          <button type="button" onClick={onClose} aria-label="Yopish" className="-mr-1 -mt-1 grid size-7 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground">
+          <button type="button" onClick={onClose} aria-label="Yopish" className="-mr-1 -mt-1 grid size-7 shrink-0 place-items-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white">
             <X size={15} />
           </button>
         )}
       </div>
-      {description && <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">{description}</p>}
+      {description && <p className="mt-2.5 text-sm leading-relaxed text-zinc-200 font-normal">{description}</p>}
       {stats && stats.length > 0 && (
         <div className="mt-3 grid grid-cols-2 gap-2">
           {stats.map((s) => (

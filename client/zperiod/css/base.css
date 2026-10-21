@@ -2241,3 +2241,129 @@ body.reduce-motion * {
     height: 45px !important;
   }
 }
+
+/* ── Settings Viewport Dark & Light Theme Overhauls ── */
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .settings-viewport {
+  color: #e8e6f0;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-card {
+  background: rgba(22, 22, 34, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45) !important;
+  color: #e8e6f0 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-card:hover {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-card-icon-row h3 {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-icon-circle {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #38e0c8 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-link-card {
+  background: rgba(22, 22, 34, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e8e6f0 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-link-card:hover {
+  background: rgba(32, 32, 48, 0.95) !important;
+  border-color: #38e0c8 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-link-card-title {
+  color: #ffffff !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-link-card-desc,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-anim-label,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-unit-desc,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-radio-desc {
+  color: #94a3b8 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-unit-radio-group,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-segmented-control {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-unit-btn,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-segment-btn {
+  color: #cbd5e1 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-unit-btn.active,
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-segment-btn.active {
+  background: #38e0c8 !important;
+  color: #04121a !important;
+  font-weight: 700 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-sidebar-footer {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-sidebar-footer .lang-dropdown-toggle {
+  background: rgba(26, 26, 38, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .sv-sidebar-footer .lang-dropdown-menu {
+  background: rgba(18, 18, 26, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7) !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .lang-option {
+  color: #e2e8f0 !important;
+}
+
+:is(html.dark-theme, html.dark, body.dark-theme, [data-theme="dark"]) .lang-option:hover {
+  background: rgba(56, 224, 200, 0.15) !important;
+  color: #38e0c8 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .settings-viewport {
+  color: #0f172a;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-card-icon-row h3 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-link-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-link-card:hover {
+  border-color: #059669 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-link-card-desc,
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-anim-label,
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sv-unit-desc {
+  color: #475569 !important;
+}

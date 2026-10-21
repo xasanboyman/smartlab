@@ -18,7 +18,10 @@ import {
   Layers,
   Boxes,
   Play,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useAppTheme } from "@/shared/hooks/useAppTheme";
 import { SUBJECTS } from "@/lab/data/subjects";
 import LandingFx from "./landing-fx/LandingFx";
 import "./LandingPage.css";
@@ -284,8 +287,29 @@ const LandingPage = () => {
   const [mode, setMode] = useState("dom");
   const onMode = useCallback((m) => setMode(m), []);
   const featured = useMemo(() => SUBJECTS, []);
+  const { theme, isDark, toggleTheme } = useAppTheme();
+
+  // Cat toggle: default is strictly OFF as requested by user
+  const [catEnabled, setCatEnabled] = useState(() => {
+    try {
+      return localStorage.getItem("simulink_cat_enabled") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCat = useCallback(() => {
+    setCatEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("simulink_cat_enabled", String(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
   return (
-    <LandingFx onMode={onMode}>
+    <LandingFx onMode={onMode} catEnabled={catEnabled}>
       <div className={`sl-landing mode-${mode}`} id="top">
         <header className="rail">
           <div className="wrap rail-in">
@@ -299,7 +323,29 @@ const LandingPage = () => {
               <a href="#how">Qanday ishlaydi</a>
               <Link to="/chemistry/lab">Laboratoriya</Link>
             </nav>
-            <span className={`status ${mode}`}><span className="dot" />{MODE_LABEL[mode]}</span>
+            <div className="rail-actions">
+              <button
+                type="button"
+                onClick={toggleCat}
+                className={`rail-btn cat-btn ${catEnabled ? "active" : ""}`}
+                title={catEnabled ? "Mushuk effektini o'chirish" : "Mushuk effektini yoqish (Standart: O'chiq)"}
+              >
+                <span>🐱</span>
+                <span className="btn-label">Mushuk: {catEnabled ? "Yoqiq" : "O'chiq"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="rail-btn theme-btn"
+                title={isDark ? "Kunduzgi rejimga o'tish" : "Tungi rejimga o'tish"}
+              >
+                {isDark ? <Sun size={13} className="text-amber-400" /> : <Moon size={13} className="text-indigo-400" />}
+                <span className="btn-label">{isDark ? "Kunduzgi" : "Tungi"}</span>
+              </button>
+
+              <span className={`status ${mode}`}><span className="dot" />{MODE_LABEL[mode]}</span>
+            </div>
           </div>
         </header>
 

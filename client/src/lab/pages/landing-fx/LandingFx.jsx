@@ -7,8 +7,9 @@ import { hasHtmlInCanvas, markDrawable } from "@/lab/html-canvas/htmlInCanvas";
 
 const BASE = import.meta.env.BASE_URL || "/";
 
-const LandingFx = ({ children, onMode }) => {
+const LandingFx = ({ children, onMode, catEnabled = false }) => {
   const hostRef = useRef(null);
+  const sceneRef = useRef(null);
   const [page, setPage] = useState(null);
 
   useLayoutEffect(() => {
@@ -19,6 +20,12 @@ const LandingFx = ({ children, onMode }) => {
     setPage(el);
     return () => el.remove();
   }, []);
+
+  useEffect(() => {
+    if (sceneRef.current?.setCatEnabled) {
+      sceneRef.current.setCatEnabled(catEnabled);
+    }
+  }, [catEnabled]);
 
   useEffect(() => {
     if (!page) return undefined;
@@ -33,7 +40,6 @@ const LandingFx = ({ children, onMode }) => {
     canvas.className = "lf-canvas";
     host.appendChild(canvas);
     const supported = hasHtmlInCanvas(canvas);
-    let scene = null;
     let cancelled = false;
 
     const leaveCanvasMode = () => {
@@ -54,8 +60,19 @@ const LandingFx = ({ children, onMode }) => {
           onMode?.("canvas");
         } else onMode?.("dom");
         try {
-          scene = await m.mountLaserScene({ canvas, host, page, mode: supported ? "canvas" : "dom", assetBase: BASE });
-          if (cancelled) scene?.destroy();
+          const scene = await m.mountLaserScene({
+            canvas,
+            host,
+            page,
+            mode: supported ? "canvas" : "dom",
+            assetBase: BASE,
+            catEnabled,
+          });
+          if (cancelled) {
+            scene?.destroy();
+          } else {
+            sceneRef.current = scene;
+          }
         } catch (err) {
           console.warn("[LandingFx] scene failed, falling back to DOM", err);
           if (supported) leaveCanvasMode();
@@ -65,7 +82,8 @@ const LandingFx = ({ children, onMode }) => {
 
     return () => {
       cancelled = true;
-      scene?.destroy();
+      sceneRef.current?.destroy();
+      sceneRef.current = null;
       if (page.parentElement === canvas) host.insertBefore(page, canvas);
       host.classList.remove("lf-canvas-mode");
       canvas.remove();

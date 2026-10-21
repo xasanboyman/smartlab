@@ -77,4 +77,4 @@ export const ACTIVE_AMBER = "border-amber-400 bg-amber-500 text-zinc-950 font-bo
 export const ACTIVE_AMBER_SOFT = "border-amber-500/60 bg-amber-500/20 text-amber-500";
 export const ACTIVE_SKY = "border-sky-500/60 bg-sky-500/20 text-sky-500";
 export const ACTIVE_PRIMARY = "border-primary/60 bg-primary/15 text-primary";
-export const MONO_LABEL = "font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground";
+export const MONO_LABEL = "font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-300 dark:text-zinc-200";
