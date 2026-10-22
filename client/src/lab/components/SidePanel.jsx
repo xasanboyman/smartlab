@@ -24,7 +24,7 @@ const SidePanel = ({
     />
     <aside
       className={cn(
-        "fixed inset-y-0 z-50 flex h-full w-[86%] max-w-xs flex-col bg-card shadow-2xl transition-transform duration-300",
+        "fixed inset-y-0 z-50 flex h-full w-[86%] max-w-xs flex-col bg-card text-card-foreground shadow-2xl transition-transform duration-300",
         "lg:static lg:z-10 lg:max-w-none lg:translate-x-0 lg:shadow-none lg:transition-none",
         widthClass,
         side === "left"

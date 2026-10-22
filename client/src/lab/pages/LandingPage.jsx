@@ -111,11 +111,13 @@ function MiniLab() {
                 <path d="M62 12h36v48l40 78c6 12-2 24-14 24H36c-12 0-20-12-14-24l40-78z" />
               </clipPath>
               <linearGradient id="glass" x1="0" x2="1">
-                <stop offset="0" stopColor="#ffffff" stopOpacity="0.35" />
-                <stop offset="0.5" stopColor="#ffffff" stopOpacity="0.04" />
-                <stop offset="1" stopColor="#ffffff" stopOpacity="0.25" />
+                <stop offset="0" stopColor="var(--flask-glass-tint, #ffffff)" stopOpacity="0.45" />
+                <stop offset="0.5" stopColor="var(--flask-glass-tint, #ffffff)" stopOpacity="0.08" />
+                <stop offset="1" stopColor="var(--flask-glass-tint, #ffffff)" stopOpacity="0.3" />
               </linearGradient>
             </defs>
+            {/* Background glass silhouette so vessel is clearly visible even when empty in light and dark mode */}
+            <path className="glassbg" d="M62 12h36v48l40 78c6 12-2 24-14 24H36c-12 0-20-12-14-24l40-78z" />
             <g clipPath="url(#flaskClip)">
               <rect className="liquid" x="0" y={level} width="160" height="170" fill={color} />
               <path className="wave" d={`M-20 ${level} q20 -5 40 0 t40 0 t40 0 t40 0 t40 0 v30 h-200z`} fill={color} opacity="0.8" />

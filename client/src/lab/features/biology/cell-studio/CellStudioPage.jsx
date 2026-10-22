@@ -12,7 +12,8 @@ import useObjectState from "@/shared/hooks/useObjectState";
 import { cn } from "@/shared/utils/cn";
 import { MUSCLE_ANNOTATIONS } from "./data/muscleAnnotations";
 import { cells, getCellById } from "./data/cells";
-import { BIO_THEME_VARS } from "../shared/bioTheme";
+import { BIO_THEME_VARS, BIO_THEME_VARS_LIGHT } from "../shared/bioTheme";
+import { applyThemeToDom, getStoredTheme } from "@/shared/hooks/useAppTheme";
 import { assetUrl, preloadWhenIdle } from "../shared/loaders";
 import { BioButton, BioLoading, BioPartList, BioSegment, BioStat } from "../shared/BioUi";
 
@@ -154,7 +155,7 @@ const CellStudioPage = () => {
     activeOrganelle: initial.defaultOrganelle,
     activeLandmarkNum: 0,
     autopilot: false,
-    studioTheme: "dark",
+    studioTheme: getStoredTheme(),
     isOverview: true,
     menuOpen: false,
     viewMode: "mesh",
@@ -244,7 +245,13 @@ const CellStudioPage = () => {
     : "border-border bg-[radial-gradient(ellipse_at_50%_45%,#16202d_0%,#0b1018_60%,#06090f_100%)]";
 
   return (
-    <div className="bio-console dark flex h-dvh flex-col overflow-hidden bg-background text-foreground" style={BIO_THEME_VARS}>
+    <div
+      className={cn(
+        "bio-console flex h-dvh flex-col overflow-hidden bg-background text-foreground transition-colors duration-300",
+        s.studioTheme !== "light" && "dark",
+      )}
+      style={s.studioTheme === "light" ? BIO_THEME_VARS_LIGHT : BIO_THEME_VARS}
+    >
       {/* top bar */}
       <header className="flex items-center gap-3 border-b border-border px-4 py-2.5">
         <Link to="/biology" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
@@ -351,9 +358,13 @@ const CellStudioPage = () => {
               <div className="pointer-events-auto absolute right-3 top-3 z-20 flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => s.setField("studioTheme", s.studioTheme === "light" ? "dark" : "light")}
+                  onClick={() => {
+                    const next = s.studioTheme === "light" ? "dark" : "light";
+                    s.setField("studioTheme", next);
+                    applyThemeToDom(next);
+                  }}
                   title={s.studioTheme === "light" ? "Qorong'i studiya" : "Yorug' studiya"}
-                  className="grid size-8 place-items-center rounded-lg border border-border bg-background/80 text-foreground shadow backdrop-blur hover:text-primary"
+                  className="grid size-8 place-items-center rounded-lg border border-border bg-background/80 text-foreground shadow backdrop-blur hover:text-primary transition-colors"
                 >
                   {s.studioTheme === "light" ? <Moon size={15} /> : <Sun size={15} />}
                 </button>

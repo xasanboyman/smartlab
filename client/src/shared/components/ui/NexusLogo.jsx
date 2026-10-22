@@ -78,17 +78,17 @@ export const NexusLogo = ({
       <div className="flex flex-col min-w-0">
         <div className="flex items-center gap-1.5">
           <span
-            className={`${titleSize} font-extrabold tracking-tight bg-gradient-to-r from-white via-zinc-100 to-zinc-300 bg-clip-text text-transparent`}
+            className={`${titleSize} font-extrabold tracking-tight text-foreground transition-colors duration-200`}
           >
-            Simu<span className="text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]">Link</span>
+            Simu<span className="text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.4)]">Link</span>
           </span>
-          <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] font-black tracking-wider uppercase shadow-sm">
+          <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-black tracking-wider uppercase shadow-sm">
             3D
           </span>
         </div>
 
         {showSubtitle && (
-          <span className="text-[10px] text-zinc-400 font-medium tracking-wide truncate">
+          <span className="text-[10px] text-muted-foreground font-medium tracking-wide truncate">
             Virtual Science & Anatomy Studio
           </span>
         )}

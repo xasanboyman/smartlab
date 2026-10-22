@@ -10,6 +10,7 @@ import { ANATOMY_TOPICS, getAnatomyTopic } from "./engine/anatomyData";
 import { AnatomyNarrator } from "./engine/HtmlCanvasManager";
 import { anatomyAudio } from "./engine/AnatomyAudio";
 import { BIO_THEME_VARS, BIO_THEME_VARS_LIGHT } from "../shared/bioTheme";
+import { applyThemeToDom, getStoredTheme } from "@/shared/hooks/useAppTheme";
 import TopBar from "./ui/TopBar";
 import LayerLever from "./ui/LayerLever";
 import DetailsPanel from "./ui/DetailsPanel";
@@ -21,7 +22,9 @@ const HtmlInCanvasOverlay = lazy(() => import("./HtmlInCanvasOverlay").then((m) 
 
 const readTheme = () => {
   try {
-    return localStorage.getItem("smartlab_anatomy_theme") || "night";
+    const custom = localStorage.getItem("smartlab_anatomy_theme");
+    if (custom === "day" || custom === "night") return custom;
+    return getStoredTheme() === "light" ? "day" : "night";
   } catch (_) {
     return "night";
   }
@@ -105,6 +108,10 @@ const SimulatorPage = () => {
     narratorRef.current = new AnatomyNarrator();
     return () => narratorRef.current?.stop();
   }, []);
+
+  useEffect(() => {
+    applyThemeToDom(ui.themeMode === "day" ? "light" : "dark");
+  }, [ui.themeMode]);
 
   // Capture the camera instance once the canvas is mounted (pins overlay projects through it).
   useEffect(() => {
@@ -193,6 +200,7 @@ const SimulatorPage = () => {
     try {
       localStorage.setItem("smartlab_anatomy_theme", next);
     } catch (_) {}
+    applyThemeToDom(next === "day" ? "light" : "dark");
     setUi({ themeMode: next });
   }, [setUi]);
 

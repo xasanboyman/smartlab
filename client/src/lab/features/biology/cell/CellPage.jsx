@@ -4,6 +4,7 @@
 import { Suspense, useMemo } from "react";
 import { Sparkles, Box, RefreshCw, Tag } from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
+import { useAppTheme } from "@/shared/hooks/useAppTheme";
 import Scene from "@/lab/components/Scene";
 import LabWorkspace from "@/lab/components/LabWorkspace";
 import { ORGANELLES, CELL_MODELS, getOrganelle, getCellModel } from "@/lab/data/cell";
@@ -19,6 +20,7 @@ const VIEW_MODES = [
 ];
 
 const CellPage = () => {
+  const { isDark } = useAppTheme();
   const { activeId, viewStyle, autoRotate, showLabels, focusKey, setField, setFields } = useObjectState({
     activeId: "eukaryotic-cell",
     viewStyle: "realistic",
@@ -57,7 +59,7 @@ const CellPage = () => {
         <>
           <Scene
             camera={[0, 1.8, 7.2]}
-            bg={BIO_SCENE_BG}
+            bg={isDark ? BIO_SCENE_BG : "#f1f5f9"}
             gl={BIO_GL}
             lights={false}
             loader={null}

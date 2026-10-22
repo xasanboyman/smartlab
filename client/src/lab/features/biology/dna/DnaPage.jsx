@@ -2,6 +2,7 @@
 // strands and explains its pairing rule.
 import { RefreshCw, Tag } from "lucide-react";
 import useObjectState from "@/shared/hooks/useObjectState";
+import { useAppTheme } from "@/shared/hooks/useAppTheme";
 import Scene from "@/lab/components/Scene";
 import LabWorkspace from "@/lab/components/LabWorkspace";
 import DnaModel, { BASES } from "./DnaModel";
@@ -12,6 +13,7 @@ import { BioButton, BioDetailCard, BioSceneTag, BioSection, BioStat } from "../s
 const ITEMS = [{ id: "dna", name: "Qo'sh spiral" }, ...BASES.map((b) => ({ id: b.id, name: `${b.letter} · ${b.name}` }))];
 
 const DnaPage = () => {
+  const { isDark } = useAppTheme();
   const { activeId, autoRotate, showLabels, setField } = useObjectState({ activeId: "dna", autoRotate: true, showLabels: true });
   const base = BASES.find((b) => b.id === activeId) || null;
   const pair = base ? BASES.find((b) => b.id === base.pair) : null;
@@ -28,7 +30,7 @@ const DnaPage = () => {
       aiContext={{ tanlangan_asos: base ? `${base.name} (${base.letter}) - ${base.pair} bilan ${base.bonds} vodorod bog'i` : undefined }}
       scene={
         <>
-          <Scene camera={[0, 0.4, 9.5]} bg={BIO_SCENE_BG} gl={BIO_GL} lights={false} shadows controls={{ minDistance: 3, maxDistance: 20 }}>
+          <Scene camera={[0, 0.4, 9.5]} bg={isDark ? BIO_SCENE_BG : "#f1f5f9"} gl={BIO_GL} lights={false} shadows controls={{ minDistance: 3, maxDistance: 20 }}>
             <BioStudio preset="molecule" scale={6} contact={{ y: -3.6, opacity: 0.45, scale: 12, blur: 2.4 }} />
             <DnaModel activeBase={base?.id || null} autoRotate={autoRotate} showLabels={showLabels} />
           </Scene>

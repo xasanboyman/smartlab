@@ -50,8 +50,7 @@ export const BIO_THEME_VARS_LIGHT = {
 export const BIO_WORKSPACE = {
   backTo: "/biology",
   backLabel: "Biologiya",
-  rootClassName: "bio-console dark",
-  rootStyle: BIO_THEME_VARS,
+  rootClassName: "bio-console",
 };
 
 // Renderer settings shared by every biology <Scene>: filmic tone mapping + sRGB output.

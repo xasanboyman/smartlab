@@ -18,20 +18,25 @@
   --bg-2: #f1f5f9;
   --panel: #ffffff;
   --panel-2: #f8fafc;
-  --line: #e2e8f0;
-  --line-soft: #cbd5e1;
+  --line: #cbd5e1;
+  --line-soft: #e2e8f0;
   --fg: #0f172a;
   --muted: #334155;
   --faint: #64748b;
   --accent: #059669;
-  --accent-2: #2563eb;
+  --accent-2: #0284c7;
   --riko: #9333ea;
   --riko-2: #db2777;
+  --flask-glass-tint: #475569;
+  --flask-glass-bg: rgba(226, 232, 240, 0.55);
+  --flask-stroke: #334155;
+  --flask-lip-fill: #cbd5e1;
 }
 
 :is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .rail {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.88)) !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92)) !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px -8px rgba(0, 0, 0, 0.06) !important;
 }
 
 :is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .btn-primary {
@@ -44,9 +49,116 @@
   background: linear-gradient(100deg, #9333ea, #db2777) !important;
 }
 
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .hero-bg .grid {
+  background-image: linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px) !important;
+}
+
 :is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .mini {
   background: #ffffff !important;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 20px 45px -15px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .flask .glassbg {
+  fill: rgba(226, 232, 240, 0.6) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .flask .glassline {
+  stroke: #334155 !important;
+  stroke-width: 2.8px !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12)) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .flask .lip {
+  fill: #cbd5e1 !important;
+  stroke: #334155 !important;
+  stroke-width: 2.8px !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .flask .mark {
+  stroke: #475569 !important;
+  stroke-width: 2.5px !important;
+  opacity: 0.9 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .reagents button {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .reagents button:hover:not(:disabled) {
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .reagents .rl {
+  color: #0f172a !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .reagents .rf {
+  color: #475569 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .reagents .reset {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .card {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.03) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .chip {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .riko {
+  background: radial-gradient(800px 420px at 80% 50%, rgba(192, 132, 252, 0.08), transparent 60%), linear-gradient(180deg, #f1f5f9, #f8fafc) !important;
+  border-block-color: #cbd5e1 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .riko-demo {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 25px 60px -20px rgba(15, 23, 42, 0.1) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .riko-points li {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .msg.you {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .msg.riko {
+  background: #f5f3ff !important;
+  border-color: #ddd6fe !important;
+  color: #4c1d95 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .steps li {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 6px 20px -6px rgba(15, 23, 42, 0.06) !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .steps .num {
+  color: #e2e8f0 !important;
+}
+
+:is(html:not(.dark):not(.dark-theme), body.light-theme, [data-theme="light"]) .sl-landing .rail-btn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
 }
 
 .sl-landing .rail-actions {
@@ -152,9 +264,10 @@
 .sl-landing .flask .liquid { transition: y 0.5s cubic-bezier(.3,1.4,.5,1), fill 0.6s; }
 .sl-landing .flask .wave { animation: sl-wave 2.4s linear infinite; transition: fill 0.6s; }
 @keyframes sl-wave { from { transform: translateX(0); } to { transform: translateX(40px); } }
-.sl-landing .flask .glassline { stroke: rgba(255,255,255,0.55); stroke-width: 2; }
-.sl-landing .flask .lip { fill: rgba(255,255,255,0.14); stroke: rgba(255,255,255,0.55); stroke-width: 2; }
-.sl-landing .flask .mark { stroke: rgba(255,255,255,0.35); stroke-width: 2; }
+.sl-landing .flask .glassbg { fill: var(--flask-glass-bg, rgba(255,255,255,0.04)); transition: fill 0.25s ease; }
+.sl-landing .flask .glassline { stroke: var(--flask-stroke, rgba(255,255,255,0.55)); stroke-width: 2; transition: stroke 0.25s ease; }
+.sl-landing .flask .lip { fill: var(--flask-lip-fill, rgba(255,255,255,0.14)); stroke: var(--flask-stroke, rgba(255,255,255,0.55)); stroke-width: 2; transition: stroke 0.25s ease, fill 0.25s ease; }
+.sl-landing .flask .mark { stroke: var(--flask-stroke, rgba(255,255,255,0.35)); stroke-width: 2; transition: stroke 0.25s ease; }
 .sl-landing .flask .flashfill { animation: sl-flashfill 1.1s ease-out forwards; }
 @keyframes sl-flashfill { 0% { opacity: 0.95; } 100% { opacity: 0; } }
 .sl-landing .flask .bub { fill: rgba(255,255,255,0.85); animation: sl-bub 1.2s ease-in infinite; }
